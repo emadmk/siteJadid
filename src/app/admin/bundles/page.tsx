@@ -9,18 +9,9 @@ async function getBundles() {
   const bundles = await prisma.productBundle.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
-      product: {
-        select: {
-          id: true,
-          name: true,
-          sku: true,
-          images: true,
-          price: true,
-        },
-      },
       items: {
         include: {
-          bundledProduct: {
+          product: {
             select: {
               id: true,
               name: true,
@@ -75,15 +66,15 @@ export default async function BundlesPage() {
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-sm font-medium text-gray-600">Avg Discount</div>
+          <div className="text-sm font-medium text-gray-600">Avg Savings</div>
           <div className="text-2xl font-bold text-gray-900 mt-2">
+            $
             {bundles.length > 0
               ? (
-                  bundles.reduce((sum, b) => sum + Number(b.discount), 0) /
+                  bundles.reduce((sum, b) => sum + Number(b.savings), 0) /
                   bundles.length
-                ).toFixed(1)
+                ).toFixed(2)
               : 0}
-            %
           </div>
         </div>
       </div>
@@ -96,11 +87,11 @@ export default async function BundlesPage() {
         ) : (
           bundles.map((bundle) => (
             <div key={bundle.id} className="bg-white rounded-lg shadow overflow-hidden">
-              {bundle.product.images[0] && (
+              {bundle.image && (
                 <div className="relative h-48 bg-gray-200">
                   <Image
-                    src={bundle.product.images[0]}
-                    alt={bundle.product.name}
+                    src={bundle.image}
+                    alt={bundle.name}
                     fill
                     className="object-cover"
                   />
@@ -108,12 +99,18 @@ export default async function BundlesPage() {
               )}
               <div className="p-4">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {bundle.product.name}
+                  {bundle.name}
                 </h3>
-                <p className="text-sm text-gray-500">SKU: {bundle.product.sku}</p>
+                <p className="text-sm text-gray-500">SKU: {bundle.sku}</p>
                 <div className="mt-3">
                   <div className="text-sm font-medium text-gray-600">
-                    Bundle Discount: {Number(bundle.discount)}%
+                    Price: ${Number(bundle.bundlePrice).toFixed(2)}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Retail Value: ${Number(bundle.retailValue).toFixed(2)}
+                  </div>
+                  <div className="text-sm font-medium text-green-600">
+                    Savings: ${Number(bundle.savings).toFixed(2)}
                   </div>
                   <div className="text-sm text-gray-600 mt-1">
                     Contains {bundle.items.length} items
@@ -126,13 +123,11 @@ export default async function BundlesPage() {
                       className="text-sm text-gray-600 flex items-center justify-between"
                     >
                       <span>
-                        {item.bundledProduct.name} x{item.quantity}
+                        {item.product.name} x{item.quantity}
                       </span>
-                      {Number(item.discount) > 0 && (
-                        <span className="text-green-600">
-                          -{Number(item.discount)}%
-                        </span>
-                      )}
+                      <span className="text-gray-500">
+                        ${Number(item.product.price).toFixed(2)}
+                      </span>
                     </div>
                   ))}
                 </div>
