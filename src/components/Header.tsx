@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { ShoppingCart, User, LogOut, ShieldCheck, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SearchBar } from '@/components/search/SearchBar';
 import { useState, useEffect } from 'react';
 
 export function Header() {
@@ -149,9 +150,19 @@ export function Header() {
           </div>
         </div>
 
+        {/* Search Bar - Desktop */}
+        <div className="hidden lg:flex py-3 border-t border-gray-100">
+          <SearchBar />
+        </div>
+
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-gray-200 py-4">
+            {/* Search Bar - Mobile */}
+            <div className="px-4 mb-4">
+              <SearchBar />
+            </div>
+
             <nav className="flex flex-col gap-3">
               <Link
                 href="/products"
