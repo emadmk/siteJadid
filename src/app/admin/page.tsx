@@ -48,8 +48,7 @@ async function getAdminDashboardData() {
       include: {
         user: {
           select: {
-            firstName: true,
-            lastName: true,
+            name: true,
             email: true,
           },
         },
@@ -77,7 +76,7 @@ async function getAdminDashboardData() {
     }),
     db.product.findMany({
       where: {
-        isActive: true,
+        status: 'ACTIVE',
         stockQuantity: { lte: 10 },
       },
       select: {
@@ -397,7 +396,7 @@ export default async function AdminDashboardPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-black">
-                          {order.user.firstName} {order.user.lastName}
+                          {order.user.name || order.user.email}
                         </div>
                         <div className="text-xs text-gray-600">{order.user.email}</div>
                       </td>

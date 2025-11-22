@@ -12,8 +12,7 @@ async function getDashboardData(userId: string) {
       where: { id: userId },
       select: {
         email: true,
-        firstName: true,
-        lastName: true,
+        name: true,
         accountType: true,
         role: true,
         phone: true,
@@ -98,7 +97,7 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold mb-2">
-                Welcome back, {user.firstName || 'User'}!
+                Welcome back, {user.name || 'User'}!
               </h1>
               <p className="text-safety-green-100">
                 {user.accountType} Account • Member since{' '}

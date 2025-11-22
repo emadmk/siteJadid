@@ -46,8 +46,7 @@ async function getCheckoutData(userId: string) {
       where: { id: userId },
       select: {
         email: true,
-        firstName: true,
-        lastName: true,
+        name: true,
         accountType: true,
       },
     }),

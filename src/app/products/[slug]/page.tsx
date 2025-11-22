@@ -22,8 +22,7 @@ async function getProduct(slug: string) {
         include: {
           user: {
             select: {
-              firstName: true,
-              lastName: true,
+              name: true,
             },
           },
         },
@@ -300,7 +299,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <div className="font-medium text-black">
-                        {review.user.firstName} {review.user.lastName?.charAt(0)}.
+                        {review.user.name || 'Anonymous'}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         {Array.from({ length: 5 }).map((_, i) => (
