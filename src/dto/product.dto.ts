@@ -21,7 +21,7 @@ export const CreateProductDto = z.object({
   // Pricing
   basePrice: z.number().positive(),
   salePrice: z.number().positive().optional(),
-  cost: z.number().positive().optional(),
+  costPrice: z.number().positive().optional(),
   wholesalePrice: z.number().positive().optional(),
   gsaPrice: z.number().positive().optional(),
 
@@ -30,7 +30,7 @@ export const CreateProductDto = z.object({
 
   // Inventory
   stockQuantity: z.number().int().min(0).default(0),
-  lowStockAlert: z.number().int().min(0).default(10),
+  lowStockThreshold: z.number().int().min(0).default(10),
   trackInventory: z.boolean().default(true),
   minimumOrderQty: z.number().int().min(1).default(1),
 
@@ -45,7 +45,26 @@ export const CreateProductDto = z.object({
 
   // Physical properties
   weight: z.number().positive().optional(),
-  dimensions: z.string().optional(), // JSON string: {length, width, height}
+  length: z.number().positive().optional(),
+  width: z.number().positive().optional(),
+  height: z.number().positive().optional(),
+
+  // Tier Pricing (JSON array)
+  tierPricing: z.array(z.object({
+    minQuantity: z.number().int().min(1),
+    maxQuantity: z.number().int().min(1).nullable().optional(),
+    price: z.number().positive(),
+    accountType: z.enum(['B2C', 'B2B', 'GSA']),
+  })).optional(),
+
+  // Compliance certifications (JSON array)
+  complianceCertifications: z.array(z.object({
+    name: z.string(),
+    number: z.string().optional(),
+    issuedBy: z.string().optional(),
+    issuedDate: z.string().optional(),
+    expiryDate: z.string().optional(),
+  })).optional(),
 
   // Category
   categoryId: z.string().uuid().optional(),
