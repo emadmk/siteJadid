@@ -13,10 +13,11 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} prisma/seed.ts",
+    "prisma:seed-full": "ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} prisma/seed-comprehensive.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:build": "docker-compose build",
-    "setup": "npm install && npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed",
+    "setup": "npm install && npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed-full",
     "deploy": "bash ./scripts/deploy.sh"
   },
   "dependencies": {
