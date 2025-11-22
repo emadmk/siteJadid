@@ -230,7 +230,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 {product.weight && (
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <div className="text-sm text-gray-600 mb-1">Weight</div>
-                    <div className="font-medium text-black">{product.weight} lbs</div>
+                    <div className="font-medium text-black">{Number(product.weight)} lbs</div>
                   </div>
                 )}
                 {dimensions && (
