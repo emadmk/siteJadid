@@ -11,9 +11,12 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
+  const { data: session } = useSession();
+  const userRole = session?.user?.role as any;
+
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
+      <AdminSidebar userRole={userRole} />
       <div className="flex-1 flex flex-col">
         <AdminHeader />
         <main className="flex-1 overflow-auto">

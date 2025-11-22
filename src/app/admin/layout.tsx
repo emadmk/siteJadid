@@ -14,7 +14,10 @@ export default async function AdminRootLayout({
     redirect('/auth/signin?callbackUrl=/admin');
   }
 
-  if (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN') {
+  // Allow admin roles to access admin panel
+  const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'CUSTOMER_SERVICE', 'WAREHOUSE_MANAGER', 'MARKETING_MANAGER', 'CONTENT_MANAGER'];
+
+  if (!adminRoles.includes(session.user.role)) {
     redirect('/dashboard');
   }
 
