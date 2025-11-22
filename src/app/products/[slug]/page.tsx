@@ -70,7 +70,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  const relatedProducts = await getRelatedProducts(product.categoryId, product.id);
+  const relatedProducts = product.categoryId
+    ? await getRelatedProducts(product.categoryId, product.id)
+    : [];
 
   const averageRating = product.reviews.length > 0
     ? product.reviews.reduce((acc: number, review: { rating: number }) => acc + review.rating, 0) / product.reviews.length
