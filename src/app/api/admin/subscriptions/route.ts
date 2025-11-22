@@ -81,7 +81,6 @@ export async function POST(request: NextRequest) {
         frequency,
         shippingAddressId,
         paymentMethod,
-        startDate: startDate ? new Date(startDate) : new Date(),
         nextOrderDate: startDate ? new Date(startDate) : new Date(),
         status: 'ACTIVE',
         items: {
