@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
       items,
       reason,
       requestType,
+      description,
       customerNotes,
     } = body;
 
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
       : 1;
     const rmaNumber = `RMA-${String(nextNumber).padStart(6, '0')}`;
 
-    let totalAmount = 0;
+    let refundAmount = 0;
 
     const rma = await prisma.rMA.create({
       data: {
@@ -98,20 +99,21 @@ export async function POST(request: NextRequest) {
         userId,
         orderId,
         status: 'REQUESTED',
-        reason: reason || 'Not specified',
-        requestType: requestType || 'REFUND',
-        totalAmount: 0,
+        reason: reason || 'OTHER',
+        type: requestType || 'REFUND',
+        description,
         customerNotes,
+        images: [],
         items: {
           create: items.map((item: any) => {
             const itemTotal = item.quantity * item.unitPrice;
-            totalAmount += itemTotal;
+            refundAmount += itemTotal;
 
             return {
+              orderItemId: item.orderItemId || item.id,
               productId: item.productId,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
-              reason: item.reason || reason,
             };
           }),
         },
@@ -147,10 +149,10 @@ export async function POST(request: NextRequest) {
 
     await prisma.rMA.update({
       where: { id: rma.id },
-      data: { totalAmount },
+      data: { refundAmount },
     });
 
-    return NextResponse.json({ ...rma, totalAmount }, { status: 201 });
+    return NextResponse.json({ ...rma, refundAmount }, { status: 201 });
   } catch (error) {
     console.error('Error creating RMA:', error);
     return NextResponse.json({ error: 'Failed to create RMA' }, { status: 500 });
