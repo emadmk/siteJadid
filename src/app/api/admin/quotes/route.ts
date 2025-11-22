@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
       userId,
       items,
       validUntil,
-      notes,
-      termsAndConditions,
+      customerNotes,
+      termsConditions,
     } = body;
 
     if (!userId || !items || items.length === 0) {
@@ -115,18 +115,23 @@ export async function POST(request: NextRequest) {
         userId,
         status: 'DRAFT',
         subtotal: 0,
-        taxAmount: 0,
-        totalAmount: 0,
+        tax: 0,
+        shipping: 0,
+        discount: 0,
+        total: 0,
         validUntil: validUntil
           ? new Date(validUntil)
           : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        notes,
-        termsAndConditions,
+        customerNotes,
+        termsConditions,
+        createdBy: session.user.id,
         items: {
           create: items.map((item: any) => {
             const itemSubtotal = item.quantity * item.unitPrice;
-            const itemTax = itemSubtotal * (item.taxRate || 0);
-            const itemTotal = itemSubtotal + itemTax;
+            const itemDiscount = item.discount || 0;
+            const afterDiscount = itemSubtotal - itemDiscount;
+            const itemTax = afterDiscount * (item.taxRate || 0);
+            const itemTotal = afterDiscount + itemTax;
 
             subtotal += itemSubtotal;
             totalTax += itemTax;
@@ -134,10 +139,14 @@ export async function POST(request: NextRequest) {
 
             return {
               productId: item.productId,
+              sku: item.sku || '',
+              name: item.name || '',
+              description: item.description,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
-              discount: item.discount || 0,
-              taxRate: item.taxRate || 0,
+              discount: itemDiscount,
+              tax: itemTax,
+              total: itemTotal,
               notes: item.notes,
             };
           }),
@@ -170,11 +179,11 @@ export async function POST(request: NextRequest) {
 
     await prisma.quote.update({
       where: { id: quote.id },
-      data: { subtotal, taxAmount: totalTax, totalAmount },
+      data: { subtotal, tax: totalTax, total: totalAmount },
     });
 
     return NextResponse.json(
-      { ...quote, subtotal, taxAmount: totalTax, totalAmount },
+      { ...quote, subtotal, tax: totalTax, total: totalAmount },
       { status: 201 }
     );
   } catch (error) {
