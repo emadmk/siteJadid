@@ -123,7 +123,7 @@ function SidebarMenuItem({ item, depth = 0 }: { item: MenuItem; depth?: number }
             <ChevronRight className="w-4 h-4" />
           )}
         </button>
-        {isOpen && (
+        {isOpen && item.children && (
           <div className="ml-4 mt-1 space-y-1">
             {item.children.map((child) => (
               <SidebarMenuItem key={child.title} item={child} depth={depth + 1} />
