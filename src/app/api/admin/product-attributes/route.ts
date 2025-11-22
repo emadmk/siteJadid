@@ -42,11 +42,11 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const { name, type, isFilterable, isRequired, options } = body;
+    const { name, code, type, isFilterable, isRequired, options } = body;
 
-    if (!name || !type) {
+    if (!name || !type || !code) {
       return NextResponse.json(
-        { error: 'Name and type are required' },
+        { error: 'Name, code, and type are required' },
         { status: 400 }
       );
     }
@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     const attribute = await prisma.productAttribute.create({
       data: {
         name,
+        code,
         type,
         isFilterable: isFilterable !== false,
         isRequired: isRequired || false,
