@@ -26,16 +26,22 @@ export async function GET(request: NextRequest) {
         salesRep: {
           select: {
             id: true,
-            name: true,
-            email: true,
-            commissionRate: true,
+            code: true,
+            defaultCommissionRate: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         order: {
           select: {
             id: true,
             orderNumber: true,
-            totalAmount: true,
+            total: true,
           },
         },
       },
