@@ -263,16 +263,22 @@ enum ProductStatus {
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  description String?
-  image       String?
-  parentId    String?
-  order       Int       @default(0)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  name             String
+  slug             String    @unique
+  description      String?
+  image            String?
+  parentId         String?
+  displayOrder     Int       @default(0)
+  isActive         Boolean   @default(true)
+
+  // SEO Fields
+  metaTitle        String?
+  metaDescription  String?
+  metaKeywords     String?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
@@ -294,7 +300,7 @@ model Product {
   // Pricing
   basePrice       Decimal       @db.Decimal(12, 2)
   salePrice       Decimal?      @db.Decimal(12, 2)
-  cost            Decimal?      @db.Decimal(12, 2)
+  costPrice       Decimal?      @db.Decimal(12, 2)
 
   // B2B Pricing
   wholesalePrice  Decimal?      @db.Decimal(12, 2)
@@ -304,9 +310,12 @@ model Product {
   gsaPrice        Decimal?      @db.Decimal(12, 2)
   gsaSin          String?       // GSA Special Item Number
 
+  // Tier Pricing (JSON)
+  tierPricing     Json?         // Array of {minQuantity, maxQuantity, price, accountType}
+
   // Inventory
   stockQuantity   Int           @default(0)
-  lowStockAlert   Int           @default(10)
+  lowStockThreshold Int         @default(10)
   trackInventory  Boolean       @default(true)
 
   // SEO & Metadata
@@ -318,9 +327,14 @@ model Product {
   images          String[]
   videos          String[]
 
-  // Attributes
+  // Physical Attributes
   weight          Decimal?      @db.Decimal(8, 2)
-  dimensions      String?       // JSON: {length, width, height}
+  length          Decimal?      @db.Decimal(8, 2)
+  width           Decimal?      @db.Decimal(8, 2)
+  height          Decimal?      @db.Decimal(8, 2)
+
+  // Compliance
+  complianceCertifications Json? // Array of certification objects
 
   // Flags
   isFeatured      Boolean       @default(false)
