@@ -78,12 +78,12 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   const isGSAAccount = user?.accountType === 'GSA';
 
   const subtotal = cart.items.reduce((sum: number, item: any) => {
-    let price = item.product.salePrice || item.product.basePrice;
+    let price = Number(item.product.salePrice || item.product.basePrice);
 
     if (isB2BAccount && item.product.wholesalePrice) {
-      price = item.product.wholesalePrice;
+      price = Number(item.product.wholesalePrice);
     } else if (isGSAAccount && item.product.gsaPrice) {
-      price = item.product.gsaPrice;
+      price = Number(item.product.gsaPrice);
     }
 
     return sum + price * item.quantity;
@@ -128,7 +128,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
                       {item.product.name} (x{item.quantity})
                     </span>
                     <span className="font-medium text-black">
-                      ${((item.product.wholesalePrice || item.product.basePrice) * item.quantity).toFixed(2)}
+                      ${(Number(item.product.wholesalePrice || item.product.basePrice) * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -319,11 +319,11 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
               {/* Items */}
               <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
                 {cart.items.map((item: any) => {
-                  let price = item.product.salePrice || item.product.basePrice;
+                  let price = Number(item.product.salePrice || item.product.basePrice);
                   if (isB2BAccount && item.product.wholesalePrice) {
-                    price = item.product.wholesalePrice;
+                    price = Number(item.product.wholesalePrice);
                   } else if (isGSAAccount && item.product.gsaPrice) {
-                    price = item.product.gsaPrice;
+                    price = Number(item.product.gsaPrice);
                   }
 
                   const images = (item.product.images as string[]) || [];

@@ -181,7 +181,7 @@ export default async function AdminDashboardPage() {
               <TrendingUp className="w-5 h-5 text-safety-green-600" />
             </div>
             <div className="text-3xl font-bold text-black mb-1">
-              ${data.totalRevenue.toFixed(2)}
+              ${Number(data.totalRevenue).toFixed(2)}
             </div>
             <div className="text-sm text-gray-600">Total Revenue</div>
           </div>
@@ -411,7 +411,7 @@ export default async function AdminDashboardPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-black">${order.total.toFixed(2)}</div>
+                        <div className="font-medium text-black">${Number(order.total).toFixed(2)}</div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Link href={`/admin/orders/${order.orderNumber}`}>

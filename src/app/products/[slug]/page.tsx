@@ -172,15 +172,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <div className="mb-6">
               <div className="flex items-center gap-4 mb-2">
                 <span className="text-4xl font-bold text-black">
-                  ${(product.salePrice || product.basePrice).toFixed(2)}
+                  ${Number(product.salePrice || product.basePrice).toFixed(2)}
                 </span>
                 {product.salePrice && product.salePrice < product.basePrice && (
                   <>
                     <span className="text-2xl text-gray-500 line-through">
-                      ${product.basePrice.toFixed(2)}
+                      ${Number(product.basePrice).toFixed(2)}
                     </span>
                     <span className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded">
-                      Save ${(product.basePrice - product.salePrice).toFixed(2)}
+                      Save ${(Number(product.basePrice) - Number(product.salePrice)).toFixed(2)}
                     </span>
                   </>
                 )}
@@ -189,12 +189,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
               {/* B2B Pricing */}
               {product.wholesalePrice && (
                 <div className="text-sm text-gray-600">
-                  B2B Wholesale: ${product.wholesalePrice.toFixed(2)}
+                  B2B Wholesale: ${Number(product.wholesalePrice).toFixed(2)}
                 </div>
               )}
               {product.gsaPrice && (
                 <div className="text-sm text-gray-600">
-                  GSA Contract Price: ${product.gsaPrice.toFixed(2)}
+                  GSA Contract Price: ${Number(product.gsaPrice).toFixed(2)}
                 </div>
               )}
             </div>
@@ -358,11 +358,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       </h3>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-bold text-black">
-                          ${(relatedProduct.salePrice || relatedProduct.basePrice).toFixed(2)}
+                          ${Number(relatedProduct.salePrice || relatedProduct.basePrice).toFixed(2)}
                         </span>
                         {relatedProduct.salePrice && relatedProduct.salePrice < relatedProduct.basePrice && (
                           <span className="text-sm text-gray-500 line-through">
-                            ${relatedProduct.basePrice.toFixed(2)}
+                            ${Number(relatedProduct.basePrice).toFixed(2)}
                           </span>
                         )}
                       </div>
