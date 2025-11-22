@@ -32,16 +32,16 @@ async function getUserProfile(userId: string) {
           companyName: true,
           taxId: true,
           creditLimit: true,
-          currentBalance: true,
+          creditUsed: true,
           paymentTerms: true,
-          isApproved: true,
+          status: true,
         },
       },
       gsaProfile: {
         select: {
           contractNumber: true,
           agencyName: true,
-          isVerified: true,
+          isActive: true,
         },
       },
       _count: {
@@ -192,9 +192,17 @@ export default async function ProfilePage() {
                   <div className="flex items-center gap-2">
                     <Building2 className="w-5 h-5 text-safety-green-600" />
                     <h2 className="text-xl font-bold text-black">Business Account</h2>
-                    {user.b2bProfile.isApproved ? (
+                    {user.b2bProfile.status === 'APPROVED' ? (
                       <span className="ml-auto text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full">
                         Approved
+                      </span>
+                    ) : user.b2bProfile.status === 'REJECTED' ? (
+                      <span className="ml-auto text-xs bg-red-100 text-red-800 px-3 py-1 rounded-full">
+                        Rejected
+                      </span>
+                    ) : user.b2bProfile.status === 'SUSPENDED' ? (
+                      <span className="ml-auto text-xs bg-orange-100 text-orange-800 px-3 py-1 rounded-full">
+                        Suspended
                       </span>
                     ) : (
                       <span className="ml-auto text-xs bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
@@ -223,7 +231,7 @@ export default async function ProfilePage() {
                     <div>
                       <div className="text-sm text-gray-600 mb-1">Payment Terms</div>
                       <div className="text-base font-medium text-black">
-                        {user.b2bProfile.paymentTerms.replace(/_/g, ' ')}
+                        Net {user.b2bProfile.paymentTerms}
                       </div>
                     </div>
 
@@ -237,16 +245,16 @@ export default async function ProfilePage() {
 
                   <div className="pt-4 border-t border-gray-200">
                     <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-600">Current Balance</div>
+                      <div className="text-sm text-gray-600">Credit Used</div>
                       <div className="text-2xl font-bold text-black">
-                        ${Number(user.b2bProfile.currentBalance).toLocaleString()}
+                        ${Number(user.b2bProfile.creditUsed).toLocaleString()}
                       </div>
                     </div>
                     <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-safety-green-600 h-2 rounded-full"
                         style={{
-                          width: `${Math.min((Number(user.b2bProfile.currentBalance) / Number(user.b2bProfile.creditLimit)) * 100, 100)}%`,
+                          width: `${Math.min((Number(user.b2bProfile.creditUsed) / Number(user.b2bProfile.creditLimit)) * 100, 100)}%`,
                         }}
                       />
                     </div>
@@ -262,13 +270,13 @@ export default async function ProfilePage() {
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-safety-green-600" />
                     <h2 className="text-xl font-bold text-black">GSA Account</h2>
-                    {user.gsaProfile.isVerified ? (
+                    {user.gsaProfile.isActive ? (
                       <span className="ml-auto text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full">
-                        Verified
+                        Active
                       </span>
                     ) : (
                       <span className="ml-auto text-xs bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
-                        Pending Verification
+                        Inactive
                       </span>
                     )}
                   </div>
