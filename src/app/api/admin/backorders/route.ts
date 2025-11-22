@@ -69,13 +69,14 @@ export async function POST(request: NextRequest) {
       productId,
       orderId,
       quantity,
+      pricePerUnit,
       expectedDate,
-      notifyOnAvailable,
+      notes,
     } = body;
 
-    if (!userId || !productId || !quantity) {
+    if (!userId || !productId || !quantity || !pricePerUnit) {
       return NextResponse.json(
-        { error: 'User, product, and quantity are required' },
+        { error: 'User, product, quantity, and price per unit are required' },
         { status: 400 }
       );
     }
@@ -86,9 +87,10 @@ export async function POST(request: NextRequest) {
         productId,
         orderId,
         quantity,
+        pricePerUnit,
         status: 'PENDING',
         expectedDate: expectedDate ? new Date(expectedDate) : null,
-        notifyOnAvailable: notifyOnAvailable !== false,
+        notes,
       },
       include: {
         user: {
