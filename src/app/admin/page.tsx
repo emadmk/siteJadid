@@ -41,7 +41,7 @@ async function getAdminDashboardData() {
     }),
     db.order.count(),
     db.user.count(),
-    db.product.count({ where: { isActive: true } }),
+    db.product.count({ where: { status: 'ACTIVE' } }),
     db.order.findMany({
       take: 10,
       orderBy: { createdAt: 'desc' },
