@@ -168,13 +168,13 @@ export async function POST(request: NextRequest) {
       where: { id: supplierId },
       data: {
         totalPurchases: {
-          increment: totalAmount,
+          increment: subtotal,
         },
       },
     });
 
     return NextResponse.json(
-      { ...purchaseOrder, totalAmount },
+      { ...purchaseOrder, total: subtotal },
       { status: 201 }
     );
   } catch (error) {
