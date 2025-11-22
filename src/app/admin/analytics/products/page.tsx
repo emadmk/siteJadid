@@ -15,7 +15,7 @@ async function getProductPerformance() {
       orderItems: {
         select: {
           quantity: true,
-          basePrice: true,
+          price: true,
           order: {
             select: {
               status: true,
