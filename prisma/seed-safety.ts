@@ -811,14 +811,14 @@ async function main() {
   console.log('Creating system settings...');
 
   const settings = [
-    { key: 'site_name', value: 'Safety Equipment Store', category: 'general', isPublic: true },
-    { key: 'site_email', value: 'support@safetygearusa.com', category: 'general', isPublic: true },
-    { key: 'currency', value: 'USD', category: 'general', isPublic: true },
-    { key: 'currency_symbol', value: '$', category: 'general', isPublic: true },
-    { key: 'tax_rate', value: '8.25', type: 'number', category: 'financial', isPublic: false },
-    { key: 'free_shipping_threshold', value: '75', type: 'number', category: 'shipping', isPublic: true },
-    { key: 'enable_b2b', value: 'true', type: 'boolean', category: 'features', isPublic: false },
-    { key: 'enable_reviews', value: 'true', type: 'boolean', category: 'features', isPublic: false },
+    { key: 'site_name', value: 'Safety Equipment Store', category: 'general' },
+    { key: 'site_email', value: 'support@safetygearusa.com', category: 'general' },
+    { key: 'currency', value: 'USD', category: 'general' },
+    { key: 'currency_symbol', value: '$', category: 'general' },
+    { key: 'tax_rate', value: '8.25', type: 'number', category: 'financial' },
+    { key: 'free_shipping_threshold', value: '75', type: 'number', category: 'shipping' },
+    { key: 'enable_b2b', value: 'true', type: 'boolean', category: 'features' },
+    { key: 'enable_reviews', value: 'true', type: 'boolean', category: 'features' },
   ];
 
   for (const setting of settings) {
