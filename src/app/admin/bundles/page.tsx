@@ -17,7 +17,7 @@ async function getBundles() {
               name: true,
               sku: true,
               images: true,
-              price: true,
+              basePrice: true,
             },
           },
         },
@@ -126,7 +126,7 @@ export default async function BundlesPage() {
                         {item.product.name} x{item.quantity}
                       </span>
                       <span className="text-gray-500">
-                        ${Number(item.product.price).toFixed(2)}
+                        ${Number(item.product.basePrice).toFixed(2)}
                       </span>
                     </div>
                   ))}

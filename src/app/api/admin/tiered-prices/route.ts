@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
             name: true,
             sku: true,
             images: true,
-            price: true,
+            basePrice: true,
           },
         },
         customerGroup: {
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
             name: true,
             sku: true,
             images: true,
-            price: true,
+            basePrice: true,
           },
         },
         customerGroup: {

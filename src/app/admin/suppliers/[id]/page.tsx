@@ -19,7 +19,7 @@ async function getSupplier(id: string) {
               sku: true,
               images: true,
               stockQuantity: true,
-              price: true,
+              basePrice: true,
             },
           },
         },

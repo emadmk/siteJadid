@@ -25,7 +25,7 @@ async function getWishlists() {
               name: true,
               sku: true,
               images: true,
-              price: true,
+              basePrice: true,
               stockQuantity: true,
             },
           },
@@ -149,7 +149,7 @@ export default async function WishlistsPage() {
                       </p>
                       <div className="mt-2 flex justify-between items-center">
                         <span className="text-sm font-bold text-gray-900">
-                          ${Number(item.product.price).toFixed(2)}
+                          ${Number(item.product.basePrice).toFixed(2)}
                         </span>
                         <span
                           className={`text-xs px-2 py-1 rounded ${

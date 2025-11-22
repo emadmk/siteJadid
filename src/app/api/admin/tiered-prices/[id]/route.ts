@@ -23,7 +23,7 @@ export async function GET(
             name: true,
             sku: true,
             images: true,
-            price: true,
+            basePrice: true,
           },
         },
         customerGroup: {
@@ -142,7 +142,7 @@ export async function PUT(
             name: true,
             sku: true,
             images: true,
-            price: true,
+            basePrice: true,
           },
         },
         customerGroup: {

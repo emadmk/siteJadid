@@ -15,7 +15,7 @@ async function getProductPerformance() {
       orderItems: {
         select: {
           quantity: true,
-          price: true,
+          basePrice: true,
           order: {
             select: {
               status: true,
@@ -71,7 +71,7 @@ async function getTopPerformers() {
     by: ['productId'],
     _sum: {
       quantity: true,
-      price: true,
+      basePrice: true,
     },
     orderBy: {
       _sum: {

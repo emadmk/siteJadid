@@ -22,7 +22,7 @@ async function getCustomer(id: string) {
           items: {
             select: {
               quantity: true,
-              price: true,
+              basePrice: true,
             },
           },
         },
