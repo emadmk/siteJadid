@@ -57,15 +57,16 @@ export async function POST(request: NextRequest) {
     const {
       userId,
       certificateNumber,
-      issuingState,
-      expirationDate,
-      exemptStates,
+      exemptionType,
+      states,
+      issueDate,
+      expiryDate,
       certificateUrl,
     } = body;
 
-    if (!userId || !certificateNumber || !issuingState) {
+    if (!userId || !certificateNumber || !exemptionType || !issueDate) {
       return NextResponse.json(
-        { error: 'User, certificate number, and issuing state are required' },
+        { error: 'User, certificate number, exemption type, and issue date are required' },
         { status: 400 }
       );
     }
@@ -74,9 +75,10 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         certificateNumber,
-        issuingState,
-        expirationDate: expirationDate ? new Date(expirationDate) : null,
-        exemptStates: exemptStates || [],
+        exemptionType,
+        states: states || [],
+        issueDate: new Date(issueDate),
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
         certificateUrl,
         status: 'PENDING',
       },

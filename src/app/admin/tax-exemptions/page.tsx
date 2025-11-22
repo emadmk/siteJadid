@@ -35,8 +35,8 @@ export default async function TaxExemptionsPage() {
   const expiringCount = exemptions.filter(
     (e) =>
       e.status === 'APPROVED' &&
-      e.expirationDate &&
-      new Date(e.expirationDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      e.expiryDate &&
+      new Date(e.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   ).length;
 
   return (
@@ -88,10 +88,10 @@ export default async function TaxExemptionsPage() {
                 Certificate #
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Issuing State
+                Exemption Type
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Exempt States
+                States
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Expiration
@@ -124,16 +124,16 @@ export default async function TaxExemptionsPage() {
                     {exemption.certificateNumber}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {exemption.issuingState}
+                    {exemption.exemptionType}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {exemption.exemptStates.length > 0
-                      ? exemption.exemptStates.join(', ')
+                    {exemption.states.length > 0
+                      ? exemption.states.join(', ')
                       : 'All states'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {exemption.expirationDate
-                      ? new Date(exemption.expirationDate).toLocaleDateString()
+                    {exemption.expiryDate
+                      ? new Date(exemption.expiryDate).toLocaleDateString()
                       : 'No expiration'}
                   </td>
                   <td className="px-6 py-4">
