@@ -709,7 +709,6 @@ async function main() {
       shipping: 12.99,
       discount: 40.94,
       total: 266.85,
-      taxableAmount: 272.96,
       paymentMethod: PaymentMethod.STRIPE,
       paymentIntentId: 'pi_3SafetyGear123456',
       paidAt: new Date('2024-11-20T10:30:00Z'),
@@ -721,7 +720,6 @@ async function main() {
       shippedAt: new Date('2024-11-21T09:00:00Z'),
       deliveredAt: new Date('2024-11-25T14:30:00Z'),
       loyaltyPointsEarned: 27,
-      discountCodes: ['SAFETY15'],
       createdAt: new Date('2024-11-20T10:25:00Z'),
       items: {
         create: [
