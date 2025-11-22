@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/db';
 
 async function getBackorders() {
   const backorders = await prisma.backOrder.findMany({
@@ -160,7 +160,7 @@ export default async function BackordersPage() {
                           ? 'bg-green-100 text-green-800'
                           : backorder.status === 'PENDING'
                           ? 'bg-yellow-100 text-yellow-800'
-                          : backorder.status === 'ORDERED'
+                          : backorder.status === 'NOTIFIED'
                           ? 'bg-blue-100 text-blue-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}
@@ -169,7 +169,7 @@ export default async function BackordersPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {backorder.notifyOnAvailable ? 'Yes' : 'No'}
+                    {backorder.notifiedAt ? 'Yes' : 'No'}
                   </td>
                 </tr>
               ))
