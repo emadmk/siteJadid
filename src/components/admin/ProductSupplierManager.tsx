@@ -11,7 +11,7 @@ interface Product {
   sku: string;
   images: string[];
   stockQuantity: number;
-  price: number;
+  basePrice: number;
 }
 
 interface ProductSupplier {
