@@ -7,7 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
 async function getDashboardData(userId: string) {
-  const [user, orders, addresses, loyaltyAccount] = await Promise.all([
+  const [user, orders, addresses, loyaltyProfile] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
       select: {
@@ -48,10 +48,10 @@ async function getDashboardData(userId: string) {
       orderBy: { isDefault: 'desc' },
       take: 3,
     }),
-    db.loyaltyAccount.findUnique({
+    db.loyaltyProfile.findUnique({
       where: { userId },
       select: {
-        currentPoints: true,
+        points: true,
         lifetimePoints: true,
         tier: true,
       },
@@ -64,7 +64,7 @@ async function getDashboardData(userId: string) {
     _count: true,
   });
 
-  return { user, orders, addresses, loyaltyAccount, orderStats };
+  return { user, orders, addresses, loyaltyProfile, orderStats };
 }
 
 export default async function DashboardPage() {
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
     redirect('/admin');
   }
 
-  const { user, orders, addresses, loyaltyAccount, orderStats } = await getDashboardData(session.user.id);
+  const { user, orders, addresses, loyaltyProfile, orderStats } = await getDashboardData(session.user.id);
 
   if (!user) {
     redirect('/auth/signin');
@@ -104,14 +104,14 @@ export default async function DashboardPage() {
                 {new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
               </p>
             </div>
-            {loyaltyAccount && (
+            {loyaltyProfile && (
               <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-6 text-center">
                 <div className="flex items-center gap-2 mb-2 justify-center">
                   <Award className="w-5 h-5" />
                   <span className="text-sm font-medium">Loyalty Points</span>
                 </div>
-                <div className="text-3xl font-bold">{loyaltyAccount.currentPoints.toLocaleString()}</div>
-                <div className="text-xs text-safety-green-100 mt-1">{loyaltyAccount.tier} Tier</div>
+                <div className="text-3xl font-bold">{loyaltyProfile.points.toLocaleString()}</div>
+                <div className="text-xs text-safety-green-100 mt-1">{loyaltyProfile.tier} Tier</div>
               </div>
             )}
           </div>
@@ -157,7 +157,7 @@ export default async function DashboardPage() {
                 <Award className="w-6 h-6 text-purple-600" />
               </div>
               <span className="text-2xl font-bold text-black">
-                {loyaltyAccount?.currentPoints || 0}
+                {loyaltyProfile?.points || 0}
               </span>
             </div>
             <div className="text-sm text-gray-600">Loyalty Points</div>
