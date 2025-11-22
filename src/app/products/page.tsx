@@ -451,8 +451,8 @@ function ProductCard({
   sku: string;
   name: string;
   slug: string;
-  price: number;
-  originalPrice?: number;
+  price: any;
+  originalPrice?: any;
   image?: string;
   category?: string;
   isFeatured: boolean;

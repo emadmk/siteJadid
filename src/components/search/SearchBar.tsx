@@ -11,8 +11,8 @@ interface SearchResult {
   name: string;
   slug: string;
   sku: string;
-  basePrice: number;
-  salePrice: number | null;
+  basePrice: any;
+  salePrice: any;
   images: string[];
   category?: {
     name: string;
