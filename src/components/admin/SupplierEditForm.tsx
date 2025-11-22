@@ -23,9 +23,8 @@ export default function SupplierEditForm({ supplier }: SupplierEditFormProps) {
     state: supplier.state || '',
     country: supplier.country || '',
     zipCode: supplier.zipCode || '',
-    contactPerson: supplier.contactPerson || '',
-    contactPhone: supplier.contactPhone || '',
-    contactEmail: supplier.contactEmail || '',
+    taxId: supplier.taxId || '',
+    businessLicense: supplier.businessLicense || '',
     rating: supplier.rating ? Number(supplier.rating) : '',
     onTimeDeliveryRate: supplier.onTimeDeliveryRate
       ? Number(supplier.onTimeDeliveryRate)
@@ -271,6 +270,34 @@ export default function SupplierEditForm({ supplier }: SupplierEditFormProps) {
             value={formData.zipCode}
             onChange={(e) =>
               setFormData({ ...formData, zipCode: e.target.value })
+            }
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-safety-green-500 focus:ring-safety-green-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Tax ID
+          </label>
+          <input
+            type="text"
+            value={formData.taxId}
+            onChange={(e) =>
+              setFormData({ ...formData, taxId: e.target.value })
+            }
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-safety-green-500 focus:ring-safety-green-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Business License
+          </label>
+          <input
+            type="text"
+            value={formData.businessLicense}
+            onChange={(e) =>
+              setFormData({ ...formData, businessLicense: e.target.value })
             }
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-safety-green-500 focus:ring-safety-green-500"
           />
