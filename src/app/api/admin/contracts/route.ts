@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
         endDate: new Date(endDate),
         minimumSpend: minimumSpend || 0,
         paymentTerms: paymentTerms || 30,
+        createdBy: session.user.id,
         items: {
           create: items.map((item: any) => ({
             productId: item.productId,
