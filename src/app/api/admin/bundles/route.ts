@@ -14,18 +14,9 @@ export async function GET(request: NextRequest) {
     const bundles = await prisma.productBundle.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        product: {
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            images: true,
-            basePrice: true,
-          },
-        },
         items: {
           include: {
-            bundledProduct: {
+            product: {
               select: {
                 id: true,
                 name: true,
@@ -59,40 +50,38 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const { productId, items, discount } = body;
+    const { sku, name, slug, description, bundlePrice, retailValue, savings, image, items } = body;
 
-    if (!productId || !items || items.length === 0) {
+    if (!sku || !name || !slug || !items || items.length === 0 || !bundlePrice || !retailValue || !savings) {
       return NextResponse.json(
-        { error: 'Product and items are required' },
+        { error: 'SKU, name, slug, pricing details, and items are required' },
         { status: 400 }
       );
     }
 
     const bundle = await prisma.productBundle.create({
       data: {
-        productId,
-        discount: discount || 0,
+        sku,
+        name,
+        slug,
+        description,
+        bundlePrice,
+        retailValue,
+        savings,
+        image,
         items: {
           create: items.map((item: any) => ({
-            bundledProductId: item.productId,
-            quantity: item.quantity,
-            discount: item.discount || 0,
+            productId: item.productId,
+            quantity: item.quantity || 1,
+            sortOrder: item.sortOrder || 0,
+            isOptional: item.isOptional || false,
           })),
         },
       },
       include: {
-        product: {
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            images: true,
-            basePrice: true,
-          },
-        },
         items: {
           include: {
-            bundledProduct: {
+            product: {
               select: {
                 id: true,
                 name: true,
