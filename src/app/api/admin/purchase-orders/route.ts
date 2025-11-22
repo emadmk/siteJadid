@@ -100,25 +100,29 @@ export async function POST(request: NextRequest) {
     });
 
     const nextNumber = lastPO
-      ? parseInt(lastPO.orderNumber.replace('PO-', '')) + 1
+      ? parseInt(lastPO.poNumber.replace('PO-', '')) + 1
       : 1;
-    const orderNumber = `PO-${String(nextNumber).padStart(6, '0')}`;
+    const poNumber = `PO-${String(nextNumber).padStart(6, '0')}`;
 
-    let totalAmount = 0;
+    let subtotal = 0;
 
     const purchaseOrder = await prisma.purchaseOrder.create({
       data: {
-        orderNumber,
+        poNumber,
         supplierId,
         status: 'DRAFT',
-        totalAmount: 0,
+        subtotal: 0,
+        tax: 0,
+        shipping: 0,
+        total: 0,
+        orderDate: new Date(),
         expectedDelivery: expectedDelivery ? new Date(expectedDelivery) : null,
-        shippingAddress,
         notes,
+        createdBy: session.user.id,
         items: {
           create: items.map((item: any) => {
             const itemTotal = item.quantity * item.unitCost;
-            totalAmount += itemTotal;
+            subtotal += itemTotal;
 
             return {
               productId: item.productId,
@@ -154,7 +158,10 @@ export async function POST(request: NextRequest) {
 
     await prisma.purchaseOrder.update({
       where: { id: purchaseOrder.id },
-      data: { totalAmount },
+      data: {
+        subtotal,
+        total: subtotal,
+      },
     });
 
     await prisma.supplier.update({

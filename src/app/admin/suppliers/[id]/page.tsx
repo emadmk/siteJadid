@@ -30,9 +30,9 @@ async function getSupplier(id: string) {
         take: 10,
         select: {
           id: true,
-          orderNumber: true,
+          poNumber: true,
           status: true,
-          totalAmount: true,
+          total: true,
           createdAt: true,
           expectedDelivery: true,
         },
@@ -77,7 +77,7 @@ export default async function SupplierDetailPage({
   }
 
   const totalRevenue = supplier.purchaseOrders.reduce(
-    (sum, po) => sum + Number(po.totalAmount),
+    (sum, po) => sum + Number(po.total),
     0
   );
 
@@ -184,7 +184,7 @@ export default async function SupplierDetailPage({
                   >
                     <div>
                       <div className="font-medium text-gray-900">
-                        PO #{po.orderNumber}
+                        PO #{po.poNumber}
                       </div>
                       <div className="text-sm text-gray-500">
                         {new Date(po.createdAt).toLocaleDateString()}
@@ -192,7 +192,7 @@ export default async function SupplierDetailPage({
                     </div>
                     <div className="text-right">
                       <div className="font-medium text-gray-900">
-                        ${Number(po.totalAmount).toLocaleString()}
+                        ${Number(po.total).toLocaleString()}
                       </div>
                       <div className="text-sm">
                         <span
