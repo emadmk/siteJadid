@@ -71,7 +71,12 @@ export async function POST(
             name: true,
             email: true,
             accountType: true,
-            loyaltyTier: true,
+            loyaltyProfile: {
+              select: {
+                tier: true,
+                points: true,
+              },
+            },
           },
         },
         group: {
