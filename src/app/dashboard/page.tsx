@@ -86,9 +86,9 @@ export default async function DashboardPage() {
   }
 
   const totalOrders = orders.length;
-  const pendingOrders = orderStats.find((s) => s.status === 'PENDING')?._count || 0;
-  const processingOrders = orderStats.find((s) => s.status === 'PROCESSING')?._count || 0;
-  const shippedOrders = orderStats.find((s) => s.status === 'SHIPPED')?._count || 0;
+  const pendingOrders = orderStats.find((s: any) => s.status === 'PENDING')?._count || 0;
+  const processingOrders = orderStats.find((s: any) => s.status === 'PROCESSING')?._count || 0;
+  const shippedOrders = orderStats.find((s: any) => s.status === 'SHIPPED')?._count || 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -191,7 +191,7 @@ export default async function DashboardPage() {
                     </Link>
                   </div>
                 ) : (
-                  orders.map((order) => {
+                  orders.map((order: any) => {
                     const statusColors: Record<string, string> = {
                       PENDING: 'bg-yellow-100 text-yellow-800',
                       PROCESSING: 'bg-blue-100 text-blue-800',
@@ -289,7 +289,7 @@ export default async function DashboardPage() {
                 <div className="text-sm text-gray-600">No saved addresses</div>
               ) : (
                 <div className="space-y-3">
-                  {addresses.slice(0, 2).map((address) => (
+                  {addresses.slice(0, 2).map((address: any) => (
                     <div key={address.id} className="text-sm">
                       <div className="font-medium text-black mb-1">
                         {address.firstName} {address.lastName}

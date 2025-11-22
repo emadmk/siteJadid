@@ -1,13 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 
-const inter = Inter({ subsets: ['latin'] });
-
 export const metadata: Metadata = {
-  title: 'Enterprise E-commerce Platform',
-  description: 'Comprehensive B2B/B2C E-commerce Platform with Multi-tier Pricing',
+  title: 'SafetyPro Store - Professional Safety Equipment',
+  description: 'Premium safety equipment for professionals. ANSI certified products including safety footwear, head protection, hi-vis clothing, and more.',
 };
 
 export default function RootLayout({
@@ -17,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className="font-sans antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

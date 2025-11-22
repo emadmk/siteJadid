@@ -47,14 +47,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate totals
-    const subtotal = cart.items.reduce((sum, item) => {
+    const subtotal = cart.items.reduce((sum: number, item: any) => {
       return sum + parseFloat(item.price.toString()) * item.quantity;
     }, 0);
 
     const result = {
       ...cart,
       subtotal,
-      itemCount: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+      itemCount: cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0),
     };
 
     return NextResponse.json(result);

@@ -1,21 +1,36 @@
-import { Client } from '@elastic/elasticsearch';
+// Elasticsearch client - optional dependency
+let esClientInstance: any = null;
+let elasticsearchAvailable = false;
 
 const getElasticsearchNode = () => {
   return process.env.ELASTICSEARCH_NODE || 'http://localhost:9200';
 };
 
-// Create Elasticsearch client
-export const esClient = new Client({
-  node: getElasticsearchNode(),
-  auth: process.env.ELASTICSEARCH_USERNAME && process.env.ELASTICSEARCH_PASSWORD
-    ? {
-        username: process.env.ELASTICSEARCH_USERNAME,
-        password: process.env.ELASTICSEARCH_PASSWORD,
-      }
-    : undefined,
-  maxRetries: 3,
-  requestTimeout: 30000,
-});
+// Lazy load Elasticsearch client
+const getClient = async () => {
+  if (esClientInstance) return esClientInstance;
+
+  try {
+    const { Client } = await import('@elastic/elasticsearch');
+    esClientInstance = new Client({
+      node: getElasticsearchNode(),
+      auth: process.env.ELASTICSEARCH_USERNAME && process.env.ELASTICSEARCH_PASSWORD
+        ? {
+            username: process.env.ELASTICSEARCH_USERNAME,
+            password: process.env.ELASTICSEARCH_PASSWORD,
+          }
+        : undefined,
+      maxRetries: 3,
+      requestTimeout: 30000,
+    });
+    elasticsearchAvailable = true;
+    return esClientInstance;
+  } catch (error) {
+    console.warn('Elasticsearch not available:', error);
+    elasticsearchAvailable = false;
+    return null;
+  }
+};
 
 // Index names
 export const INDICES = {
@@ -27,6 +42,9 @@ export const INDICES = {
 // Initialize indices
 export async function initializeIndices() {
   try {
+    const esClient = await getClient();
+    if (!esClient) return;
+
     // Products index
     const productsExists = await esClient.indices.exists({ index: INDICES.PRODUCTS });
     if (!productsExists) {
@@ -94,7 +112,7 @@ export async function initializeIndices() {
 
     console.log('✅ Elasticsearch indices initialized');
   } catch (error) {
-    console.error('Elasticsearch initialization error:', error);
+    console.warn('Elasticsearch initialization skipped:', error);
   }
 }
 
@@ -102,6 +120,9 @@ export async function initializeIndices() {
 export const productSearch = {
   async index(product: any) {
     try {
+      const esClient = await getClient();
+      if (!esClient) return;
+
       await esClient.index({
         index: INDICES.PRODUCTS,
         id: product.id,
@@ -129,12 +150,15 @@ export const productSearch = {
         },
       });
     } catch (error) {
-      console.error('Product indexing error:', error);
+      console.warn('Product indexing skipped:', error);
     }
   },
 
   async bulkIndex(products: any[]) {
     try {
+      const esClient = await getClient();
+      if (!esClient) return;
+
       const body = products.flatMap(product => [
         { index: { _index: INDICES.PRODUCTS, _id: product.id } },
         {
@@ -164,12 +188,18 @@ export const productSearch = {
       await esClient.bulk({ body, refresh: true });
       console.log(`✅ Indexed ${products.length} products`);
     } catch (error) {
-      console.error('Bulk product indexing error:', error);
+      console.warn('Bulk product indexing skipped:', error);
     }
   },
 
   async search(query: string, filters?: any, page: number = 1, limit: number = 20) {
     try {
+      const esClient = await getClient();
+      if (!esClient) {
+        // Fallback to empty results if Elasticsearch not available
+        return { hits: [], total: 0, page, limit };
+      }
+
       const must: any[] = [];
 
       if (query) {
@@ -221,13 +251,16 @@ export const productSearch = {
         limit,
       };
     } catch (error) {
-      console.error('Product search error:', error);
+      console.warn('Product search fallback to empty results:', error);
       return { hits: [], total: 0, page, limit };
     }
   },
 
   async suggest(query: string, limit: number = 5) {
     try {
+      const esClient = await getClient();
+      if (!esClient) return [];
+
       const result = await esClient.search({
         index: INDICES.PRODUCTS,
         body: {
@@ -245,21 +278,25 @@ export const productSearch = {
 
       return result.suggest?.products[0]?.options?.map((opt: any) => opt.text) || [];
     } catch (error) {
-      console.error('Product suggest error:', error);
+      console.warn('Product suggest skipped:', error);
       return [];
     }
   },
 
   async delete(productId: string) {
     try {
+      const esClient = await getClient();
+      if (!esClient) return;
+
       await esClient.delete({
         index: INDICES.PRODUCTS,
         id: productId,
       });
     } catch (error) {
-      console.error('Product delete error:', error);
+      console.warn('Product delete skipped:', error);
     }
   },
 };
 
+export const esClient = { get: getClient };
 export default esClient;

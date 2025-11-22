@@ -79,7 +79,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   const isB2BAccount = user?.accountType === 'B2B';
   const isGSAAccount = user?.accountType === 'GSA';
 
-  const subtotal = cart.items.reduce((sum, item) => {
+  const subtotal = cart.items.reduce((sum: number, item: any) => {
     let price = item.product.salePrice || item.product.basePrice;
 
     if (isB2BAccount && item.product.wholesalePrice) {
@@ -91,7 +91,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     return sum + price * item.quantity;
   }, 0);
 
-  const totalWeight = cart.items.reduce((sum, item) => {
+  const totalWeight = cart.items.reduce((sum: number, item: any) => {
     return sum + (item.product.weight || 0) * item.quantity;
   }, 0);
 
@@ -99,7 +99,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   const tax = isB2BAccount || isGSAAccount ? 0 : subtotal * 0.08;
   const total = subtotal + estimatedShipping + tax;
 
-  const defaultAddress = addresses.find((addr) => addr.isDefault) || addresses[0];
+  const defaultAddress = addresses.find((addr: any) => addr.isDefault) || addresses[0];
 
   if (isB2BQuote) {
     return (
@@ -124,7 +124,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
             <div className="bg-gray-50 rounded-lg p-6 mb-6">
               <h3 className="font-semibold text-black mb-4">Items in Quote Request</h3>
               <div className="space-y-3">
-                {cart.items.map((item) => (
+                {cart.items.map((item: any) => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <span className="text-gray-700">
                       {item.product.name} (x{item.quantity})
@@ -320,7 +320,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 
               {/* Items */}
               <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
-                {cart.items.map((item) => {
+                {cart.items.map((item: any) => {
                   let price = item.product.salePrice || item.product.basePrice;
                   if (isB2BAccount && item.product.wholesalePrice) {
                     price = item.product.wholesalePrice;

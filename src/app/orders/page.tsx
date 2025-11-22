@@ -69,7 +69,7 @@ export default async function OrdersPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {orders.map((order) => {
+            {orders.map((order: any) => {
               const statusColors: Record<string, string> = {
                 PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-300',
                 PROCESSING: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -131,7 +131,7 @@ export default async function OrdersPage() {
                   {/* Order Items */}
                   <div className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {order.items.slice(0, 3).map((item) => {
+                      {order.items.slice(0, 3).map((item: any) => {
                         const images = (item.product.images as string[]) || [];
                         return (
                           <div key={item.id} className="flex gap-3 bg-gray-50 p-3 rounded-lg">

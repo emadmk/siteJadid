@@ -96,7 +96,7 @@ async function getAdminDashboardData() {
 
   const topProductDetails = await db.product.findMany({
     where: {
-      id: { in: topProducts.map((p) => p.productId) },
+      id: { in: topProducts.map((p: { productId: string }) => p.productId) },
     },
     select: {
       id: true,
@@ -108,8 +108,8 @@ async function getAdminDashboardData() {
     },
   });
 
-  const topProductsWithDetails = topProducts.map((tp) => {
-    const product = topProductDetails.find((p) => p.id === tp.productId);
+  const topProductsWithDetails = topProducts.map((tp: { productId: string; _sum: { quantity: number | null }; _count: number }) => {
+    const product = topProductDetails.find((p: { id: string }) => p.id === tp.productId);
     return {
       ...tp,
       product,
@@ -141,11 +141,11 @@ export default async function AdminDashboardPage() {
 
   const data = await getAdminDashboardData();
 
-  const pendingOrders = data.ordersByStatus.find((s) => s.status === 'PENDING')?._count || 0;
-  const processingOrders = data.ordersByStatus.find((s) => s.status === 'PROCESSING')?._count || 0;
-  const shippedOrders = data.ordersByStatus.find((s) => s.status === 'SHIPPED')?._count || 0;
-  const deliveredOrders = data.ordersByStatus.find((s) => s.status === 'DELIVERED')?._count || 0;
-  const cancelledOrders = data.ordersByStatus.find((s) => s.status === 'CANCELLED')?._count || 0;
+  const pendingOrders = data.ordersByStatus.find((s: { status: string; _count: number }) => s.status === 'PENDING')?._count || 0;
+  const processingOrders = data.ordersByStatus.find((s: { status: string; _count: number }) => s.status === 'PROCESSING')?._count || 0;
+  const shippedOrders = data.ordersByStatus.find((s: { status: string; _count: number }) => s.status === 'SHIPPED')?._count || 0;
+  const deliveredOrders = data.ordersByStatus.find((s: { status: string; _count: number }) => s.status === 'DELIVERED')?._count || 0;
+  const cancelledOrders = data.ordersByStatus.find((s: { status: string; _count: number }) => s.status === 'CANCELLED')?._count || 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -262,7 +262,7 @@ export default async function AdminDashboardPage() {
               </Link>
             </div>
             <div className="divide-y divide-gray-200">
-              {data.topProducts.map((item, index) => {
+              {data.topProducts.map((item: any, index: number) => {
                 const images = (item.product?.images as string[]) || [];
                 return (
                   <div key={item.productId} className="p-4 hover:bg-gray-50 transition-colors">
@@ -313,7 +313,7 @@ export default async function AdminDashboardPage() {
                   <div className="text-sm text-gray-600">All products are well stocked</div>
                 </div>
               ) : (
-                data.lowStockProducts.map((product) => (
+                data.lowStockProducts.map((product: any) => (
                   <div key={product.id} className="p-4 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
@@ -381,7 +381,7 @@ export default async function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {data.recentOrders.map((order) => {
+                {data.recentOrders.map((order: any) => {
                   const statusColors: Record<string, string> = {
                     PENDING: 'bg-yellow-100 text-yellow-800',
                     PROCESSING: 'bg-blue-100 text-blue-800',

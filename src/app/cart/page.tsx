@@ -72,12 +72,12 @@ export default async function CartPage() {
     );
   }
 
-  const subtotal = cart.items.reduce((sum, item) => {
+  const subtotal = cart.items.reduce((sum: number, item: any) => {
     const price = item.product.salePrice || item.product.basePrice;
     return sum + price * item.quantity;
   }, 0);
 
-  const totalWeight = cart.items.reduce((sum, item) => {
+  const totalWeight = cart.items.reduce((sum: number, item: any) => {
     return sum + (item.product.weight || 0) * item.quantity;
   }, 0);
 
@@ -100,7 +100,7 @@ export default async function CartPage() {
           {/* Cart Items */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              {cart.items.map((item, index) => {
+              {cart.items.map((item: any, index: number) => {
                 const price = item.product.salePrice || item.product.basePrice;
                 const images = (item.product.images as string[]) || [];
 

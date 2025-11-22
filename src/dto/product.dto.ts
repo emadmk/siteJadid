@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { ProductStatus } from '@prisma/client';
+
+// Enums matching Prisma schema
+enum ProductStatus {
+  DRAFT = 'DRAFT',
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  OUT_OF_STOCK = 'OUT_OF_STOCK',
+  DISCONTINUED = 'DISCONTINUED',
+}
 
 // Product creation DTO
 export const CreateProductDto = z.object({

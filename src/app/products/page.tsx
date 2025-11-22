@@ -21,7 +21,7 @@ async function getProducts(searchParams: ProductsPageProps['searchParams']) {
   const limit = 20;
   const skip = (page - 1) * limit;
 
-  const where: Prisma.ProductWhereInput = {
+  const where: any = {
     isActive: true,
     stockQuantity: {
       gt: 0,
@@ -56,7 +56,7 @@ async function getProducts(searchParams: ProductsPageProps['searchParams']) {
     where.isFeatured = true;
   }
 
-  let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+  let orderBy: any = { createdAt: 'desc' };
 
   switch (searchParams.sort) {
     case 'price-asc':
@@ -142,7 +142,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     getCategories(),
   ]);
 
-  const activeCategory = categories.find((c) => c.slug === searchParams.category);
+  const activeCategory = categories.find((c: any) => c.slug === searchParams.category);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -203,7 +203,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   >
                     All Categories
                   </Link>
-                  {categories.map((category) => (
+                  {categories.map((category: any) => (
                     <Link
                       key={category.id}
                       href={`/products?category=${category.slug}`}
@@ -344,7 +344,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((product) => (
+                  {products.map((product: any) => (
                     <ProductCard
                       key={product.id}
                       sku={product.sku}

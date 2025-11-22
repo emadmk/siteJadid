@@ -1,5 +1,14 @@
 import { z } from 'zod';
-import { ShipmentStatus } from '@prisma/client';
+
+// Enums matching Prisma schema
+enum ShipmentStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  SHIPPED = 'SHIPPED',
+  IN_TRANSIT = 'IN_TRANSIT',
+  OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
+  DELIVERED = 'DELIVERED',
+}
 
 // Shipping carriers in USA
 export const ShippingCarrier = z.enum(['USPS', 'FEDEX', 'UPS', 'DHL']);

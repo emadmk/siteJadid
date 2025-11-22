@@ -1,8 +1,37 @@
 import { z } from 'zod';
-import { DiscountType, DiscountScope, AccountType, LoyaltyTier } from '@prisma/client';
 
-// Create discount DTO
-export const CreateDiscountDto = z.object({
+// Enums matching Prisma schema
+enum DiscountType {
+  PERCENTAGE = 'PERCENTAGE',
+  FIXED_AMOUNT = 'FIXED_AMOUNT',
+  FREE_SHIPPING = 'FREE_SHIPPING',
+  BUY_X_GET_Y = 'BUY_X_GET_Y',
+}
+
+enum DiscountScope {
+  GLOBAL = 'GLOBAL',
+  CATEGORY = 'CATEGORY',
+  PRODUCT = 'PRODUCT',
+  USER = 'USER',
+  USER_TIER = 'USER_TIER',
+}
+
+enum AccountType {
+  B2C = 'B2C',
+  B2B = 'B2B',
+  GSA = 'GSA',
+}
+
+enum LoyaltyTier {
+  BRONZE = 'BRONZE',
+  SILVER = 'SILVER',
+  GOLD = 'GOLD',
+  PLATINUM = 'PLATINUM',
+  DIAMOND = 'DIAMOND',
+}
+
+// Base discount schema (without refinements)
+const BaseDiscountDto = z.object({
   code: z.string().min(1).max(50).regex(/^[A-Z0-9_-]+$/),
   name: z.string().min(1).max(255),
   description: z.string().max(500).optional(),
@@ -27,7 +56,10 @@ export const CreateDiscountDto = z.object({
 
   // Product associations
   productIds: z.array(z.string().uuid()).default([]),
-}).refine((data) => {
+});
+
+// Create discount DTO (with refinements)
+export const CreateDiscountDto = BaseDiscountDto.refine((data) => {
   if (data.endsAt && data.startsAt) {
     return data.endsAt > data.startsAt;
   }
@@ -38,7 +70,7 @@ export const CreateDiscountDto = z.object({
 });
 
 // Update discount DTO
-export const UpdateDiscountDto = CreateDiscountDto.partial().omit({ code: true });
+export const UpdateDiscountDto = BaseDiscountDto.partial().omit({ code: true });
 
 // Validate discount DTO
 export const ValidateDiscountDto = z.object({

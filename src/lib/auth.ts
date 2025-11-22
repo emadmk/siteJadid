@@ -3,7 +3,25 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { db } from './db';
-import { UserRole, AccountType } from '@prisma/client';
+
+// Enums matching Prisma schema
+enum UserRole {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  ADMIN = 'ADMIN',
+  ACCOUNTANT = 'ACCOUNTANT',
+  CUSTOMER_SERVICE = 'CUSTOMER_SERVICE',
+  WAREHOUSE_MANAGER = 'WAREHOUSE_MANAGER',
+  MARKETING_MANAGER = 'MARKETING_MANAGER',
+  CUSTOMER = 'CUSTOMER',
+  B2B_CUSTOMER = 'B2B_CUSTOMER',
+  GSA_CUSTOMER = 'GSA_CUSTOMER',
+}
+
+enum AccountType {
+  B2C = 'B2C',
+  B2B = 'B2B',
+  GSA = 'GSA',
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),

@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { ReviewStatus } from '@prisma/client';
+
+// Enums matching Prisma schema
+enum ReviewStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
 
 // Create review DTO
 export const CreateReviewDto = z.object({

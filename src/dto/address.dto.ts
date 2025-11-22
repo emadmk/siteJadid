@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { AddressType } from '@prisma/client';
+
+// Address type enum matching Prisma schema
+enum AddressType {
+  BILLING = 'BILLING',
+  SHIPPING = 'SHIPPING',
+  BOTH = 'BOTH',
+}
 
 // US State codes
 const US_STATES = [

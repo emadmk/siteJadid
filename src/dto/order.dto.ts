@@ -1,5 +1,40 @@
 import { z } from 'zod';
-import { OrderStatus, PaymentStatus, PaymentMethod, AccountType } from '@prisma/client';
+
+// Enums matching Prisma schema
+enum OrderStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  PROCESSING = 'PROCESSING',
+  SHIPPED = 'SHIPPED',
+  DELIVERED = 'DELIVERED',
+  CANCELLED = 'CANCELLED',
+  REFUNDED = 'REFUNDED',
+}
+
+enum PaymentStatus {
+  PENDING = 'PENDING',
+  AUTHORIZED = 'AUTHORIZED',
+  PAID = 'PAID',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED',
+  PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED',
+}
+
+enum PaymentMethod {
+  CREDIT_CARD = 'CREDIT_CARD',
+  PAYPAL = 'PAYPAL',
+  STRIPE = 'STRIPE',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  NET_TERMS = 'NET_TERMS',
+  PURCHASE_ORDER = 'PURCHASE_ORDER',
+  GSA_SMARTPAY = 'GSA_SMARTPAY',
+}
+
+enum AccountType {
+  B2C = 'B2C',
+  B2B = 'B2B',
+  GSA = 'GSA',
+}
 
 // Create order DTO
 export const CreateOrderDto = z.object({

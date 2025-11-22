@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build Prisma query
-    const where: Prisma.ProductWhereInput = {
+    const where: any = {
       status: 'ACTIVE',
       ...(categoryId && { categoryId }),
       ...(featured && { isFeatured: true }),
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [sortField, sortOrder] = sort.split('_');
-    const orderBy: Prisma.ProductOrderByWithRelationInput = {
+    const orderBy: any = {
       [sortField]: sortOrder === 'asc' ? 'asc' : 'desc',
     };
 

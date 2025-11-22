@@ -74,7 +74,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const relatedProducts = await getRelatedProducts(product.categoryId, product.id);
 
   const averageRating = product.reviews.length > 0
-    ? product.reviews.reduce((acc, review) => acc + review.rating, 0) / product.reviews.length
+    ? product.reviews.reduce((acc: number, review: { rating: number }) => acc + review.rating, 0) / product.reviews.length
     : 0;
 
   const images = (product.images as string[]) || [];
@@ -295,7 +295,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="bg-white rounded-lg border border-gray-200 p-8 mb-12">
             <h2 className="text-2xl font-bold text-black mb-6">Customer Reviews</h2>
             <div className="space-y-6">
-              {product.reviews.map((review) => (
+              {product.reviews.map((review: any) => (
                 <div key={review.id} className="border-b border-gray-200 pb-6 last:border-0">
                   <div className="flex items-center justify-between mb-2">
                     <div>
@@ -335,7 +335,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div>
             <h2 className="text-2xl font-bold text-black mb-6">Related Products</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((relatedProduct) => (
+              {relatedProducts.map((relatedProduct: any) => (
                 <Link key={relatedProduct.id} href={`/products/${relatedProduct.slug}`}>
                   <div className="group bg-white rounded-lg border border-gray-200 hover:border-safety-green-400 transition-all hover:shadow-xl cursor-pointer overflow-hidden">
                     <div className="w-full h-48 bg-gray-100 overflow-hidden">

@@ -10,6 +10,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    serverComponentsExternalPackages: ['@elastic/elasticsearch', 'undici'],
   },
   // Environment variables that should be available on the client side
   env: {
@@ -26,6 +27,12 @@ const nextConfig = {
         tls: false,
         crypto: false,
       };
+      // Exclude server-only modules from client bundle
+      config.externals = config.externals || [];
+      config.externals.push({
+        '@elastic/elasticsearch': 'commonjs @elastic/elasticsearch',
+        'undici': 'commonjs undici',
+      });
     }
     return config;
   },
