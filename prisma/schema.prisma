@@ -1282,6 +1282,7 @@ model Warehouse {
   stock           WarehouseStock[]
   transfers       WarehouseTransfer[] @relation("SourceWarehouse")
   receivedTransfers WarehouseTransfer[] @relation("DestinationWarehouse")
+  purchaseOrders  PurchaseOrder[]
 
   @@index([code])
   @@index([isActive])
