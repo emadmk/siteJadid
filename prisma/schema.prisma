@@ -40,6 +40,12 @@ enum LoyaltyTier {
   DIAMOND
 }
 
+enum GSAApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -51,6 +57,11 @@ model User {
   role          UserRole  @default(CUSTOMER)
   accountType   AccountType @default(B2C)
   isActive      Boolean   @default(true)
+
+  // GSA Fields
+  gsaNumber           String?
+  gsaApprovalStatus   GSAApprovalStatus?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -71,6 +82,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([accountType])
+  @@index([gsaApprovalStatus])
 }
 
 model Account {
@@ -125,16 +137,22 @@ model Address {
   id          String      @id @default(cuid())
   userId      String
   type        AddressType @default(BOTH)
-  firstName   String
-  lastName    String
+
+  // Support both formats for compatibility
+  fullName    String?
+  firstName   String?
+  lastName    String?
+
   company     String?
-  address1    String
+  addressLine1 String?    // Alias for address1
+  addressLine2 String?    // Alias for address2
+  address1    String?
   address2    String?
   city        String
   state       String
   zipCode     String
   country     String      @default("USA")
-  phone       String
+  phone       String?
   isDefault   Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -519,15 +537,18 @@ model Order {
   status            OrderStatus   @default(PENDING)
   paymentStatus     PaymentStatus @default(PENDING)
 
-  // Amounts
+  // Amounts - with aliases for compatibility
   subtotal          Decimal       @db.Decimal(12, 2)
   tax               Decimal       @default(0) @db.Decimal(12, 2)
+  taxAmount         Decimal?      @db.Decimal(12, 2) // Alias for tax
   shipping          Decimal       @default(0) @db.Decimal(12, 2)
+  shippingCost      Decimal?      @db.Decimal(12, 2) // Alias for shipping
   discount          Decimal       @default(0) @db.Decimal(12, 2)
   total             Decimal       @db.Decimal(12, 2)
+  totalAmount       Decimal?      @db.Decimal(12, 2) // Alias for total
 
   // Payment
-  paymentMethod     PaymentMethod
+  paymentMethod     String?       // Changed from enum to string for flexibility
   paymentIntentId   String?
   paidAt            DateTime?
 
