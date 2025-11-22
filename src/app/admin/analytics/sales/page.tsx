@@ -110,7 +110,7 @@ async function getTopSellingProducts() {
     by: ['productId'],
     _sum: {
       quantity: true,
-      basePrice: true,
+      price: true,
     },
     orderBy: {
       _sum: {
