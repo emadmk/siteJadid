@@ -1,7 +1,7 @@
 {
-  "name": "enterprise-ecommerce-platform",
+  "name": "safety-equipment-store",
   "version": "1.0.0",
-  "description": "Comprehensive B2B/B2C E-commerce Platform with Next.js, PostgreSQL, Redis, and Elasticsearch",
+  "description": "Professional Safety Equipment E-commerce Platform - B2B/B2C Safety Gear Store with Next.js, PostgreSQL, Redis, and Elasticsearch",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -14,10 +14,11 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} prisma/seed.ts",
     "prisma:seed-full": "ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} prisma/seed-comprehensive.ts",
+    "prisma:seed-safety": "ts-node --compiler-options {\\\"module\\\":\\\"CommonJS\\\"} prisma/seed-safety.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:build": "docker-compose build",
-    "setup": "npm install && npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed-full",
+    "setup": "npm install && npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed-safety",
     "deploy": "bash ./scripts/deploy.sh"
   },
   "dependencies": {
