@@ -3,22 +3,20 @@ version: '3.8'
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:16-alpine
-    container_name: ecommerce-postgres
+    image: postgres:14-alpine
+    container_name: sitejadid_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ecommerce_user
-      POSTGRES_PASSWORD: ecommerce_password
-      POSTGRES_DB: ecommerce_db
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      POSTGRES_USER: siteuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme123}
+      POSTGRES_DB: sitejadid
     ports:
       - "5432:5432"
-    networks:
-      - ecommerce-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ecommerce_user -d ecommerce_db"]
+      test: ["CMD-SHELL", "pg_isready -U siteuser -d sitejadid"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,42 +24,17 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: ecommerce-redis
+    container_name: sitejadid_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme123}
     ports:
       - "6379:6379"
-    networks:
-      - ecommerce-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Elasticsearch
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: ecommerce-elasticsearch
-    restart: unless-stopped
-    environment:
-      - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - xpack.security.enabled=false
-      - xpack.security.http.ssl.enabled=false
     volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    networks:
-      - ecommerce-network
+      - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
       retries: 5
 
   # Next.js Application
@@ -69,38 +42,52 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ecommerce-app
+    container_name: sitejadid_app
     restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://ecommerce_user:ecommerce_password@postgres:5432/ecommerce_db?schema=public
-      - REDIS_URL=redis://redis:6379
-      - ELASTICSEARCH_NODE=http://elasticsearch:9200
-      - NEXTAUTH_URL=http://localhost:3000
-    env_file:
-      - .env
-    ports:
-      - "3000:3000"
-    networks:
-      - ecommerce-network
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://siteuser:${DB_PASSWORD:-changeme123}@postgres:5432/sitejadid
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-changeme123}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+    ports:
+      - "3000:3000"
     volumes:
       - ./public/uploads:/app/public/uploads
+      - ./logs:/app/logs
+
+  # Nginx Reverse Proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: sitejadid_nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./public:/usr/share/nginx/html:ro
+    profiles:
+      - production
 
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
-  elasticsearch_data:
-    driver: local
 
 networks:
-  ecommerce-network:
-    driver: bridge
+  default:
+    name: sitejadid_network
