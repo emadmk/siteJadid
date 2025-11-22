@@ -22,7 +22,7 @@ async function getProducts(searchParams: ProductsPageProps['searchParams']) {
   const skip = (page - 1) * limit;
 
   const where: any = {
-    isActive: true,
+    status: 'ACTIVE',
     stockQuantity: {
       gt: 0,
     },

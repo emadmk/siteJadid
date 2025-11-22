@@ -41,7 +41,7 @@ async function getRelatedProducts(categoryId: string, currentProductId: string) 
   const products = await db.product.findMany({
     where: {
       categoryId,
-      isActive: true,
+      status: 'ACTIVE',
       stockQuantity: {
         gt: 0,
       },

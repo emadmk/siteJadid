@@ -26,7 +26,7 @@ async function getCategories() {
 async function getFeaturedProducts() {
   const products = await db.product.findMany({
     where: {
-      isActive: true,
+      status: 'ACTIVE',
       isFeatured: true,
       stockQuantity: {
         gt: 0,

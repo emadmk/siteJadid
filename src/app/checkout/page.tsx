@@ -11,7 +11,6 @@ async function getCheckoutData(userId: string) {
     db.cart.findFirst({
       where: {
         userId,
-        status: 'ACTIVE',
       },
       include: {
         items: {

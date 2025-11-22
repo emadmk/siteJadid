@@ -10,7 +10,6 @@ async function getCart(userId: string) {
   const cart = await db.cart.findFirst({
     where: {
       userId,
-      status: 'ACTIVE',
     },
     include: {
       items: {
