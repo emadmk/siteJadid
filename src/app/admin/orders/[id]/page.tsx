@@ -310,7 +310,7 @@ export default async function OrderDetailPage({
             <div className="space-y-3">
               <div>
                 <div className="text-sm text-gray-600">Payment Method</div>
-                <div className="font-medium text-black">{order.paymentMethod.replace('_', ' ')}</div>
+                <div className="font-medium text-black">{order.paymentMethod?.replace('_', ' ') || 'N/A'}</div>
               </div>
               <div>
                 <div className="text-sm text-gray-600">Payment Status</div>
