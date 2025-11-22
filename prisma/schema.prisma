@@ -616,6 +616,7 @@ model Order {
   rmas              RMA[]
   commissions       Commission[]
   subscriptionOrders SubscriptionOrder[]
+  backOrders        BackOrder[]
 
   @@index([userId])
   @@index([orderNumber])
@@ -1631,10 +1632,12 @@ model BackOrder {
 
   user            User            @relation(fields: [userId], references: [id])
   product         Product         @relation(fields: [productId], references: [id])
+  order           Order?          @relation(fields: [orderId], references: [id])
 
   @@index([userId])
   @@index([productId])
   @@index([status])
+  @@index([orderId])
 }
 
 // ============================================
