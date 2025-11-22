@@ -116,7 +116,7 @@ export default async function OrdersPage() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <div className="text-sm text-gray-600 mb-1">Total</div>
-                          <div className="text-3xl font-bold text-black">${order.totalAmount.toFixed(2)}</div>
+                          <div className="text-3xl font-bold text-black">${order.total.toFixed(2)}</div>
                         </div>
                         <Link href={`/orders/${order.orderNumber}`}>
                           <Button className="bg-primary hover:bg-primary/90 gap-2">

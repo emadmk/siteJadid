@@ -28,7 +28,7 @@ async function getDashboardData(userId: string) {
         orderNumber: true,
         status: true,
         paymentStatus: true,
-        totalAmount: true,
+        total: true,
         createdAt: true,
         items: {
           select: {
@@ -230,7 +230,7 @@ export default async function DashboardPage() {
                           </div>
                           <div className="text-right">
                             <div className="text-xl font-bold text-black">
-                              ${order.totalAmount.toFixed(2)}
+                              ${order.total.toFixed(2)}
                             </div>
                             <Link href={`/orders/${order.orderNumber}`}>
                               <Button variant="link" size="sm" className="text-safety-green-600 hover:text-safety-green-700 p-0 h-auto">

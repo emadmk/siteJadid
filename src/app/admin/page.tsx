@@ -34,7 +34,7 @@ async function getAdminDashboardData() {
     lowStockProducts,
   ] = await Promise.all([
     db.order.aggregate({
-      _sum: { totalAmount: true },
+      _sum: { total: true },
       where: {
         paymentStatus: 'PAID',
       },
@@ -66,7 +66,7 @@ async function getAdminDashboardData() {
         createdAt: { gte: thirtyDaysAgo },
         paymentStatus: 'PAID',
       },
-      _sum: { totalAmount: true },
+      _sum: { total: true },
     }),
     db.orderItem.groupBy({
       by: ['productId'],
@@ -117,7 +117,7 @@ async function getAdminDashboardData() {
   });
 
   return {
-    totalRevenue: totalRevenue._sum.totalAmount || 0,
+    totalRevenue: totalRevenue._sum.total || 0,
     totalOrders,
     totalUsers,
     totalProducts,
@@ -412,7 +412,7 @@ export default async function AdminDashboardPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-black">${order.totalAmount.toFixed(2)}</div>
+                        <div className="font-medium text-black">${order.total.toFixed(2)}</div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Link href={`/admin/orders/${order.orderNumber}`}>
