@@ -165,7 +165,7 @@ export default async function GSAApprovalsPage() {
 
                     {/* Actions */}
                     <div className="flex flex-col gap-3">
-                      <GSAApprovalActions userId={user.id} userName={user.name} />
+                      <GSAApprovalActions userId={user.id} userName={user.name || ''} />
                       <Link href={`/admin/customers/${user.id}`}>
                         <Button
                           variant="outline"
