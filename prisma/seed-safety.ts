@@ -1,5 +1,5 @@
-import { PrismaClient, UserRole, AccountType, LoyaltyTier, ProductStatus, OrderStatus, PaymentStatus, PaymentMethod, ShipmentStatus } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+const { PrismaClient, UserRole, AccountType, LoyaltyTier, ProductStatus, OrderStatus, PaymentStatus, PaymentMethod, ShipmentStatus } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
@@ -24,7 +24,6 @@ async function main() {
       role: UserRole.SUPER_ADMIN,
       accountType: AccountType.B2C,
       emailVerified: new Date(),
-      lastLoginAt: new Date(),
     },
   });
 
@@ -76,7 +75,6 @@ async function main() {
       country: 'USA',
       phone: '+17135551234',
       isDefault: true,
-      isVerified: true,
     },
   });
 
@@ -94,7 +92,6 @@ async function main() {
       country: 'USA',
       phone: '+12145551000',
       isDefault: true,
-      isVerified: true,
     },
   });
 
@@ -125,7 +122,6 @@ async function main() {
       businessLicense: 'TX-BL-2024-001234',
       creditLimit: 50000,
       creditUsed: 12000,
-      creditAvailable: 38000,
       paymentTerms: 30,
       discountPercent: 15,
       status: 'APPROVED',
@@ -713,7 +709,6 @@ async function main() {
       shipping: 12.99,
       discount: 40.94,
       total: 266.85,
-      taxRate: 8.25,
       taxableAmount: 272.96,
       paymentMethod: PaymentMethod.STRIPE,
       paymentIntentId: 'pi_3SafetyGear123456',
@@ -791,7 +786,6 @@ async function main() {
       title: 'Best work boots I have ever owned!',
       comment: 'These Timberland PRO boots are absolutely worth every penny. The steel toe protection gives me confidence on the job site, and they are surprisingly comfortable even after 10-hour days. The waterproofing really works - my feet stayed dry during a rainstorm. Highly recommend for anyone in construction!',
       status: 'APPROVED',
-      isVerified: true,
       helpfulCount: 18,
       createdAt: new Date('2024-11-26T15:30:00Z'),
     },
@@ -806,7 +800,6 @@ async function main() {
       title: 'Great visibility, comfortable to wear',
       comment: 'The 3M safety vest is perfect for my road work job. The reflective stripes are very bright and visible from far away. The mesh material is breathable and does not make me overheat. Good value for the price.',
       status: 'APPROVED',
-      isVerified: true,
       helpfulCount: 12,
       createdAt: new Date('2024-11-27T10:15:00Z'),
     },
