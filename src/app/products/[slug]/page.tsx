@@ -80,7 +80,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     : 0;
 
   const images = (product.images as string[]) || [];
-  const dimensions = product.dimensions ? JSON.parse(product.dimensions as string) : null;
+  const hasDimensions = product.length && product.width && product.height;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -234,11 +234,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <div className="font-medium text-black">{Number(product.weight)} lbs</div>
                   </div>
                 )}
-                {dimensions && (
+                {hasDimensions && (
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <div className="text-sm text-gray-600 mb-1">Dimensions</div>
                     <div className="font-medium text-black">
-                      {dimensions.length}" × {dimensions.width}" × {dimensions.height}"
+                      {Number(product.length)}" × {Number(product.width)}" × {Number(product.height)}"
                     </div>
                   </div>
                 )}
