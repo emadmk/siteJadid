@@ -1,0 +1,158 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import prisma from '@/lib/prisma';
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+
+    const where = status ? { status } : {};
+
+    const rmas = await prisma.rMA.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+          },
+        },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                images: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(rmas);
+  } catch (error) {
+    console.error('Error fetching RMAs:', error);
+    return NextResponse.json({ error: 'Failed to fetch RMAs' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    const {
+      userId,
+      orderId,
+      items,
+      reason,
+      requestType,
+      customerNotes,
+    } = body;
+
+    if (!userId || !orderId || !items || items.length === 0) {
+      return NextResponse.json(
+        { error: 'User, order, and items are required' },
+        { status: 400 }
+      );
+    }
+
+    const lastRMA = await prisma.rMA.findFirst({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const nextNumber = lastRMA
+      ? parseInt(lastRMA.rmaNumber.replace('RMA-', '')) + 1
+      : 1;
+    const rmaNumber = `RMA-${String(nextNumber).padStart(6, '0')}`;
+
+    let totalAmount = 0;
+
+    const rma = await prisma.rMA.create({
+      data: {
+        rmaNumber,
+        userId,
+        orderId,
+        status: 'REQUESTED',
+        reason: reason || 'Not specified',
+        requestType: requestType || 'REFUND',
+        totalAmount: 0,
+        customerNotes,
+        items: {
+          create: items.map((item: any) => {
+            const itemTotal = item.quantity * item.unitPrice;
+            totalAmount += itemTotal;
+
+            return {
+              productId: item.productId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              reason: item.reason || reason,
+            };
+          }),
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+          },
+        },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                images: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    await prisma.rMA.update({
+      where: { id: rma.id },
+      data: { totalAmount },
+    });
+
+    return NextResponse.json({ ...rma, totalAmount }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating RMA:', error);
+    return NextResponse.json({ error: 'Failed to create RMA' }, { status: 500 });
+  }
+}
