@@ -12,9 +12,15 @@ async function getCommissions() {
         salesRep: {
           select: {
             id: true,
-            name: true,
-            email: true,
-            commissionRate: true,
+            code: true,
+            defaultCommissionRate: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         order: {
@@ -50,12 +56,12 @@ export default async function CommissionsPage() {
   const { commissions, salesReps } = await getCommissions();
 
   const totalCommissions = commissions.reduce(
-    (sum, c) => sum + Number(c.amount),
+    (sum, c) => sum + Number(c.commissionAmount),
     0
   );
   const pendingAmount = commissions
     .filter((c) => c.status === 'PENDING')
-    .reduce((sum, c) => sum + Number(c.amount), 0);
+    .reduce((sum, c) => sum + Number(c.commissionAmount), 0);
 
   return (
     <div className="space-y-6">
@@ -93,7 +99,7 @@ export default async function CommissionsPage() {
             $
             {commissions
               .filter((c) => c.status === 'PAID')
-              .reduce((sum, c) => sum + Number(c.amount), 0)
+              .reduce((sum, c) => sum + Number(c.commissionAmount), 0)
               .toLocaleString()}
           </div>
         </div>
@@ -144,9 +150,9 @@ export default async function CommissionsPage() {
                 <tr key={comm.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm">
                     <div className="font-medium text-gray-900">
-                      {comm.salesRep.name || 'N/A'}
+                      {comm.salesRep.user.name || 'N/A'}
                     </div>
-                    <div className="text-gray-500">{comm.salesRep.email}</div>
+                    <div className="text-gray-500">{comm.salesRep.user.email}</div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {comm.order.orderNumber}
@@ -155,10 +161,10 @@ export default async function CommissionsPage() {
                     ${Number(comm.order.totalAmount).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {Number(comm.salesRep.commissionRate)}%
+                    {Number(comm.commissionRate)}%
                   </td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    ${Number(comm.amount).toLocaleString()}
+                    ${Number(comm.commissionAmount).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
                     {new Date(comm.createdAt).toLocaleDateString()}
