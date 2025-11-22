@@ -66,32 +66,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create B2B profile if needed
-    if (validatedData.accountType === 'B2B' && validatedData.companyName) {
-      await db.b2BProfile.create({
-        data: {
-          userId: user.id,
-          companyName: validatedData.companyName,
-          taxId: validatedData.taxId,
-          creditLimit: 10000,
-          currentBalance: 0,
-          paymentTerms: 'NET_30',
-          isApproved: false,
-        },
-      });
-    }
-
-    // Create GSA profile if needed
-    if (validatedData.accountType === 'GSA') {
-      await db.gSAProfile.create({
-        data: {
-          userId: user.id,
-          contractNumber: '',
-          agencyName: validatedData.companyName || '',
-          isVerified: false,
-        },
-      });
-    }
+    // Note: B2B and GSA profiles are created by admin during account approval
+    // This ensures all required fields (taxId, contractNumber, etc.) are properly collected
 
     // Return success (without password)
     const { password: _, ...userWithoutPassword } = user;
