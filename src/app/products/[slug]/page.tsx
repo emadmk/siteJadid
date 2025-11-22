@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, Truck, ArrowLeft, Star, Package, Award, CheckCircle2 } from 'lucide-react';
 import { db } from '@/lib/db';
+import { AddToCartButton } from '@/components/product/AddToCartButton';
 
 interface ProductPageProps {
   params: {
@@ -252,14 +253,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Add to Cart */}
             <div className="space-y-3">
-              <Button
-                size="lg"
-                className="w-full bg-primary hover:bg-primary/90 text-lg"
-                disabled={product.stockQuantity === 0}
-              >
-                <Package className="w-5 h-5 mr-2" />
-                Add to Cart
-              </Button>
+              <AddToCartButton
+                productId={product.id}
+                stockQuantity={product.stockQuantity}
+              />
               <Button
                 size="lg"
                 variant="outline"
