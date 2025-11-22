@@ -52,7 +52,7 @@ async function main() {
 
   const emailInput = await question('Enter the email address of the user you want to make admin: ');
 
-  const user = users.find((u) => u.email.toLowerCase() === emailInput.toLowerCase().trim());
+  const user = users.find((u: any) => u.email.toLowerCase() === emailInput.toLowerCase().trim());
 
   if (!user) {
     console.log(`\nUser with email "${emailInput}" not found.`);
