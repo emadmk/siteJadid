@@ -25,7 +25,12 @@ export async function GET(
                 name: true,
                 email: true,
                 accountType: true,
-                loyaltyTier: true,
+                loyaltyProfile: {
+                  select: {
+                    tier: true,
+                    points: true,
+                  },
+                },
               },
             },
           },
