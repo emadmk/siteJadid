@@ -88,6 +88,7 @@ model User {
   rmas          RMA[]
   salesRep      SalesRep?
   subscriptions Subscription[]
+  b2bMemberships B2BAccountMember[]
 
   @@index([email])
   @@index([role])
@@ -205,6 +206,8 @@ model B2BProfile {
   updatedAt         DateTime  @updatedAt
 
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members           B2BAccountMember[]
+  costCenters       CostCenter[]
 
   @@index([status])
   @@index([companyName])
@@ -400,6 +403,8 @@ model Product {
   subscriptionItems SubscriptionItem[]
   purchaseOrderItems PurchaseOrderItem[]
   poReceiptItems  POReceiptItem[]
+  bulkOrderTemplateItems BulkOrderTemplateItem[]
+  shoppingListItems ShoppingListItem[]
 
   @@index([slug])
   @@index([sku])
@@ -594,6 +599,8 @@ model Order {
 
   // B2B
   purchaseOrderNumber String?
+  createdByMemberId   String?    // B2B multi-user: who created the order
+  costCenterId        String?    // Budget tracking
 
   // GSA
   gsaContractNumber String?
@@ -618,11 +625,15 @@ model Order {
   commissions       Commission[]
   subscriptionOrders SubscriptionOrder[]
   backOrders        BackOrder[]
+  createdByMember   B2BAccountMember? @relation("OrderCreatedBy", fields: [createdByMemberId], references: [id])
+  costCenter        CostCenter?   @relation("OrderCostCenter", fields: [costCenterId], references: [id])
+  approvals         OrderApproval[]
 
   @@index([userId])
   @@index([orderNumber])
   @@index([status])
   @@index([createdAt])
+  @@index([costCenterId])
 }
 
 model OrderItem {
@@ -2193,4 +2204,285 @@ model POReceiptItem {
 
   @@index([receiptId])
   @@index([productId])
+}
+
+// ============================================
+// B2B MULTI-USER ACCOUNT MANAGEMENT
+// ============================================
+
+enum B2BUserRole {
+  ACCOUNT_ADMIN      // Can manage users, budgets, approvals
+  PURCHASER          // Can create orders
+  APPROVER           // Can approve orders
+  VIEWER             // Read-only access
+  FINANCE            // Can view invoices, payments
+}
+
+model B2BAccountMember {
+  id              String      @id @default(cuid())
+  b2bProfileId    String
+  userId          String
+  role            B2BUserRole @default(PURCHASER)
+
+  // Department/Cost Center assignment
+  department      String?
+  costCenterId    String?
+
+  // Spending limits
+  orderLimit      Decimal?    @db.Decimal(12, 2)  // Max per order
+  monthlyLimit    Decimal?    @db.Decimal(12, 2)  // Max per month
+
+  // Approval requirements
+  requiresApproval Boolean    @default(false)
+  approvalThreshold Decimal?  @db.Decimal(12, 2)  // Orders above this need approval
+
+  isActive        Boolean     @default(true)
+  invitedAt       DateTime    @default(now())
+  joinedAt        DateTime?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  b2bProfile      B2BProfile  @relation(fields: [b2bProfileId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  costCenter      CostCenter? @relation(fields: [costCenterId], references: [id])
+
+  ordersCreated   Order[]     @relation("OrderCreatedBy")
+  approvalsGiven  OrderApproval[] @relation("ApprovedBy")
+  approvalsNeeded OrderApproval[] @relation("ApprovalFor")
+
+  @@unique([b2bProfileId, userId])
+  @@index([b2bProfileId])
+  @@index([userId])
+  @@index([role])
+}
+
+// Update B2BProfile to add relation
+model B2BProfileExtension {
+  id              String    @id @default(cuid())
+
+  // Multi-user settings
+  allowMultiUser  Boolean   @default(true)
+  maxUsers        Int       @default(50)
+
+  // Default approval settings
+  defaultApprovalThreshold Decimal? @db.Decimal(12, 2)
+  requireApprovalForAll    Boolean  @default(false)
+}
+
+// ============================================
+// COST CENTERS & BUDGETS
+// ============================================
+
+enum BudgetPeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+model CostCenter {
+  id              String   @id @default(cuid())
+  b2bProfileId    String
+
+  code            String
+  name            String
+  description     String?
+
+  // Budget allocation
+  budgetAmount    Decimal  @db.Decimal(12, 2)
+  budgetPeriod    BudgetPeriod @default(MONTHLY)
+  budgetStartDate DateTime
+  budgetEndDate   DateTime?
+
+  // Spending tracking
+  currentSpent    Decimal  @default(0) @db.Decimal(12, 2)
+
+  // Manager
+  managerId       String?
+
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  b2bProfile      B2BProfile @relation(fields: [b2bProfileId], references: [id], onDelete: Cascade)
+  members         B2BAccountMember[]
+  orders          Order[]  @relation("OrderCostCenter")
+
+  @@unique([b2bProfileId, code])
+  @@index([b2bProfileId])
+  @@index([isActive])
+}
+
+// ============================================
+// APPROVAL WORKFLOWS
+// ============================================
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model OrderApproval {
+  id              String         @id @default(cuid())
+  orderId         String
+
+  // Requester
+  requestedById   String
+  requestedAt     DateTime       @default(now())
+
+  // Approver
+  approverId      String
+  approvedAt      DateTime?
+
+  status          ApprovalStatus @default(PENDING)
+
+  // Approval details
+  orderTotal      Decimal        @db.Decimal(12, 2)
+  reason          String?
+  approverNotes   String?
+
+  // Notification
+  notifiedAt      DateTime?
+  reminderSentAt  DateTime?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  order           Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  requester       B2BAccountMember @relation("ApprovalFor", fields: [requestedById], references: [id])
+  approver        B2BAccountMember @relation("ApprovedBy", fields: [approverId], references: [id])
+
+  @@index([orderId])
+  @@index([status])
+  @@index([approverId])
+}
+
+// ============================================
+// BULK ORDER TEMPLATES
+// ============================================
+
+model BulkOrderTemplate {
+  id              String   @id @default(cuid())
+  userId          String
+
+  name            String
+  description     String?
+
+  // Template type
+  isRecurring     Boolean  @default(false)
+  frequency       String?  // WEEKLY, MONTHLY, etc
+  nextOrderDate   DateTime?
+
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           BulkOrderTemplateItem[]
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model BulkOrderTemplateItem {
+  id              String            @id @default(cuid())
+  templateId      String
+  productId       String
+
+  sku             String
+  quantity        Int
+  notes           String?
+
+  template        BulkOrderTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  product         Product           @relation(fields: [productId], references: [id])
+
+  @@index([templateId])
+  @@index([productId])
+}
+
+// ============================================
+// SHOPPING LISTS
+// ============================================
+
+model ShoppingList {
+  id              String   @id @default(cuid())
+  userId          String
+
+  name            String
+  description     String?
+
+  isDefault       Boolean  @default(false)
+  isShared        Boolean  @default(false)
+  shareCode       String?  @unique
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           ShoppingListItem[]
+
+  @@index([userId])
+  @@index([shareCode])
+}
+
+model ShoppingListItem {
+  id              String       @id @default(cuid())
+  listId          String
+  productId       String
+
+  quantity        Int          @default(1)
+  notes           String?
+  priority        Int          @default(0)
+
+  addedAt         DateTime     @default(now())
+
+  list            ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  product         Product      @relation(fields: [productId], references: [id])
+
+  @@unique([listId, productId])
+  @@index([listId])
+  @@index([productId])
+}
+
+// ============================================
+// PRODUCT COMPARISON
+// ============================================
+
+model ProductComparison {
+  id              String   @id @default(cuid())
+  userId          String
+
+  name            String?
+
+  productIds      String[] // Array of product IDs
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================
+// FREQUENTLY BOUGHT TOGETHER
+// ============================================
+
+model FrequentlyBoughtTogether {
+  id              String   @id @default(cuid())
+  productId       String
+  relatedProductId String
+
+  // Auto-calculated
+  purchaseCount   Int      @default(0)
+  confidence      Decimal  @default(0) @db.Decimal(5, 2) // 0-100
+
+  lastPurchased   DateTime?
+  isActive        Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([productId, relatedProductId])
+  @@index([productId])
+  @@index([confidence])
 }
