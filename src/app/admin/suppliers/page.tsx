@@ -3,7 +3,8 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import prisma from '@/lib/db';
-import { SupplierStatus } from '@prisma/client';
+
+type SupplierStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_APPROVAL';
 
 async function getSuppliers(status?: SupplierStatus) {
   const where = status ? { status } : {};

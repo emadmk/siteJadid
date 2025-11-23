@@ -2,7 +2,25 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Supplier, SupplierStatus } from '@prisma/client';
+
+type SupplierStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_APPROVAL';
+
+interface Supplier {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  country: string;
+  status: SupplierStatus;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface SupplierEditFormProps {
   supplier: Supplier;

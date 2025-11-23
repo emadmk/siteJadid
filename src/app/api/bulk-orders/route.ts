@@ -67,7 +67,10 @@ export async function POST(request: NextRequest) {
     // If csvData provided, parse and add to cart
     if (csvData) {
       const lines = csvData.split('\n').filter((line: string) => line.trim());
-      const results = {
+      const results: {
+        success: Array<{ sku: string; quantity: number; productName: string }>;
+        errors: Array<{ line?: string; sku?: string; error: string; available?: number }>;
+      } = {
         success: [],
         errors: [],
       };
