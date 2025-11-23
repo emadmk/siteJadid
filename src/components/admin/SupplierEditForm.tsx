@@ -8,6 +8,7 @@ type SupplierStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING_APPROVAL';
 interface Supplier {
   id: string;
   name: string;
+  code: string;
   email: string | null;
   phone: string | null;
   website: string | null;
@@ -16,7 +17,16 @@ interface Supplier {
   state: string | null;
   zipCode: string | null;
   country: string;
+  taxId: string | null;
+  businessLicense: string | null;
+  rating: number | null;
+  onTimeDeliveryRate: number | null;
+  qualityRating: number | null;
+  totalPurchases: number;
+  paymentTerms: number;
+  currency: string;
   status: SupplierStatus;
+  isActive: boolean;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
