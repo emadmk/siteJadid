@@ -58,7 +58,10 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.22.4",
     "zustand": "^4.4.7",
-    "@elastic/elasticsearch": "^8.11.0"
+    "@elastic/elasticsearch": "^8.11.0",
+    "resend": "^3.0.0",
+    "algoliasearch": "^4.22.0",
+    "@sentry/nextjs": "^7.99.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
