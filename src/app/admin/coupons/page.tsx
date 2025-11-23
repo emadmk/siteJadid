@@ -1,13 +1,19 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Tag, Plus, Search } from 'lucide-react';
-
-// This page is a placeholder for the Coupons feature
-// The Coupon model needs to be added to Prisma schema
+import { prisma } from '@/lib/prisma';
 
 export default async function CouponsPage() {
-  // Placeholder data - will be replaced with actual database queries
-  const coupons: any[] = [];
+  // Fetch coupons from database
+  const coupons = await prisma.coupon.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Calculate stats
+  const totalCoupons = coupons.length;
+  const activeCoupons = coupons.filter(c => c.isActive && (!c.endsAt || c.endsAt > new Date())).length;
+  const totalUsage = coupons.reduce((sum, c) => sum + c.usageCount, 0);
+  const expiredCoupons = coupons.filter(c => c.endsAt && c.endsAt < new Date()).length;
 
   return (
     <div className="p-8">
@@ -26,15 +32,15 @@ export default async function CouponsPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-3xl font-bold text-black mb-1">0</div>
+          <div className="text-3xl font-bold text-black mb-1">{totalCoupons}</div>
           <div className="text-sm text-gray-600">Total Coupons</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-3xl font-bold text-safety-green-600 mb-1">0</div>
+          <div className="text-3xl font-bold text-safety-green-600 mb-1">{activeCoupons}</div>
           <div className="text-sm text-gray-600">Active</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-3xl font-bold text-blue-600 mb-1">0</div>
+          <div className="text-3xl font-bold text-blue-600 mb-1">{totalUsage}</div>
           <div className="text-sm text-gray-600">Times Used</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -42,7 +48,7 @@ export default async function CouponsPage() {
           <div className="text-sm text-gray-600">Total Discount</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-3xl font-bold text-gray-600 mb-1">0</div>
+          <div className="text-3xl font-bold text-gray-600 mb-1">{expiredCoupons}</div>
           <div className="text-sm text-gray-600">Expired</div>
         </div>
       </div>

@@ -2486,3 +2486,132 @@ model FrequentlyBoughtTogether {
   @@index([productId])
   @@index([confidence])
 }
+
+// ============================================
+// COUPON SYSTEM
+// ============================================
+
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+  BUY_X_GET_Y
+}
+
+model Coupon {
+  id              String      @id @default(cuid())
+  code            String      @unique
+  name            String
+  description     String?
+  type            CouponType
+
+  // Discount Value
+  value           Decimal     @db.Decimal(12, 2) // Percentage or fixed amount
+
+  // Conditions
+  minPurchase     Decimal?    @db.Decimal(12, 2)
+  maxDiscount     Decimal?    @db.Decimal(12, 2)
+
+  // Usage Limits
+  usageLimit      Int?        // Total usage limit (null = unlimited)
+  usageCount      Int         @default(0)
+  perUserLimit    Int?        // Per user limit (null = unlimited)
+
+  // Applicability
+  accountTypes    AccountType[]
+  loyaltyTiers    LoyaltyTier[]
+
+  // Validity
+  startsAt        DateTime
+  endsAt          DateTime?
+  isActive        Boolean     @default(true)
+
+  // Auto-apply
+  autoApply       Boolean     @default(false)
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+  @@index([startsAt, endsAt])
+}
+
+// ============================================
+// PRODUCT Q&A SYSTEM
+// ============================================
+
+enum QuestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProductQuestion {
+  id              String         @id @default(cuid())
+  productId       String
+  userId          String?        // null for guest questions
+
+  // Question
+  question        String
+  askerName       String?        // For guest questions
+  askerEmail      String?        // For guest questions
+
+  // Answer
+  answer          String?
+  answeredBy      String?        // Admin user ID
+  answeredAt      DateTime?
+
+  status          QuestionStatus @default(PENDING)
+
+  // Engagement
+  helpfulCount    Int            @default(0)
+
+  // Display
+  isPublic        Boolean        @default(true)
+  isPinned        Boolean        @default(false)
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// STOCK NOTIFICATION SYSTEM
+// ============================================
+
+enum NotificationStatus {
+  PENDING
+  NOTIFIED
+  CANCELLED
+}
+
+model StockNotification {
+  id              String             @id @default(cuid())
+  productId       String
+  userId          String?            // null for guest notifications
+
+  // Contact Info (for guests)
+  email           String
+  name            String?
+
+  // Status
+  status          NotificationStatus @default(PENDING)
+  notifiedAt      DateTime?
+
+  // Metadata
+  requestedStock  Int?               // Quantity they want to be notified about
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
