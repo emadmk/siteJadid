@@ -90,6 +90,20 @@ model User {
   subscriptions Subscription[]
   b2bMemberships B2BAccountMember[]
 
+  // New Relations - Advanced Features
+  productQuestions ProductQuestion[] @relation("UserProductQuestions")
+  stockNotifications StockNotification[] @relation("UserStockNotifications")
+  purchasedGiftCards GiftCard[] @relation("PurchasedGiftCards")
+  redeemedGiftCards GiftCard[] @relation("RedeemedGiftCards")
+  giftCardTransactions GiftCardTransaction[] @relation("UserGiftCardTransactions")
+  abandonedCarts AbandonedCart[] @relation("UserAbandonedCarts")
+  chatConversations ChatConversation[] @relation("UserChats")
+  assignedChats ChatConversation[] @relation("AssignedChats")
+  paymentTransactions PaymentTransaction[] @relation("UserPaymentTransactions")
+  emailLogs EmailLog[] @relation("UserEmailLogs")
+  errorLogs ErrorLog[] @relation("UserErrorLogs")
+  searchQueries SearchQuery[] @relation("UserSearchQueries")
+
   @@index([email])
   @@index([role])
   @@index([accountType])
@@ -2574,6 +2588,8 @@ model ProductQuestion {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
+  user            User?          @relation("UserProductQuestions", fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([productId])
   @@index([userId])
   @@index([status])
@@ -2608,6 +2624,8 @@ model StockNotification {
 
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
+
+  user            User?              @relation("UserStockNotifications", fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([productId])
   @@index([userId])
@@ -2665,6 +2683,8 @@ model GiftCard {
   updatedAt       DateTime       @updatedAt
 
   transactions    GiftCardTransaction[]
+  purchaser       User?          @relation("PurchasedGiftCards", fields: [purchasedBy], references: [id], onDelete: SetNull)
+  redeemer        User?          @relation("RedeemedGiftCards", fields: [redeemedBy], references: [id], onDelete: SetNull)
 
   @@index([code])
   @@index([status])
@@ -2701,10 +2721,12 @@ model GiftCardTransaction {
   createdAt       DateTime               @default(now())
 
   giftCard        GiftCard               @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  user            User?                  @relation("UserGiftCardTransactions", fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([giftCardId])
   @@index([orderId])
   @@index([createdAt])
+  @@index([userId])
 }
 
 // ============================================
@@ -2846,6 +2868,8 @@ model AbandonedCart {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
+  user            User               @relation("UserAbandonedCarts", fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([status])
   @@index([abandonedAt])
@@ -2908,6 +2932,8 @@ model ChatConversation {
   updatedAt       DateTime     @updatedAt
 
   messages        ChatMessage[]
+  user            User?        @relation("UserChats", fields: [userId], references: [id], onDelete: SetNull)
+  assignedAdmin   User?        @relation("AssignedChats", fields: [assignedTo], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([assignedTo])
@@ -3225,6 +3251,7 @@ model PaymentTransaction {
   updatedAt       DateTime @updatedAt
 
   refunds         PaymentRefund[]
+  user            User?    @relation("UserPaymentTransactions", fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([transactionId])
   @@index([orderId])
@@ -3375,6 +3402,7 @@ model EmailLog {
   updatedAt       DateTime      @updatedAt
 
   template        EmailTemplate? @relation(fields: [templateId], references: [id])
+  user            User?          @relation("UserEmailLogs", fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([templateId])
   @@index([toEmail])
@@ -3501,6 +3529,8 @@ model ErrorLog {
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+
+  user            User?         @relation("UserErrorLogs", fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([level])
   @@index([environment])
@@ -3723,6 +3753,8 @@ model SearchQuery {
   responseTime    Int?     // milliseconds
 
   createdAt       DateTime @default(now())
+
+  user            User?    @relation("UserSearchQueries", fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([query])
   @@index([userId])
