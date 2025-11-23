@@ -7,54 +7,73 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
 async function getUserProfile(userId: string) {
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      phone: true,
-      accountType: true,
-      role: true,
-      image: true,
-      isActive: true,
-      emailVerified: true,
-      createdAt: true,
-      loyaltyProfile: {
-        select: {
-          points: true,
-          lifetimePoints: true,
-          tier: true,
+  const [user, b2bMembership] = await Promise.all([
+    db.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        accountType: true,
+        role: true,
+        image: true,
+        isActive: true,
+        emailVerified: true,
+        createdAt: true,
+        loyaltyProfile: {
+          select: {
+            points: true,
+            lifetimePoints: true,
+            tier: true,
+          },
+        },
+        b2bProfile: {
+          select: {
+            companyName: true,
+            taxId: true,
+            creditLimit: true,
+            creditUsed: true,
+            paymentTerms: true,
+            status: true,
+          },
+        },
+        gsaProfile: {
+          select: {
+            contractNumber: true,
+            agencyName: true,
+            isActive: true,
+          },
+        },
+        _count: {
+          select: {
+            orders: true,
+            addresses: true,
+            reviews: true,
+          },
         },
       },
-      b2bProfile: {
-        select: {
-          companyName: true,
-          taxId: true,
-          creditLimit: true,
-          creditUsed: true,
-          paymentTerms: true,
-          status: true,
+    }),
+    db.b2BAccountMember.findFirst({
+      where: { userId },
+      include: {
+        account: {
+          select: {
+            companyName: true,
+          },
+        },
+        costCenter: {
+          select: {
+            name: true,
+            budget: true,
+            spent: true,
+          },
         },
       },
-      gsaProfile: {
-        select: {
-          contractNumber: true,
-          agencyName: true,
-          isActive: true,
-        },
-      },
-      _count: {
-        select: {
-          orders: true,
-          addresses: true,
-          reviews: true,
-        },
-      },
-    },
-  });
+    }),
+  ]);
 
-  return user;
+  return { user, b2bMembership };
 }
 
 export default async function ProfilePage() {
@@ -64,7 +83,7 @@ export default async function ProfilePage() {
     redirect('/auth/signin?callbackUrl=/profile');
   }
 
-  const user = await getUserProfile(session.user.id);
+  const { user, b2bMembership } = await getUserProfile(session.user.id);
 
   if (!user) {
     redirect('/auth/signin');
@@ -259,6 +278,101 @@ export default async function ProfilePage() {
                       />
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* B2B Membership (Multi-User) */}
+            {b2bMembership && (
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-600" />
+                    <h2 className="text-xl font-bold text-black">Team Member Role</h2>
+                    {b2bMembership.isActive ? (
+                      <span className="ml-auto text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="ml-auto text-xs bg-red-100 text-red-800 px-3 py-1 rounded-full">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <div className="text-sm text-gray-600 mb-1">Company</div>
+                      <div className="text-base font-medium text-black">
+                        {b2bMembership.account.companyName}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-sm text-gray-600 mb-1">Role</div>
+                      <div className="text-base font-medium text-black">
+                        {b2bMembership.role.replace(/_/g, ' ')}
+                      </div>
+                    </div>
+
+                    {b2bMembership.department && (
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">Department</div>
+                        <div className="text-base font-medium text-black">
+                          {b2bMembership.department}
+                        </div>
+                      </div>
+                    )}
+
+                    {b2bMembership.costCenter && (
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">Cost Center</div>
+                        <div className="text-base font-medium text-black">
+                          {b2bMembership.costCenter.name}
+                        </div>
+                      </div>
+                    )}
+
+                    {b2bMembership.orderLimit && (
+                      <div>
+                        <div className="text-sm text-gray-600 mb-1">Order Limit</div>
+                        <div className="text-base font-medium text-black">
+                          ${Number(b2bMembership.orderLimit).toLocaleString()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {b2bMembership.costCenter && (
+                    <div className="pt-4 border-t border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm text-gray-600">Cost Center Budget</div>
+                        <div className="text-lg font-bold text-black">
+                          ${Number(b2bMembership.costCenter.spent).toLocaleString()} / ${Number(b2bMembership.costCenter.budget).toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{
+                            width: `${Math.min((Number(b2bMembership.costCenter.spent) / Number(b2bMembership.costCenter.budget)) * 100, 100)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {(b2bMembership.role === 'ACCOUNT_ADMIN' || b2bMembership.role === 'APPROVER') && (
+                    <div className="pt-4 border-t border-gray-200">
+                      <Link href="/b2b/team">
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                          Manage Team Members
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
