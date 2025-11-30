@@ -71,7 +71,7 @@ interface PageData {
 export default function CategoryPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
   const { addToCart } = useCart();
-  const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist();
+  const { isInWishlist, toggleWishlist, isLoading: wishlistLoading } = useWishlist();
 
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
