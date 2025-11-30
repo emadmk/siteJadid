@@ -28,11 +28,14 @@ async function getSubscriptionData() {
         },
       },
       orders: {
-        select: {
-          id: true,
-          orderNumber: true,
-          total: true,
-          createdAt: true,
+        include: {
+          order: {
+            select: {
+              id: true,
+              orderNumber: true,
+              total: true,
+            },
+          },
         },
         orderBy: {
           createdAt: 'desc',
@@ -53,9 +56,10 @@ async function getSubscriptionData() {
   const totalMRR = subscriptions
     .filter((s) => s.status === 'ACTIVE')
     .reduce((sum, s) => {
-      const intervalDays =
-        s.interval === 'WEEKLY' ? 7 : s.interval === 'MONTHLY' ? 30 : s.interval === 'QUARTERLY' ? 90 : 365;
-      const monthlyValue = (Number(s.price) * 30) / intervalDays;
+      const frequencyDays =
+        s.frequency === 'WEEKLY' ? 7 : s.frequency === 'BIWEEKLY' ? 14 : s.frequency === 'MONTHLY' ? 30 : s.frequency === 'QUARTERLY' ? 90 : 365;
+      const itemsTotal = s.items.reduce((itemSum, item) => itemSum + Number(item.price) * item.quantity, 0);
+      const monthlyValue = (itemsTotal * 30) / frequencyDays;
       return sum + monthlyValue;
     }, 0);
 
@@ -87,8 +91,9 @@ export default async function SubscriptionsListPage() {
     EXPIRED: 'bg-gray-100 text-gray-800',
   };
 
-  const intervalLabels: Record<string, string> = {
+  const frequencyLabels: Record<string, string> = {
     WEEKLY: 'Weekly',
+    BIWEEKLY: 'Bi-Weekly',
     MONTHLY: 'Monthly',
     QUARTERLY: 'Quarterly',
     YEARLY: 'Yearly',
@@ -176,22 +181,22 @@ export default async function SubscriptionsListPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                        {intervalLabels[subscription.interval]}
+                        {frequencyLabels[subscription.frequency]}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-black">
-                      ${Number(subscription.price).toFixed(2)}
+                      ${subscription.items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0).toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {new Date(subscription.nextBillingDate).toLocaleDateString()}
+                      {new Date(subscription.nextOrderDate).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {lastOrder ? (
+                      {lastOrder?.order ? (
                         <Link
-                          href={`/admin/orders/${lastOrder.id}`}
+                          href={`/admin/orders/${lastOrder.order.id}`}
                           className="text-safety-green-600 hover:text-safety-green-700"
                         >
-                          {lastOrder.orderNumber}
+                          {lastOrder.order.orderNumber}
                         </Link>
                       ) : (
                         '-'

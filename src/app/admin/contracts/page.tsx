@@ -9,11 +9,19 @@ import { FileText, CheckCircle, Building2 } from 'lucide-react';
 export default async function ContractsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect('/auth/signin');
-  
+
   const contracts = await db.contract.findMany({
     include: {
-      b2bProfile: { select: { companyName: true } },
-      gsaProfile: { select: { agencyName: true } },
+      user: {
+        select: {
+          name: true,
+          email: true,
+          accountType: true,
+          b2bProfile: { select: { companyName: true } },
+          gsaProfile: { select: { agencyName: true } },
+        },
+      },
+      items: true,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -31,7 +39,7 @@ export default async function ContractsPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Contract #</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Customer</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Value</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Discount</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Status</th>
             </tr>
           </thead>
@@ -39,9 +47,11 @@ export default async function ContractsPage() {
             {contracts.map((c: any) => (
               <tr key={c.id}>
                 <td className="px-6 py-4">{c.contractNumber}</td>
-                <td className="px-6 py-4">{c.b2bProfile?.companyName || c.gsaProfile?.agencyName}</td>
-                <td className="px-6 py-4">{c.b2bProfileId ? 'B2B' : 'GSA'}</td>
-                <td className="px-6 py-4">${Number(c.value).toFixed(2)}</td>
+                <td className="px-6 py-4">
+                  {c.user?.b2bProfile?.companyName || c.user?.gsaProfile?.agencyName || c.user?.name || 'N/A'}
+                </td>
+                <td className="px-6 py-4">{c.user?.accountType || 'N/A'}</td>
+                <td className="px-6 py-4">{Number(c.discountPercent)}%</td>
                 <td className="px-6 py-4">{c.status}</td>
               </tr>
             ))}
