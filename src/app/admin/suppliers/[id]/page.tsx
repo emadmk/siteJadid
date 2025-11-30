@@ -46,7 +46,16 @@ async function getSupplier(id: string) {
     },
   });
 
-  return supplier;
+  if (!supplier) return null;
+
+  // Convert Decimal fields to numbers for component compatibility
+  return {
+    ...supplier,
+    rating: supplier.rating ? Number(supplier.rating) : null,
+    onTimeDeliveryRate: supplier.onTimeDeliveryRate ? Number(supplier.onTimeDeliveryRate) : null,
+    qualityRating: supplier.qualityRating ? Number(supplier.qualityRating) : null,
+    totalPurchases: Number(supplier.totalPurchases),
+  };
 }
 
 export default async function SupplierDetailPage({
