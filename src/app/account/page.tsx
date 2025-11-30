@@ -51,7 +51,7 @@ async function getAccountOverview(userId: string) {
       },
     }),
     db.wishlistItem.count({
-      where: { userId },
+      where: { wishlist: { userId } },
     }),
     db.address.count({
       where: { userId },
