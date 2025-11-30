@@ -47,7 +47,6 @@ async function saveBanners(banners: Banner[]): Promise<void> {
       value: JSON.stringify(banners),
       type: 'JSON',
       category: 'marketing',
-      label: 'Site Banners',
     },
   });
 }
