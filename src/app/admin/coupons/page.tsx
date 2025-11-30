@@ -149,14 +149,15 @@ export default async function CouponsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
-                      {coupon.discountType === 'PERCENTAGE' ? 'Percentage' :
-                       coupon.discountType === 'FIXED' ? 'Fixed Amount' : 'Free Shipping'}
+                      {coupon.type === 'PERCENTAGE' ? 'Percentage' :
+                       coupon.type === 'FIXED_AMOUNT' ? 'Fixed Amount' :
+                       coupon.type === 'FREE_SHIPPING' ? 'Free Shipping' : 'Buy X Get Y'}
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-black">
-                      {coupon.discountType === 'PERCENTAGE'
-                        ? `${Number(coupon.discountValue)}%`
-                        : coupon.discountType === 'FIXED'
-                        ? `$${Number(coupon.discountValue).toFixed(2)}`
+                      {coupon.type === 'PERCENTAGE'
+                        ? `${Number(coupon.value)}%`
+                        : coupon.type === 'FIXED_AMOUNT'
+                        ? `$${Number(coupon.value).toFixed(2)}`
                         : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
