@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
         orderNumber,
         userId: session.user.id,
         ...(b2bMembership && { createdByMemberId: b2bMembership.id }),
-        status: requiresApproval ? 'PENDING_APPROVAL' : 'PENDING',
+        status: requiresApproval ? 'ON_HOLD' : 'PENDING',
         paymentStatus: 'PENDING',
         paymentMethod: paymentMethod || 'CREDIT_CARD',
         shippingMethod: shippingMethod || 'GROUND',

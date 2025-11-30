@@ -147,7 +147,7 @@ export async function PATCH(
 
     // Handle cancel action
     if (action === 'cancel') {
-      if (order.status !== 'PENDING' && order.status !== 'PENDING_APPROVAL' && order.status !== 'PROCESSING') {
+      if (order.status !== 'PENDING' && order.status !== 'ON_HOLD' && order.status !== 'PROCESSING') {
         return NextResponse.json(
           { error: 'Order cannot be cancelled' },
           { status: 400 }
