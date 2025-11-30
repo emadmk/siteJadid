@@ -1,4 +1,5 @@
 // Elasticsearch client - optional dependency
+// This module is server-only and should never be imported in client components
 let esClientInstance: any = null;
 let elasticsearchAvailable = false;
 

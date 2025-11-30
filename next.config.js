@@ -10,7 +10,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
-    serverComponentsExternalPackages: ['@elastic/elasticsearch', 'undici'],
+    serverComponentsExternalPackages: ['@elastic/elasticsearch', '@elastic/transport', 'undici'],
   },
   // Environment variables that should be available on the client side
   env: {
@@ -71,19 +71,12 @@ const nextConfig = {
       };
     }
 
-    // Exclude elasticsearch and undici from webpack bundling entirely
-    // This prevents webpack from parsing private class fields (#target)
-    const originalExternals = config.externals || [];
-    config.externals = [
-      ...originalExternals,
-      function ({ context, request }, callback) {
-        // Externalize undici and elastic packages
-        if (/^undici/.test(request) || /^@elastic/.test(request)) {
-          return callback(null, 'commonjs ' + request);
-        }
-        callback();
-      },
-    ];
+    // Skip parsing undici to avoid private class field issues
+    config.module = config.module || {};
+    config.module.noParse = config.module.noParse || [];
+    if (Array.isArray(config.module.noParse)) {
+      config.module.noParse.push(/node_modules[/\\]undici/);
+    }
 
     return config;
   },
