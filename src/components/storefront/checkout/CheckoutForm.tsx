@@ -876,7 +876,7 @@ export function CheckoutForm({
           {currentStep === 'review' ? (
             <Button
               onClick={handlePlaceOrder}
-              disabled={loading || exceedsOrderLimit}
+              disabled={loading || !!exceedsOrderLimit}
               className="bg-safety-green-600 hover:bg-safety-green-700"
             >
               {loading ? (
