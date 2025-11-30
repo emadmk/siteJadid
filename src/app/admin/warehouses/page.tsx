@@ -36,12 +36,12 @@ async function getWarehouseData() {
         status: 'PENDING',
       },
       include: {
-        fromWarehouse: true,
-        toWarehouse: true,
+        sourceWarehouse: true,
+        destinationWarehouse: true,
       },
       take: 5,
       orderBy: {
-        requestedDate: 'desc',
+        createdAt: 'desc',
       },
     }),
     db.warehouseStock.findMany({
@@ -229,10 +229,10 @@ export default async function WarehousesPage() {
               {transfers.map((transfer) => (
                 <div key={transfer.id} className="p-4">
                   <div className="text-sm font-medium text-black mb-1">
-                    {transfer.fromWarehouse.name} → {transfer.toWarehouse.name}
+                    {transfer.sourceWarehouse.name} → {transfer.destinationWarehouse.name}
                   </div>
                   <div className="text-xs text-gray-600">
-                    {new Date(transfer.requestedDate).toLocaleDateString()}
+                    {new Date(transfer.createdAt).toLocaleDateString()}
                   </div>
                   <span className="inline-block mt-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded">
                     Pending
