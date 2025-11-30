@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { FileText, CheckCircle, XCircle, Clock, DollarSign, Eye } from 'lucide-react';
 
-type QuoteStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CONVERTED' | 'EXPIRED';
+type QuoteStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'CONVERTED';
 
 async function getQuotes() {
   const quotes = await db.quote.findMany({
@@ -41,9 +41,10 @@ async function getQuotes() {
 }
 
 async function getQuoteStats() {
-  const [pending, approved, rejected, converted, total] = await Promise.all([
-    db.quote.count({ where: { status: 'PENDING' } }),
-    db.quote.count({ where: { status: 'APPROVED' } }),
+  const [draft, sent, accepted, rejected, converted, total] = await Promise.all([
+    db.quote.count({ where: { status: 'DRAFT' } }),
+    db.quote.count({ where: { status: 'SENT' } }),
+    db.quote.count({ where: { status: 'ACCEPTED' } }),
     db.quote.count({ where: { status: 'REJECTED' } }),
     db.quote.count({ where: { status: 'CONVERTED' } }),
     db.quote.count(),
@@ -51,12 +52,14 @@ async function getQuoteStats() {
 
   const totalValue = await db.quote.aggregate({
     _sum: { total: true },
-    where: { status: { in: ['PENDING', 'APPROVED'] } },
+    where: { status: { in: ['DRAFT', 'SENT', 'ACCEPTED'] } },
   });
 
   return {
-    pending,
-    approved,
+    draft,
+    sent,
+    pending: draft + sent, // Combined for display
+    accepted,
     rejected,
     converted,
     total,
@@ -79,8 +82,10 @@ export default async function QuotesPage() {
   const [quotes, stats] = await Promise.all([getQuotes(), getQuoteStats()]);
 
   const statusColors: Record<QuoteStatus, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-800',
-    APPROVED: 'bg-green-100 text-green-800',
+    DRAFT: 'bg-gray-100 text-gray-800',
+    SENT: 'bg-yellow-100 text-yellow-800',
+    VIEWED: 'bg-orange-100 text-orange-800',
+    ACCEPTED: 'bg-green-100 text-green-800',
     REJECTED: 'bg-red-100 text-red-800',
     CONVERTED: 'bg-blue-100 text-blue-800',
     EXPIRED: 'bg-gray-100 text-gray-800',
@@ -110,9 +115,9 @@ export default async function QuotesPage() {
             <div className="p-2 bg-green-100 rounded-lg">
               <CheckCircle className="w-5 h-5 text-green-600" />
             </div>
-            <span className="text-2xl font-bold text-black">{stats.approved}</span>
+            <span className="text-2xl font-bold text-black">{stats.accepted}</span>
           </div>
-          <div className="text-sm text-gray-600">Approved</div>
+          <div className="text-sm text-gray-600">Accepted</div>
         </div>
 
         <div className="bg-white rounded-lg border p-6">
@@ -232,13 +237,13 @@ export default async function QuotesPage() {
                             View
                           </Button>
                         </Link>
-                        {quote.status === 'PENDING' && (
+                        {(quote.status === 'DRAFT' || quote.status === 'SENT' || quote.status === 'VIEWED') && (
                           <>
                             <Button
                               size="sm"
                               className="bg-green-600 hover:bg-green-700 text-white"
                             >
-                              Approve
+                              Accept
                             </Button>
                             <Button
                               size="sm"
@@ -249,7 +254,7 @@ export default async function QuotesPage() {
                             </Button>
                           </>
                         )}
-                        {quote.status === 'APPROVED' && (
+                        {quote.status === 'ACCEPTED' && (
                           <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
                             Convert to Order
                           </Button>

@@ -67,24 +67,30 @@ export default async function RMAsPage() {
 
   const { rmas, stats } = await getRMAData();
 
-  const pending = stats.find((s) => s.status === 'PENDING')?._count || 0;
+  const pending = stats.find((s) => s.status === 'REQUESTED')?._count || 0;
   const approved = stats.find((s) => s.status === 'APPROVED')?._count || 0;
   const totalRefunds = stats.reduce((sum, s) => sum + Number(s._sum.refundAmount || 0), 0);
 
   const statusColors: Record<string, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-800',
+    REQUESTED: 'bg-yellow-100 text-yellow-800',
     APPROVED: 'bg-safety-green-100 text-safety-green-800',
     REJECTED: 'bg-red-100 text-red-800',
-    RECEIVED: 'bg-blue-100 text-blue-800',
-    COMPLETED: 'bg-gray-100 text-gray-800',
+    ITEMS_RECEIVED: 'bg-blue-100 text-blue-800',
+    INSPECTION: 'bg-purple-100 text-purple-800',
+    REFUNDED: 'bg-gray-100 text-gray-800',
+    REPLACED: 'bg-teal-100 text-teal-800',
+    CLOSED: 'bg-gray-100 text-gray-800',
   };
 
   const statusIcons: Record<string, any> = {
-    PENDING: Clock,
+    REQUESTED: Clock,
     APPROVED: CheckCircle,
     REJECTED: XCircle,
-    RECEIVED: Package,
-    COMPLETED: CheckCircle,
+    ITEMS_RECEIVED: Package,
+    INSPECTION: Clock,
+    REFUNDED: DollarSign,
+    REPLACED: RotateCcw,
+    CLOSED: CheckCircle,
   };
 
   return (
