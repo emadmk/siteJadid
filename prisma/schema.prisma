@@ -419,6 +419,7 @@ model Product {
   poReceiptItems  POReceiptItem[]
   bulkOrderTemplateItems BulkOrderTemplateItem[]
   shoppingListItems ShoppingListItem[]
+  stockNotifications StockNotification[]
 
   @@index([slug])
   @@index([sku])
@@ -2626,6 +2627,7 @@ model StockNotification {
   updatedAt       DateTime           @updatedAt
 
   user            User?              @relation("UserStockNotifications", fields: [userId], references: [id], onDelete: SetNull)
+  product         Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
   @@index([userId])
