@@ -255,7 +255,7 @@ export default async function B2BDashboardPage() {
               <DollarSign className="w-5 h-5 text-blue-600" />
             </div>
             <div className="text-2xl font-bold text-black">
-              ${Number(b2bProfile.creditLimit - b2bProfile.currentBalance).toLocaleString()}
+              ${(Number(b2bProfile.creditLimit) - Number(b2bProfile.currentBalance)).toLocaleString()}
             </div>
           </div>
 
