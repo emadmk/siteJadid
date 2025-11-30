@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
         title,
         comment,
         images: images || [],
-        isVerifiedPurchase: false, // TODO: Check if user purchased this product
+        isVerified: false, // TODO: Check if user purchased this product
       },
       include: {
         user: {
