@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
       data: {
         orderNumber,
         userId: session.user.id,
-        accountType: user?.accountType || 'RETAIL',
+        accountType: user?.accountType || 'B2C',
         ...(b2bMembership && { createdByMemberId: b2bMembership.id }),
         status: requiresApproval ? 'ON_HOLD' : 'PENDING',
         paymentStatus: 'PENDING',
