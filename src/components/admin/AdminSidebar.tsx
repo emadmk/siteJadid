@@ -16,7 +16,7 @@ import {
   Warehouse,
   TrendingUp,
   ChevronDown,
-  ChevronRight,
+  ChevronLeft,
   Layers,
   PackageX,
   ClipboardList,
@@ -35,10 +35,45 @@ import {
   BadgeCheck,
   Boxes,
   Link2,
+  Menu,
+  X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, createContext, useContext } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { hasAnyPermission, type UserRole, type Permission } from '@/lib/permissions';
+
+// Sidebar context for collapse state
+interface SidebarContextType {
+  collapsed: boolean;
+  setCollapsed: (collapsed: boolean) => void;
+  mobileOpen: boolean;
+  setMobileOpen: (open: boolean) => void;
+  toggle: () => void;
+}
+
+const SidebarContext = createContext<SidebarContextType>({
+  collapsed: false,
+  setCollapsed: () => {},
+  mobileOpen: false,
+  setMobileOpen: () => {},
+  toggle: () => {},
+});
+
+export const useSidebar = () => useContext(SidebarContext);
+
+// Provider component for external use
+export function SidebarProvider({ children }: { children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const toggle = () => setMobileOpen(prev => !prev);
+
+  return (
+    <SidebarContext.Provider value={{ collapsed, setCollapsed, mobileOpen, setMobileOpen, toggle }}>
+      {children}
+    </SidebarContext.Provider>
+  );
+}
 
 interface MenuItem {
   title: string;
@@ -64,10 +99,8 @@ const menuItems: MenuItem[] = [
       { title: 'Add Product', href: '/admin/products/new', icon: Package, permissions: ['products.create'] },
       { title: 'Categories', href: '/admin/categories', icon: FolderTree, permissions: ['products.view'] },
       { title: 'Attributes', href: '/admin/attributes', icon: Layers, permissions: ['products.view'] },
-      { title: 'Product Attributes', href: '/admin/product-attributes', icon: Layers, permissions: ['products.view'] },
       { title: 'Bundles', href: '/admin/bundles', icon: Boxes, permissions: ['products.view'] },
       { title: 'Inventory', href: '/admin/inventory', icon: Warehouse, permissions: ['inventory.view'] },
-      { title: 'Backorders', href: '/admin/backorders', icon: PackageX, permissions: ['inventory.view'] },
     ],
   },
   {
@@ -76,9 +109,7 @@ const menuItems: MenuItem[] = [
     permissions: ['orders.view'],
     children: [
       { title: 'All Orders', href: '/admin/orders', icon: ShoppingCart, permissions: ['orders.view'] },
-      { title: 'Pending Orders', href: '/admin/orders?status=PENDING', icon: ShoppingCart, permissions: ['orders.view'] },
-      { title: 'Shipped Orders', href: '/admin/orders?status=SHIPPED', icon: ShoppingCart, permissions: ['orders.view'] },
-      { title: 'Backorders List', href: '/admin/backorders-list', icon: PackageX, permissions: ['orders.view'] },
+      { title: 'Backorders', href: '/admin/backorders-list', icon: PackageX, permissions: ['orders.view'] },
       { title: 'RMAs', href: '/admin/rmas', icon: RotateCcw, permissions: ['orders.view'] },
     ],
   },
@@ -90,9 +121,7 @@ const menuItems: MenuItem[] = [
       { title: 'All Customers', href: '/admin/customers', icon: Users, permissions: ['customers.view'] },
       { title: 'B2B Customers', href: '/admin/customers/b2b', icon: Building2, permissions: ['customers.view'] },
       { title: 'GSA Customers', href: '/admin/customers/gsa', icon: BadgeCheck, permissions: ['customers.view'] },
-      { title: 'GSA Approvals', href: '/admin/customers/gsa-approvals', icon: FileCheck, permissions: ['customers.manage'] },
       { title: 'Customer Groups', href: '/admin/customers/groups', icon: Users, permissions: ['customers.view'] },
-      { title: 'Customer Credit', href: '/admin/customer-credit', icon: CreditCard, permissions: ['customers.manage'] },
     ],
   },
   {
@@ -108,12 +137,6 @@ const menuItems: MenuItem[] = [
     permissions: ['orders.view'],
   },
   {
-    title: 'Purchase Orders',
-    href: '/admin/purchase-orders',
-    icon: ClipboardList,
-    permissions: ['inventory.view'],
-  },
-  {
     title: 'Suppliers',
     href: '/admin/suppliers',
     icon: Truck,
@@ -126,22 +149,10 @@ const menuItems: MenuItem[] = [
     permissions: ['inventory.view'],
   },
   {
-    title: 'Subscriptions',
-    href: '/admin/subscriptions',
-    icon: Calendar,
-    permissions: ['orders.view'],
-  },
-  {
     title: 'Reviews',
     href: '/admin/reviews',
     icon: Star,
     permissions: ['products.view'],
-  },
-  {
-    title: 'Wishlists',
-    href: '/admin/wishlists',
-    icon: Heart,
-    permissions: ['customers.view'],
   },
   {
     title: 'Analytics',
@@ -149,9 +160,8 @@ const menuItems: MenuItem[] = [
     permissions: ['analytics.view'],
     children: [
       { title: 'Overview', href: '/admin/analytics', icon: TrendingUp, permissions: ['analytics.view'] },
-      { title: 'Sales Report', href: '/admin/analytics/sales', icon: DollarSign, permissions: ['analytics.view'] },
-      { title: 'Product Performance', href: '/admin/analytics/products', icon: Package, permissions: ['analytics.view'] },
-      { title: 'Customer Insights', href: '/admin/analytics/customers', icon: Users, permissions: ['analytics.view'] },
+      { title: 'Sales', href: '/admin/analytics/sales', icon: DollarSign, permissions: ['analytics.view'] },
+      { title: 'Products', href: '/admin/analytics/products', icon: Package, permissions: ['analytics.view'] },
     ],
   },
   {
@@ -162,8 +172,6 @@ const menuItems: MenuItem[] = [
       { title: 'Revenue', href: '/admin/accounting/revenue', icon: DollarSign, permissions: ['accounting.view'] },
       { title: 'Payments', href: '/admin/accounting/payments', icon: Receipt, permissions: ['accounting.view'] },
       { title: 'Invoices', href: '/admin/accounting/invoices', icon: FileText, permissions: ['accounting.view'] },
-      { title: 'Tax Exemptions', href: '/admin/tax-exemptions', icon: Percent, permissions: ['accounting.view'] },
-      { title: 'Commissions', href: '/admin/commissions', icon: DollarSign, permissions: ['accounting.view'] },
     ],
   },
   {
@@ -171,17 +179,10 @@ const menuItems: MenuItem[] = [
     icon: Tag,
     permissions: ['marketing.view'],
     children: [
-      { title: 'Promotions', href: '/admin/promotions', icon: Tag, permissions: ['marketing.view'] },
       { title: 'Coupons', href: '/admin/coupons', icon: Percent, permissions: ['marketing.view'] },
       { title: 'Banners', href: '/admin/marketing/banners', icon: Image, permissions: ['marketing.view'] },
-      { title: 'Email Marketing', href: '/admin/marketing/emails', icon: Mail, permissions: ['marketing.view'] },
+      { title: 'Emails', href: '/admin/marketing/emails', icon: Mail, permissions: ['marketing.view'] },
     ],
-  },
-  {
-    title: 'Reports',
-    href: '/admin/reports',
-    icon: BarChart3,
-    permissions: ['analytics.view'],
   },
   {
     title: 'Settings',
@@ -196,37 +197,64 @@ const menuItems: MenuItem[] = [
 
 function SidebarMenuItem({ item, depth = 0 }: { item: MenuItem; depth?: number }) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(true);
+  const { collapsed } = useSidebar();
+  const [isOpen, setIsOpen] = useState(false);
   const hasChildren = item.children && item.children.length > 0;
-  const isActive = item.href === pathname;
+  const isActive = item.href === pathname || (item.href && pathname?.startsWith(item.href + '/'));
+  const isChildActive = item.children?.some(child =>
+    child.href === pathname || (child.href && pathname?.startsWith(child.href + '/'))
+  );
+
+  // Auto-open if child is active
+  useState(() => {
+    if (isChildActive) setIsOpen(true);
+  });
 
   if (hasChildren) {
     return (
-      <div>
+      <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            'w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-colors rounded-lg',
-            'hover:bg-gray-100 text-gray-700'
+            'w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
+            'hover:bg-gray-100 dark:hover:bg-gray-800',
+            isChildActive
+              ? 'text-safety-green-600 dark:text-safety-green-400 bg-safety-green-50 dark:bg-safety-green-900/20'
+              : 'text-gray-700 dark:text-gray-300',
+            collapsed && 'justify-center px-2'
           )}
         >
           <div className="flex items-center gap-3">
-            <item.icon className="w-5 h-5" />
-            <span>{item.title}</span>
+            <item.icon className={cn('w-5 h-5 flex-shrink-0', isChildActive && 'text-safety-green-600 dark:text-safety-green-400')} />
+            {!collapsed && <span>{item.title}</span>}
           </div>
-          {isOpen ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
+          {!collapsed && (
+            <motion.div
+              animate={{ rotate: isOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="w-4 h-4" />
+            </motion.div>
           )}
         </button>
-        {isOpen && item.children && (
-          <div className="ml-4 mt-1 space-y-1">
-            {item.children.map((child) => (
-              <SidebarMenuItem key={child.title} item={child} depth={depth + 1} />
-            ))}
-          </div>
-        )}
+
+        <AnimatePresence>
+          {isOpen && !collapsed && item.children && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="ml-4 mt-1 pl-4 border-l-2 border-gray-200 dark:border-gray-700 space-y-1">
+                {item.children.map((child) => (
+                  <SidebarMenuItem key={child.title} item={child} depth={depth + 1} />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -235,19 +263,39 @@ function SidebarMenuItem({ item, depth = 0 }: { item: MenuItem; depth?: number }
     <Link
       href={item.href || '#'}
       className={cn(
-        'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors rounded-lg',
+        'group relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
         isActive
-          ? 'bg-safety-green-600 text-white'
-          : 'text-gray-700 hover:bg-gray-100'
+          ? 'bg-safety-green-600 text-white shadow-lg shadow-safety-green-600/25'
+          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800',
+        collapsed && 'justify-center px-2'
       )}
     >
-      <item.icon className="w-5 h-5" />
-      <span>{item.title}</span>
+      {isActive && (
+        <motion.div
+          layoutId="activeIndicator"
+          className="absolute inset-0 bg-safety-green-600 rounded-xl"
+          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        />
+      )}
+      <span className="relative z-10 flex items-center gap-3">
+        <item.icon className="w-5 h-5 flex-shrink-0" />
+        {!collapsed && <span>{item.title}</span>}
+      </span>
+
+      {/* Tooltip for collapsed mode */}
+      {collapsed && (
+        <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-md
+                        opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+          {item.title}
+        </div>
+      )}
     </Link>
   );
 }
 
 export function AdminSidebar({ userRole }: { userRole?: UserRole }) {
+  const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar();
+
   // Filter menu items based on user permissions
   const filteredMenuItems = menuItems.filter((item) => {
     if (!userRole || !item.permissions) return true;
@@ -266,41 +314,91 @@ export function AdminSidebar({ userRole }: { userRole?: UserRole }) {
   });
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 overflow-y-auto">
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
-        <Link href="/admin" className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-safety-green-600 rounded-lg flex items-center justify-center">
-            <LayoutDashboard className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <div className="font-bold text-lg text-black">Admin Panel</div>
-            <div className="text-xs text-gray-600">SafetyPro Store</div>
-          </div>
-        </Link>
-      </div>
+    <>
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMobileOpen(false)}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Navigation */}
-      <nav className="p-4 space-y-1">
-        {filteredMenuItems.map((item) => (
-          <SidebarMenuItem key={item.title} item={item} />
-        ))}
-      </nav>
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg lg:hidden"
+      >
+        <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+      </button>
 
-      {/* Quick Stats */}
-      <div className="p-4 m-4 bg-gray-50 rounded-lg border border-gray-200">
-        <div className="text-xs font-medium text-gray-600 mb-2">Quick Stats</div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-700">Today's Orders</span>
-            <span className="font-bold text-black">-</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-700">Revenue</span>
-            <span className="font-bold text-safety-green-600">-</span>
-          </div>
+      {/* Sidebar */}
+      <motion.aside
+        initial={false}
+        animate={{ width: collapsed ? 80 : 280 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className={cn(
+          'fixed lg:sticky top-0 left-0 h-screen z-50 lg:z-auto',
+          'bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800',
+          'flex flex-col overflow-hidden',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+          <Link href="/admin" className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-safety-green-500 to-safety-green-700 rounded-xl flex items-center justify-center shadow-lg">
+              <LayoutDashboard className="w-5 h-5 text-white" />
+            </div>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+              >
+                <div className="font-bold text-gray-900 dark:text-white">SafetyPro</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Admin Panel</div>
+              </motion.div>
+            )}
+          </Link>
+
+          {/* Mobile close button */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
-      </div>
-    </aside>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
+          {filteredMenuItems.map((item) => (
+            <SidebarMenuItem key={item.title} item={item} />
+          ))}
+        </nav>
+
+        {/* Collapse button */}
+        <div className="p-3 border-t border-gray-200 dark:border-gray-800 hidden lg:block">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={cn(
+              'w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
+              'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800',
+              collapsed && 'justify-center'
+            )}
+          >
+            <motion.div animate={{ rotate: collapsed ? 180 : 0 }}>
+              <ChevronLeft className="w-5 h-5" />
+            </motion.div>
+            {!collapsed && <span>Collapse</span>}
+          </button>
+        </div>
+      </motion.aside>
+    </>
   );
 }

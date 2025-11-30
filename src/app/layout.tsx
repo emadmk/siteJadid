@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
-import { Header } from '@/components/Header';
+import { ConditionalHeader } from '@/components/ConditionalHeader';
 
 export const metadata: Metadata = {
   title: 'SafetyPro Store - Professional Safety Equipment',
@@ -17,7 +17,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <Providers>
-          <Header />
+          <ConditionalHeader />
           {children}
         </Providers>
       </body>
