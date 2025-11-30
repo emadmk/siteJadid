@@ -320,25 +320,25 @@ export async function GET(
     <div class="totals">
       <div class="totals-row">
         <span>Subtotal</span>
-        <span>$${Number(order.subtotalAmount).toFixed(2)}</span>
+        <span>$${Number(order.subtotal).toFixed(2)}</span>
       </div>
-      ${order.discountAmount && Number(order.discountAmount) > 0 ? `
+      ${order.discount && Number(order.discount) > 0 ? `
         <div class="totals-row">
           <span>Discount</span>
-          <span>-$${Number(order.discountAmount).toFixed(2)}</span>
+          <span>-$${Number(order.discount).toFixed(2)}</span>
         </div>
       ` : ''}
       <div class="totals-row">
         <span>Shipping</span>
-        <span>$${Number(order.shippingAmount || 0).toFixed(2)}</span>
+        <span>$${Number(order.shipping || 0).toFixed(2)}</span>
       </div>
       <div class="totals-row">
         <span>Tax</span>
-        <span>$${Number(order.taxAmount || 0).toFixed(2)}</span>
+        <span>$${Number(order.tax || 0).toFixed(2)}</span>
       </div>
       <div class="totals-row total">
         <span>Total</span>
-        <span>$${Number(order.totalAmount).toFixed(2)}</span>
+        <span>$${Number(order.total).toFixed(2)}</span>
       </div>
     </div>
 
