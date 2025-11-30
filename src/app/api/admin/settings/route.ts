@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update each setting
-    const updates = [];
+    const updates: Promise<any>[] = [];
     for (const [key, value] of Object.entries(settings)) {
       const fullKey = `${category}.${key}`;
       const defaultConfig = DEFAULT_SETTINGS[fullKey as keyof typeof DEFAULT_SETTINGS];
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await prisma.$transaction(updates);
+    await Promise.all(updates);
 
     return NextResponse.json({
       success: true,
