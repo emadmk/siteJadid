@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if balance
-    if (giftCard.currentBalance <= 0) {
+    if (Number(giftCard.currentBalance) <= 0) {
       return NextResponse.json({
         valid: false,
         error: 'Gift card has no remaining balance',
@@ -51,10 +51,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       valid: true,
       code: giftCard.code,
-      balance: giftCard.currentBalance,
-      initialAmount: giftCard.initialAmount,
+      balance: Number(giftCard.currentBalance),
+      initialAmount: Number(giftCard.initialAmount),
       expiresAt: giftCard.expiresAt,
-      minPurchase: giftCard.minPurchase,
+      minPurchase: giftCard.minPurchase ? Number(giftCard.minPurchase) : null,
     });
   } catch (error: any) {
     console.error('Error checking gift card:', error);
