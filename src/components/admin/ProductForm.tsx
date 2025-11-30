@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Plus, X, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface ProductFormProps {
@@ -14,7 +14,9 @@ interface ProductFormProps {
 export function ProductForm({ product, categories }: ProductFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -89,6 +91,80 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
   const handleRemoveImage = (index: number) => {
     setImages(images.filter((_, i) => i !== index));
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach(file => {
+        formData.append('files', file);
+      });
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to upload images');
+      }
+
+      setImages([...images, ...data.urls]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach(file => {
+        if (file.type.startsWith('image/')) {
+          formData.append('files', file);
+        }
+      });
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to upload images');
+      }
+
+      setImages([...images, ...data.urls]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
   };
 
   const handleAddTierPrice = () => {
@@ -422,6 +498,42 @@ export function ProductForm({ product, categories }: ProductFormProps) {
         <h2 className="text-xl font-bold text-black mb-6">Product Images</h2>
 
         <div className="space-y-4">
+          {/* Upload Zone */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-safety-green-500 transition-colors cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            {uploading ? (
+              <div className="flex flex-col items-center">
+                <Loader2 className="w-12 h-12 text-safety-green-600 animate-spin mb-3" />
+                <p className="text-gray-600">Uploading images...</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <Upload className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-700 font-medium mb-1">
+                  Drop images here or click to upload
+                </p>
+                <p className="text-sm text-gray-500">
+                  Supports: JPEG, PNG, GIF, WebP (max 5MB each)
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Image Preview Grid */}
           {images.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {images.map((img, index) => (
@@ -448,25 +560,31 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             </div>
           )}
 
-          <div className="flex gap-2">
-            <input
-              type="url"
-              value={imageInput}
-              onChange={(e) => setImageInput(e.target.value)}
-              placeholder="Enter image URL..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-            />
-            <Button
-              type="button"
-              onClick={handleAddImage}
-              className="bg-safety-green-600 hover:bg-safety-green-700"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Add Image
-            </Button>
+          {/* URL Input (alternative method) */}
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <p className="text-sm text-gray-600 mb-2">Or add image by URL:</p>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={imageInput}
+                onChange={(e) => setImageInput(e.target.value)}
+                placeholder="Enter image URL..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+              />
+              <Button
+                type="button"
+                onClick={handleAddImage}
+                variant="outline"
+                className="border-safety-green-600 text-safety-green-600 hover:bg-safety-green-50"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add URL
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-gray-600">
-            Add product images by URL. First image will be the primary image.
+
+          <p className="text-xs text-gray-500">
+            First image will be the primary product image. Drag images to reorder.
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,7 +18,9 @@ import {
   Users,
   AlertCircle,
   Check,
-  X
+  CreditCard,
+  Star,
+  Gift,
 } from 'lucide-react';
 import Link from 'next/link';
 import { ThemeToggle } from './ui/ThemeToggle';
@@ -27,51 +29,45 @@ import { useSidebar } from './AdminSidebar';
 
 interface Notification {
   id: string;
-  type: 'order' | 'stock' | 'customer' | 'system';
+  type: string;
   title: string;
   message: string;
-  time: string;
-  read: boolean;
+  createdAt: string;
+  isRead: boolean;
 }
-
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'order',
-    title: 'New Order',
-    message: 'Order #1234 has been placed',
-    time: '2 min ago',
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'stock',
-    title: 'Low Stock Alert',
-    message: 'Product "Wireless Headphones" is running low',
-    time: '1 hour ago',
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'customer',
-    title: 'New Customer',
-    message: 'John Doe just created an account',
-    time: '3 hours ago',
-    read: true,
-  },
-];
 
 const NotificationIcon = ({ type }: { type: string }) => {
   switch (type) {
-    case 'order':
+    case 'ORDER_UPDATE':
       return <ShoppingCart className="w-4 h-4 text-blue-500" />;
-    case 'stock':
-      return <Package className="w-4 h-4 text-orange-500" />;
-    case 'customer':
-      return <Users className="w-4 h-4 text-green-500" />;
+    case 'SHIPMENT_UPDATE':
+      return <Package className="w-4 h-4 text-purple-500" />;
+    case 'PAYMENT_RECEIVED':
+      return <CreditCard className="w-4 h-4 text-green-500" />;
+    case 'REVIEW_SUBMITTED':
+      return <Star className="w-4 h-4 text-yellow-500" />;
+    case 'PROMOTION':
+      return <Gift className="w-4 h-4 text-pink-500" />;
+    case 'LOYALTY_UPDATE':
+      return <Star className="w-4 h-4 text-orange-500" />;
     default:
       return <AlertCircle className="w-4 h-4 text-gray-500" />;
   }
+};
+
+const formatTimeAgo = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
 export function AdminHeader() {
@@ -81,12 +77,37 @@ export function AdminHeader() {
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Fetch notifications from API
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/admin/notifications?limit=10');
+      const data = await res.json();
+      if (res.ok) {
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch notifications on mount and when dropdown opens
+  useEffect(() => {
+    fetchNotifications();
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -102,14 +123,34 @@ export function AdminHeader() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const markAsRead = async (id: string) => {
+    try {
+      await fetch('/api/admin/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationIds: [id] }),
+      });
+      setNotifications(notifications.map(n =>
+        n.id === id ? { ...n, isRead: true } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    try {
+      await fetch('/api/admin/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAll: true }),
+      });
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
   };
 
   const getUserInitials = (name?: string | null) => {
@@ -172,7 +213,10 @@ export function AdminHeader() {
             <div className="relative" ref={notificationRef}>
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setShowNotifications(!showNotifications)}
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  if (!showNotifications) fetchNotifications();
+                }}
                 className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
               >
                 <Bell className="w-5 h-5 text-gray-500 dark:text-gray-400" />
@@ -182,7 +226,7 @@ export function AdminHeader() {
                     animate={{ scale: 1 }}
                     className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center"
                   >
-                    {unreadCount}
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </motion.span>
                 )}
               </motion.button>
@@ -209,7 +253,12 @@ export function AdminHeader() {
                     </div>
 
                     <div className="max-h-80 overflow-y-auto">
-                      {notifications.length === 0 ? (
+                      {loading ? (
+                        <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                          <div className="w-6 h-6 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin mx-auto mb-2" />
+                          <p className="text-sm">Loading...</p>
+                        </div>
+                      ) : notifications.length === 0 ? (
                         <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                           <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
                           <p className="text-sm">No notifications</p>
@@ -219,7 +268,7 @@ export function AdminHeader() {
                           <div
                             key={notification.id}
                             className={`p-4 border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
-                              !notification.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                              !notification.isRead ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                             }`}
                           >
                             <div className="flex gap-3">
@@ -231,7 +280,7 @@ export function AdminHeader() {
                                   <p className="text-sm font-medium text-gray-900 dark:text-white">
                                     {notification.title}
                                   </p>
-                                  {!notification.read && (
+                                  {!notification.isRead && (
                                     <button
                                       onClick={() => markAsRead(notification.id)}
                                       className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
@@ -245,7 +294,7 @@ export function AdminHeader() {
                                   {notification.message}
                                 </p>
                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                  {notification.time}
+                                  {formatTimeAgo(notification.createdAt)}
                                 </p>
                               </div>
                             </div>
@@ -258,6 +307,7 @@ export function AdminHeader() {
                       <Link
                         href="/admin/notifications"
                         className="block w-full text-center text-sm text-green-600 dark:text-green-400 hover:underline"
+                        onClick={() => setShowNotifications(false)}
                       >
                         View all notifications
                       </Link>
@@ -322,6 +372,7 @@ export function AdminHeader() {
                       <Link
                         href="/admin/profile"
                         className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                        onClick={() => setShowUserMenu(false)}
                       >
                         <User className="w-4 h-4" />
                         <span>My Profile</span>
@@ -329,6 +380,7 @@ export function AdminHeader() {
                       <Link
                         href="/admin/settings"
                         className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                        onClick={() => setShowUserMenu(false)}
                       >
                         <Settings className="w-4 h-4" />
                         <span>Settings</span>
@@ -336,6 +388,7 @@ export function AdminHeader() {
                       <Link
                         href="/admin/help"
                         className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                        onClick={() => setShowUserMenu(false)}
                       >
                         <HelpCircle className="w-4 h-4" />
                         <span>Help & Support</span>
