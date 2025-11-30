@@ -15,8 +15,6 @@ export async function GET(request: NextRequest) {
       where: { id: session.user.id },
       select: {
         phone: true,
-        emailNotifications: true,
-        smsNotifications: true,
       },
     });
 
@@ -24,7 +22,7 @@ export async function GET(request: NextRequest) {
       phone: user?.phone || '',
       notifications: {
         orderUpdates: true,
-        promotions: user?.emailNotifications ?? false,
+        promotions: false,
         newsletter: true,
       },
     });
