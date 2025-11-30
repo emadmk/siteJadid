@@ -17,6 +17,8 @@ async function getWarehouseData() {
                 id: true,
                 name: true,
                 sku: true,
+                costPrice: true,
+                basePrice: true,
               },
             },
           },
@@ -76,7 +78,8 @@ async function getWarehouseData() {
     return (
       sum +
       warehouse.stock.reduce((s, stock) => {
-        return s + stock.quantity * Number(stock.averageCost || 0);
+        const cost = stock.product.costPrice || stock.product.basePrice || 0;
+        return s + stock.quantity * Number(cost);
       }, 0)
     );
   }, 0);
@@ -161,7 +164,10 @@ export default async function WarehousesPage() {
               {warehouses.map((warehouse) => {
                 const totalUnits = warehouse.stock.reduce((sum, s) => sum + s.quantity, 0);
                 const totalValue = warehouse.stock.reduce(
-                  (sum, s) => sum + s.quantity * Number(s.averageCost || 0),
+                  (sum, s) => {
+                    const cost = s.product.costPrice || s.product.basePrice || 0;
+                    return sum + s.quantity * Number(cost);
+                  },
                   0
                 );
 
