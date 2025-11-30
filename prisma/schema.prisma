@@ -389,6 +389,10 @@ model Product {
   isBestSeller    Boolean       @default(false)
   allowReviews    Boolean       @default(true)
 
+  // Review Stats
+  rating          Decimal?      @db.Decimal(3, 2) // Average rating 0.00 - 5.00
+  reviewCount     Int           @default(0)
+
   // Timestamps
   publishedAt     DateTime?
   createdAt       DateTime      @default(now())
