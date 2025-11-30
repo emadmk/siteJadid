@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Package, MapPin, CreditCard, Award, ShoppingBag, TrendingUp, Clock } from 'lucide-react';
+import { ShieldCheck, Package, MapPin, CreditCard, Award, ShoppingBag, TrendingUp, Clock, CheckCircle, Users, ShoppingCart, ListChecks } from 'lucide-react';
 import { db } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
 async function getDashboardData(userId: string) {
-  const [user, orders, addresses, loyaltyProfile] = await Promise.all([
+  const [user, orders, addresses, loyaltyProfile, b2bMembership, shoppingLists] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
       select: {
@@ -39,6 +39,11 @@ async function getDashboardData(userId: string) {
             },
           },
         },
+        approvals: {
+          select: {
+            status: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       take: 5,
@@ -56,6 +61,36 @@ async function getDashboardData(userId: string) {
         tier: true,
       },
     }),
+    db.b2BAccountMember.findFirst({
+      where: { userId },
+      include: {
+        account: {
+          select: {
+            companyName: true,
+          },
+        },
+        costCenter: {
+          select: {
+            name: true,
+            budget: true,
+            spent: true,
+          },
+        },
+      },
+    }),
+    db.shoppingList.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: {
+            items: true,
+          },
+        },
+      },
+      take: 3,
+    }),
   ]);
 
   const orderStats = await db.order.groupBy({
@@ -64,7 +99,18 @@ async function getDashboardData(userId: string) {
     _count: true,
   });
 
-  return { user, orders, addresses, loyaltyProfile, orderStats };
+  // Get pending approvals count
+  let pendingApprovals = 0;
+  if (b2bMembership) {
+    pendingApprovals = await db.orderApproval.count({
+      where: {
+        approverId: b2bMembership.id,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  return { user, orders, addresses, loyaltyProfile, orderStats, b2bMembership, pendingApprovals, shoppingLists };
 }
 
 export default async function DashboardPage() {
@@ -78,7 +124,7 @@ export default async function DashboardPage() {
     redirect('/admin');
   }
 
-  const { user, orders, addresses, loyaltyProfile, orderStats } = await getDashboardData(session.user.id);
+  const { user, orders, addresses, loyaltyProfile, orderStats, b2bMembership, pendingApprovals, shoppingLists } = await getDashboardData(session.user.id);
 
   if (!user) {
     redirect('/auth/signin');
@@ -119,6 +165,35 @@ export default async function DashboardPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* B2B Member Info Banner */}
+        {b2bMembership && (
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg p-6 mb-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-5 h-5" />
+                  <h3 className="font-bold text-lg">{b2bMembership.account.companyName}</h3>
+                </div>
+                <div className="text-sm text-blue-100">
+                  Role: {b2bMembership.role.replace(/_/g, ' ')}
+                  {b2bMembership.department && ` • ${b2bMembership.department}`}
+                  {b2bMembership.costCenter && ` • ${b2bMembership.costCenter.name}`}
+                </div>
+                {b2bMembership.orderLimit && (
+                  <div className="text-sm text-blue-100 mt-1">
+                    Order Limit: ${Number(b2bMembership.orderLimit).toLocaleString()}
+                  </div>
+                )}
+              </div>
+              <Link href="/b2b/team">
+                <Button variant="outline" className="bg-white text-blue-700 hover:bg-blue-50 border-0">
+                  Manage Team
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -141,27 +216,37 @@ export default async function DashboardPage() {
             <div className="text-sm text-gray-600">Active Orders</div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-safety-green-100 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-safety-green-600" />
+          {b2bMembership && (b2bMembership.role === 'APPROVER' || b2bMembership.role === 'ACCOUNT_ADMIN') ? (
+            <Link href="/b2b/approvals" className="bg-white rounded-lg border border-gray-200 p-6 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-orange-100 rounded-lg">
+                  <CheckCircle className="w-6 h-6 text-orange-600" />
+                </div>
+                <span className="text-2xl font-bold text-black">{pendingApprovals}</span>
               </div>
-              <span className="text-2xl font-bold text-black">{shippedOrders}</span>
+              <div className="text-sm text-gray-600">Pending Approvals</div>
+            </Link>
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-safety-green-100 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-safety-green-600" />
+                </div>
+                <span className="text-2xl font-bold text-black">{shippedOrders}</span>
+              </div>
+              <div className="text-sm text-gray-600">Shipped Orders</div>
             </div>
-            <div className="text-sm text-gray-600">Shipped Orders</div>
-          </div>
+          )}
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <Link href="/shopping-lists" className="bg-white rounded-lg border border-gray-200 p-6 hover:bg-gray-50 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-purple-100 rounded-lg">
-                <Award className="w-6 h-6 text-purple-600" />
+                <ListChecks className="w-6 h-6 text-purple-600" />
               </div>
-              <span className="text-2xl font-bold text-black">
-                {loyaltyProfile?.points || 0}
-              </span>
+              <span className="text-2xl font-bold text-black">{shoppingLists.length}</span>
             </div>
-            <div className="text-sm text-gray-600">Loyalty Points</div>
-          </div>
+            <div className="text-sm text-gray-600">Shopping Lists</div>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -256,6 +341,18 @@ export default async function DashboardPage() {
                   <Button className="w-full justify-start bg-primary hover:bg-primary/90 gap-2">
                     <ShoppingBag className="w-4 h-4" />
                     Shop Products
+                  </Button>
+                </Link>
+                <Link href="/quick-order">
+                  <Button variant="outline" className="w-full justify-start border-safety-green-600 text-safety-green-600 hover:bg-safety-green-50 gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    Quick Order Pad
+                  </Button>
+                </Link>
+                <Link href="/bulk-order">
+                  <Button variant="outline" className="w-full justify-start border-blue-600 text-blue-600 hover:bg-blue-50 gap-2">
+                    <Package className="w-4 h-4" />
+                    Bulk Order Entry
                   </Button>
                 </Link>
                 <Link href="/orders">

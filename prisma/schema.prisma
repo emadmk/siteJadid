@@ -21,6 +21,7 @@ enum UserRole {
   CUSTOMER_SERVICE
   WAREHOUSE_MANAGER
   MARKETING_MANAGER
+  CONTENT_MANAGER
   CUSTOMER
   B2B_CUSTOMER
   GSA_CUSTOMER
@@ -87,6 +88,21 @@ model User {
   rmas          RMA[]
   salesRep      SalesRep?
   subscriptions Subscription[]
+  b2bMemberships B2BAccountMember[]
+
+  // New Relations - Advanced Features
+  productQuestions ProductQuestion[] @relation("UserProductQuestions")
+  stockNotifications StockNotification[] @relation("UserStockNotifications")
+  purchasedGiftCards GiftCard[] @relation("PurchasedGiftCards")
+  redeemedGiftCards GiftCard[] @relation("RedeemedGiftCards")
+  giftCardTransactions GiftCardTransaction[] @relation("UserGiftCardTransactions")
+  abandonedCarts AbandonedCart[] @relation("UserAbandonedCarts")
+  chatConversations ChatConversation[] @relation("UserChats")
+  assignedChats ChatConversation[] @relation("AssignedChats")
+  paymentTransactions PaymentTransaction[] @relation("UserPaymentTransactions")
+  emailLogs EmailLog[] @relation("UserEmailLogs")
+  errorLogs ErrorLog[] @relation("UserErrorLogs")
+  searchQueries SearchQuery[] @relation("UserSearchQueries")
 
   @@index([email])
   @@index([role])
@@ -204,6 +220,8 @@ model B2BProfile {
   updatedAt         DateTime  @updatedAt
 
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members           B2BAccountMember[]
+  costCenters       CostCenter[]
 
   @@index([status])
   @@index([companyName])
@@ -399,6 +417,8 @@ model Product {
   subscriptionItems SubscriptionItem[]
   purchaseOrderItems PurchaseOrderItem[]
   poReceiptItems  POReceiptItem[]
+  bulkOrderTemplateItems BulkOrderTemplateItem[]
+  shoppingListItems ShoppingListItem[]
 
   @@index([slug])
   @@index([sku])
@@ -593,6 +613,8 @@ model Order {
 
   // B2B
   purchaseOrderNumber String?
+  createdByMemberId   String?    // B2B multi-user: who created the order
+  costCenterId        String?    // Budget tracking
 
   // GSA
   gsaContractNumber String?
@@ -617,11 +639,15 @@ model Order {
   commissions       Commission[]
   subscriptionOrders SubscriptionOrder[]
   backOrders        BackOrder[]
+  createdByMember   B2BAccountMember? @relation("OrderCreatedBy", fields: [createdByMemberId], references: [id])
+  costCenter        CostCenter?   @relation("OrderCostCenter", fields: [costCenterId], references: [id])
+  approvals         OrderApproval[]
 
   @@index([userId])
   @@index([orderNumber])
   @@index([status])
   @@index([createdAt])
+  @@index([costCenterId])
 }
 
 model OrderItem {
@@ -2192,4 +2218,1545 @@ model POReceiptItem {
 
   @@index([receiptId])
   @@index([productId])
+}
+
+// ============================================
+// B2B MULTI-USER ACCOUNT MANAGEMENT
+// ============================================
+
+enum B2BUserRole {
+  ACCOUNT_ADMIN      // Can manage users, budgets, approvals
+  PURCHASER          // Can create orders
+  APPROVER           // Can approve orders
+  VIEWER             // Read-only access
+  FINANCE            // Can view invoices, payments
+}
+
+model B2BAccountMember {
+  id              String      @id @default(cuid())
+  b2bProfileId    String
+  userId          String
+  role            B2BUserRole @default(PURCHASER)
+
+  // Department/Cost Center assignment
+  department      String?
+  costCenterId    String?
+
+  // Spending limits
+  orderLimit      Decimal?    @db.Decimal(12, 2)  // Max per order
+  monthlyLimit    Decimal?    @db.Decimal(12, 2)  // Max per month
+
+  // Approval requirements
+  requiresApproval Boolean    @default(false)
+  approvalThreshold Decimal?  @db.Decimal(12, 2)  // Orders above this need approval
+
+  isActive        Boolean     @default(true)
+  invitedAt       DateTime    @default(now())
+  joinedAt        DateTime?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  b2bProfile      B2BProfile  @relation(fields: [b2bProfileId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  costCenter      CostCenter? @relation(fields: [costCenterId], references: [id])
+
+  ordersCreated   Order[]     @relation("OrderCreatedBy")
+  approvalsGiven  OrderApproval[] @relation("ApprovedBy")
+  approvalsNeeded OrderApproval[] @relation("ApprovalFor")
+
+  @@unique([b2bProfileId, userId])
+  @@index([b2bProfileId])
+  @@index([userId])
+  @@index([role])
+}
+
+// Update B2BProfile to add relation
+model B2BProfileExtension {
+  id              String    @id @default(cuid())
+
+  // Multi-user settings
+  allowMultiUser  Boolean   @default(true)
+  maxUsers        Int       @default(50)
+
+  // Default approval settings
+  defaultApprovalThreshold Decimal? @db.Decimal(12, 2)
+  requireApprovalForAll    Boolean  @default(false)
+}
+
+// ============================================
+// COST CENTERS & BUDGETS
+// ============================================
+
+enum BudgetPeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+model CostCenter {
+  id              String   @id @default(cuid())
+  b2bProfileId    String
+
+  code            String
+  name            String
+  description     String?
+
+  // Budget allocation
+  budgetAmount    Decimal  @db.Decimal(12, 2)
+  budgetPeriod    BudgetPeriod @default(MONTHLY)
+  budgetStartDate DateTime
+  budgetEndDate   DateTime?
+
+  // Spending tracking
+  currentSpent    Decimal  @default(0) @db.Decimal(12, 2)
+
+  // Manager
+  managerId       String?
+
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  b2bProfile      B2BProfile @relation(fields: [b2bProfileId], references: [id], onDelete: Cascade)
+  members         B2BAccountMember[]
+  orders          Order[]  @relation("OrderCostCenter")
+
+  @@unique([b2bProfileId, code])
+  @@index([b2bProfileId])
+  @@index([isActive])
+}
+
+// ============================================
+// APPROVAL WORKFLOWS
+// ============================================
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model OrderApproval {
+  id              String         @id @default(cuid())
+  orderId         String
+
+  // Requester
+  requestedById   String
+  requestedAt     DateTime       @default(now())
+
+  // Approver
+  approverId      String
+  approvedAt      DateTime?
+
+  status          ApprovalStatus @default(PENDING)
+
+  // Approval details
+  orderTotal      Decimal        @db.Decimal(12, 2)
+  reason          String?
+  approverNotes   String?
+
+  // Notification
+  notifiedAt      DateTime?
+  reminderSentAt  DateTime?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  order           Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  requester       B2BAccountMember @relation("ApprovalFor", fields: [requestedById], references: [id])
+  approver        B2BAccountMember @relation("ApprovedBy", fields: [approverId], references: [id])
+
+  @@index([orderId])
+  @@index([status])
+  @@index([approverId])
+}
+
+// ============================================
+// BULK ORDER TEMPLATES
+// ============================================
+
+model BulkOrderTemplate {
+  id              String   @id @default(cuid())
+  userId          String
+
+  name            String
+  description     String?
+
+  // Template type
+  isRecurring     Boolean  @default(false)
+  frequency       String?  // WEEKLY, MONTHLY, etc
+  nextOrderDate   DateTime?
+
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           BulkOrderTemplateItem[]
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model BulkOrderTemplateItem {
+  id              String            @id @default(cuid())
+  templateId      String
+  productId       String
+
+  sku             String
+  quantity        Int
+  notes           String?
+
+  template        BulkOrderTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  product         Product           @relation(fields: [productId], references: [id])
+
+  @@index([templateId])
+  @@index([productId])
+}
+
+// ============================================
+// SHOPPING LISTS
+// ============================================
+
+model ShoppingList {
+  id              String   @id @default(cuid())
+  userId          String
+
+  name            String
+  description     String?
+
+  isDefault       Boolean  @default(false)
+  isShared        Boolean  @default(false)
+  shareCode       String?  @unique
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           ShoppingListItem[]
+
+  @@index([userId])
+  @@index([shareCode])
+}
+
+model ShoppingListItem {
+  id              String       @id @default(cuid())
+  listId          String
+  productId       String
+
+  quantity        Int          @default(1)
+  notes           String?
+  priority        Int          @default(0)
+
+  addedAt         DateTime     @default(now())
+
+  list            ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  product         Product      @relation(fields: [productId], references: [id])
+
+  @@unique([listId, productId])
+  @@index([listId])
+  @@index([productId])
+}
+
+// ============================================
+// PRODUCT COMPARISON
+// ============================================
+
+model ProductComparison {
+  id              String   @id @default(cuid())
+  userId          String
+
+  name            String?
+
+  productIds      String[] // Array of product IDs
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================
+// FREQUENTLY BOUGHT TOGETHER
+// ============================================
+
+model FrequentlyBoughtTogether {
+  id              String   @id @default(cuid())
+  productId       String
+  relatedProductId String
+
+  // Auto-calculated
+  purchaseCount   Int      @default(0)
+  confidence      Decimal  @default(0) @db.Decimal(5, 2) // 0-100
+
+  lastPurchased   DateTime?
+  isActive        Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([productId, relatedProductId])
+  @@index([productId])
+  @@index([confidence])
+}
+
+// ============================================
+// COUPON SYSTEM
+// ============================================
+
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+  BUY_X_GET_Y
+}
+
+model Coupon {
+  id              String      @id @default(cuid())
+  code            String      @unique
+  name            String
+  description     String?
+  type            CouponType
+
+  // Discount Value
+  value           Decimal     @db.Decimal(12, 2) // Percentage or fixed amount
+
+  // Conditions
+  minPurchase     Decimal?    @db.Decimal(12, 2)
+  maxDiscount     Decimal?    @db.Decimal(12, 2)
+
+  // Usage Limits
+  usageLimit      Int?        // Total usage limit (null = unlimited)
+  usageCount      Int         @default(0)
+  perUserLimit    Int?        // Per user limit (null = unlimited)
+
+  // Applicability
+  accountTypes    AccountType[]
+  loyaltyTiers    LoyaltyTier[]
+
+  // Validity
+  startsAt        DateTime
+  endsAt          DateTime?
+  isActive        Boolean     @default(true)
+
+  // Auto-apply
+  autoApply       Boolean     @default(false)
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+  @@index([startsAt, endsAt])
+}
+
+// ============================================
+// PRODUCT Q&A SYSTEM
+// ============================================
+
+enum QuestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProductQuestion {
+  id              String         @id @default(cuid())
+  productId       String
+  userId          String?        // null for guest questions
+
+  // Question
+  question        String
+  askerName       String?        // For guest questions
+  askerEmail      String?        // For guest questions
+
+  // Answer
+  answer          String?
+  answeredBy      String?        // Admin user ID
+  answeredAt      DateTime?
+
+  status          QuestionStatus @default(PENDING)
+
+  // Engagement
+  helpfulCount    Int            @default(0)
+
+  // Display
+  isPublic        Boolean        @default(true)
+  isPinned        Boolean        @default(false)
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user            User?          @relation("UserProductQuestions", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// STOCK NOTIFICATION SYSTEM
+// ============================================
+
+enum NotificationStatus {
+  PENDING
+  NOTIFIED
+  CANCELLED
+}
+
+model StockNotification {
+  id              String             @id @default(cuid())
+  productId       String
+  userId          String?            // null for guest notifications
+
+  // Contact Info (for guests)
+  email           String
+  name            String?
+
+  // Status
+  status          NotificationStatus @default(PENDING)
+  notifiedAt      DateTime?
+
+  // Metadata
+  requestedStock  Int?               // Quantity they want to be notified about
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  user            User?              @relation("UserStockNotifications", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([userId])
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// GIFT CARD SYSTEM
+// ============================================
+
+enum GiftCardStatus {
+  ACTIVE
+  REDEEMED
+  EXPIRED
+  CANCELLED
+}
+
+model GiftCard {
+  id              String         @id @default(cuid())
+  code            String         @unique
+
+  // Amounts
+  initialAmount   Decimal        @db.Decimal(12, 2)
+  currentBalance  Decimal        @db.Decimal(12, 2)
+
+  // Status
+  status          GiftCardStatus @default(ACTIVE)
+
+  // Purchase Info
+  purchasedBy     String?        // User ID who purchased
+  purchasedAt     DateTime       @default(now())
+  orderId         String?        // Order where it was purchased
+
+  // Recipient Info
+  recipientEmail  String?
+  recipientName   String?
+  message         String?
+
+  // Redemption Info
+  redeemedBy      String?        // User ID who redeemed
+  redeemedAt      DateTime?
+
+  // Expiration
+  expiresAt       DateTime?
+
+  // Restrictions
+  minPurchase     Decimal?       @db.Decimal(12, 2)
+  accountTypes    AccountType[]
+
+  isActive        Boolean        @default(true)
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  transactions    GiftCardTransaction[]
+  purchaser       User?          @relation("PurchasedGiftCards", fields: [purchasedBy], references: [id], onDelete: SetNull)
+  redeemer        User?          @relation("RedeemedGiftCards", fields: [redeemedBy], references: [id], onDelete: SetNull)
+
+  @@index([code])
+  @@index([status])
+  @@index([purchasedBy])
+  @@index([redeemedBy])
+  @@index([expiresAt])
+}
+
+enum GiftCardTransactionType {
+  PURCHASE
+  REDEMPTION
+  REFUND
+  ADJUSTMENT
+  EXPIRATION
+}
+
+model GiftCardTransaction {
+  id              String                 @id @default(cuid())
+  giftCardId      String
+
+  type            GiftCardTransactionType
+  amount          Decimal                @db.Decimal(12, 2)
+
+  balanceBefore   Decimal                @db.Decimal(12, 2)
+  balanceAfter    Decimal                @db.Decimal(12, 2)
+
+  // Reference
+  orderId         String?
+  userId          String?
+
+  description     String?
+  notes           String?
+
+  createdAt       DateTime               @default(now())
+
+  giftCard        GiftCard               @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  user            User?                  @relation("UserGiftCardTransactions", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([giftCardId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+// ============================================
+// FLASH SALES SYSTEM
+// ============================================
+
+enum FlashSaleStatus {
+  SCHEDULED
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+model FlashSale {
+  id              String         @id @default(cuid())
+  name            String
+  slug            String         @unique
+  description     String?
+
+  // Status
+  status          FlashSaleStatus @default(SCHEDULED)
+
+  // Timing
+  startsAt        DateTime
+  endsAt          DateTime
+
+  // Display
+  bannerImage     String?
+  badgeText       String?        // e.g., "Flash Sale", "Limited Time"
+  priority        Int            @default(0)
+
+  // Limits
+  maxQuantity     Int?           // Max total items to sell
+  soldQuantity    Int            @default(0)
+  maxPerUser      Int?           // Max per user
+
+  // Restrictions
+  accountTypes    AccountType[]
+  loyaltyTiers    LoyaltyTier[]
+
+  // Visibility
+  isFeatured      Boolean        @default(true)
+  isActive        Boolean        @default(true)
+
+  // Notifications
+  notifyUsers     Boolean        @default(true)
+  notifiedAt      DateTime?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  items           FlashSaleItem[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([startsAt])
+  @@index([endsAt])
+  @@index([isActive])
+}
+
+model FlashSaleItem {
+  id              String     @id @default(cuid())
+  flashSaleId     String
+  productId       String
+
+  // Original Price
+  originalPrice   Decimal    @db.Decimal(12, 2)
+
+  // Flash Sale Price
+  salePrice       Decimal    @db.Decimal(12, 2)
+
+  // Discount
+  discountPercent Decimal    @db.Decimal(5, 2)
+  savings         Decimal    @db.Decimal(12, 2)
+
+  // Stock Limits
+  maxQuantity     Int?       // Max for this specific product
+  soldQuantity    Int        @default(0)
+
+  // Display Order
+  sortOrder       Int        @default(0)
+
+  isActive        Boolean    @default(true)
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  flashSale       FlashSale  @relation(fields: [flashSaleId], references: [id], onDelete: Cascade)
+
+  @@index([flashSaleId])
+  @@index([productId])
+  @@index([isActive])
+}
+
+// ============================================
+// ABANDONED CART RECOVERY
+// ============================================
+
+enum AbandonedCartStatus {
+  ABANDONED
+  FIRST_EMAIL_SENT
+  SECOND_EMAIL_SENT
+  THIRD_EMAIL_SENT
+  RECOVERED
+  EXPIRED
+}
+
+model AbandonedCart {
+  id              String             @id @default(cuid())
+  userId          String
+
+  // Cart Snapshot
+  cartData        String             // JSON snapshot of cart items
+  subtotal        Decimal            @db.Decimal(12, 2)
+
+  // Status
+  status          AbandonedCartStatus @default(ABANDONED)
+
+  // Recovery Tracking
+  abandonedAt     DateTime           @default(now())
+  firstEmailSent  DateTime?
+  secondEmailSent DateTime?
+  thirdEmailSent  DateTime?
+
+  // Recovery
+  recoveredAt     DateTime?
+  recoveredOrderId String?
+
+  // Coupon for recovery
+  recoveryCouponCode String?
+
+  // Metadata
+  sessionId       String?
+  userAgent       String?
+  lastUrl         String?
+
+  expiresAt       DateTime
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  user            User               @relation("UserAbandonedCarts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([abandonedAt])
+  @@index([expiresAt])
+}
+
+// ============================================
+// LIVE CHAT SYSTEM
+// ============================================
+
+enum ChatStatus {
+  OPEN
+  ASSIGNED
+  RESOLVED
+  CLOSED
+}
+
+enum ChatPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model ChatConversation {
+  id              String       @id @default(cuid())
+  userId          String?      // null for guest chats
+
+  // Guest Info
+  guestName       String?
+  guestEmail      String?
+
+  // Assignment
+  assignedTo      String?      // Admin user ID
+  assignedAt      DateTime?
+
+  // Status
+  status          ChatStatus   @default(OPEN)
+  priority        ChatPriority @default(NORMAL)
+
+  // Subject
+  subject         String?
+  department      String?      // e.g., "Sales", "Support"
+
+  // Metadata
+  ipAddress       String?
+  userAgent       String?
+  pageUrl         String?
+
+  // Satisfaction
+  rating          Int?         // 1-5
+  feedbackComment String?
+
+  // Timing
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  messages        ChatMessage[]
+  user            User?        @relation("UserChats", fields: [userId], references: [id], onDelete: SetNull)
+  assignedAdmin   User?        @relation("AssignedChats", fields: [assignedTo], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([assignedTo])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+enum MessageSender {
+  USER
+  ADMIN
+  SYSTEM
+}
+
+model ChatMessage {
+  id              String           @id @default(cuid())
+  conversationId  String
+
+  senderId        String?          // User or Admin ID
+  senderType      MessageSender
+
+  message         String
+  attachments     String[]
+
+  isRead          Boolean          @default(false)
+  readAt          DateTime?
+
+  createdAt       DateTime         @default(now())
+
+  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+// ============================================
+// TAX SETTINGS (TaxJar Integration)
+// ============================================
+
+model TaxSettings {
+  id              String   @id @default(cuid())
+
+  // Provider
+  provider        String   @default("taxjar") // "taxjar", "avalara", "manual"
+
+  // API Credentials (encrypted)
+  apiKey          String?
+  apiSecret       String?
+
+  // Settings
+  enableTax       Boolean  @default(true)
+  enableNexus     Boolean  @default(true)  // Nexus-based tax calculation
+
+  // Default Rates (fallback)
+  defaultTaxRate  Decimal  @default(0) @db.Decimal(5, 2)
+
+  // Nexus States
+  nexusStates     String[] // Array of state codes with nexus
+
+  // Tax Exempt Products
+  exemptCategories String[]
+
+  // Settings
+  taxShipping     Boolean  @default(true)
+  roundAtSubtotal Boolean  @default(false)
+
+  // Live/Test Mode
+  testMode        Boolean  @default(true)
+
+  // Cache Settings
+  cacheTaxRates   Boolean  @default(true)
+  cacheDuration   Int      @default(3600) // seconds
+
+  updatedBy       String?
+  updatedAt       DateTime @updatedAt
+
+  @@index([provider])
+}
+
+model TaxNexus {
+  id              String   @id @default(cuid())
+
+  state           String   @unique
+
+  // Jurisdiction Info
+  hasStateTax     Boolean  @default(true)
+  hasCountyTax    Boolean  @default(false)
+  hasCityTax      Boolean  @default(false)
+  hasSpecialTax   Boolean  @default(false)
+
+  // Registration
+  registrationNumber String?
+  effectiveDate   DateTime
+  endDate         DateTime?
+
+  // Rates (manual fallback)
+  stateTaxRate    Decimal? @db.Decimal(5, 4)
+
+  isActive        Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([state])
+  @@index([isActive])
+}
+
+// ============================================
+// SHIPPING PROVIDER SETTINGS
+// ============================================
+
+enum ShippingProviderType {
+  USPS
+  FEDEX
+  UPS
+  DHL
+  CUSTOM
+}
+
+model ShippingProviderSettings {
+  id              String               @id @default(cuid())
+
+  provider        ShippingProviderType
+  name            String
+
+  // API Credentials (encrypted)
+  apiKey          String?
+  apiSecret       String?
+  accountNumber   String?
+  meterNumber     String?             // For FedEx
+
+  // Additional Credentials
+  username        String?
+  password        String?
+
+  // Endpoints
+  apiEndpoint     String?
+
+  // Settings
+  isActive        Boolean              @default(true)
+  isDefault       Boolean              @default(false)
+
+  // Test Mode
+  testMode        Boolean              @default(true)
+
+  // Default Services
+  defaultService  String?
+
+  // Packaging
+  defaultPackaging String?
+
+  // Insurance
+  includeInsurance Boolean             @default(false)
+  insuranceProvider String?
+
+  // Signature
+  requireSignature Boolean             @default(false)
+
+  // Negotiated Rates
+  useNegotiatedRates Boolean           @default(false)
+
+  // Label Settings
+  labelFormat     String               @default("PNG")
+  labelSize       String               @default("4x6")
+
+  updatedBy       String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  services        ShippingService[]
+
+  @@index([provider])
+  @@index([isActive])
+  @@index([isDefault])
+}
+
+model ShippingService {
+  id              String                   @id @default(cuid())
+  providerId      String
+
+  serviceCode     String
+  serviceName     String
+  description     String?
+
+  // Estimated Transit
+  minDays         Int?
+  maxDays         Int?
+
+  // Pricing Markup
+  markupType      String                   @default("percentage") // "percentage" or "fixed"
+  markupValue     Decimal                  @default(0) @db.Decimal(10, 2)
+
+  // Restrictions
+  maxWeight       Decimal?                 @db.Decimal(8, 2)
+  internationalAllowed Boolean             @default(false)
+
+  isActive        Boolean                  @default(true)
+  displayOrder    Int                      @default(0)
+
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  provider        ShippingProviderSettings @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([serviceCode])
+  @@index([isActive])
+}
+
+// ============================================
+// PAYMENT GATEWAY SETTINGS
+// ============================================
+
+enum PaymentGatewayType {
+  STRIPE
+  PAYPAL
+  SQUARE
+  AUTHORIZE_NET
+  BRAINTREE
+}
+
+model PaymentGatewaySettings {
+  id              String              @id @default(cuid())
+
+  provider        PaymentGatewayType
+  name            String
+
+  // API Credentials (encrypted)
+  publishableKey  String?
+  secretKey       String?
+  merchantId      String?
+
+  // Additional Credentials
+  clientId        String?
+  clientSecret    String?
+
+  // Webhook
+  webhookSecret   String?
+  webhookUrl      String?
+
+  // Settings
+  isActive        Boolean             @default(true)
+  isDefault       Boolean             @default(false)
+
+  // Test Mode
+  testMode        Boolean             @default(true)
+
+  // Features
+  saveCards       Boolean             @default(true)
+  autoCapture     Boolean             @default(true)
+
+  // Supported Payment Methods
+  creditCard      Boolean             @default(true)
+  debitCard       Boolean             @default(true)
+  applePay        Boolean             @default(false)
+  googlePay       Boolean             @default(false)
+
+  // 3D Secure
+  require3DS      Boolean             @default(false)
+
+  // Currency
+  defaultCurrency String              @default("USD")
+
+  // Statement Descriptor
+  statementDescriptor String?
+
+  updatedBy       String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([provider])
+  @@index([isActive])
+  @@index([isDefault])
+}
+
+model PaymentTransaction {
+  id              String   @id @default(cuid())
+
+  // Gateway Info
+  gatewayProvider String
+  transactionId   String   @unique
+
+  // Order Reference
+  orderId         String?
+  userId          String?
+
+  // Amount
+  amount          Decimal  @db.Decimal(12, 2)
+  currency        String   @default("USD")
+
+  // Status
+  status          String   // "pending", "authorized", "captured", "failed", "refunded"
+
+  // Payment Method
+  paymentMethod   String
+  last4           String?
+  cardBrand       String?
+
+  // Customer Info
+  customerEmail   String?
+  customerId      String?  // Gateway's customer ID
+
+  // Response Data
+  responseCode    String?
+  responseMessage String?
+  metadata        String?  // JSON
+
+  // Timestamps
+  authorizedAt    DateTime?
+  capturedAt      DateTime?
+  failedAt        DateTime?
+  refundedAt      DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  refunds         PaymentRefund[]
+  user            User?    @relation("UserPaymentTransactions", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([transactionId])
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PaymentRefund {
+  id              String            @id @default(cuid())
+  transactionId   String
+
+  refundId        String            @unique
+  amount          Decimal           @db.Decimal(12, 2)
+  currency        String            @default("USD")
+
+  reason          String?
+  status          String            // "pending", "completed", "failed"
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  transaction     PaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId])
+  @@index([refundId])
+  @@index([status])
+}
+
+// ============================================
+// EMAIL TEMPLATE SYSTEM
+// ============================================
+
+enum EmailTemplateType {
+  ORDER_CONFIRMATION
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  PAYMENT_RECEIVED
+  REFUND_PROCESSED
+  ABANDONED_CART
+  WELCOME
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+  STOCK_NOTIFICATION
+  GIFT_CARD
+  INVOICE
+  QUOTE
+  CUSTOM
+}
+
+model EmailTemplate {
+  id              String            @id @default(cuid())
+
+  type            EmailTemplateType
+  name            String
+  description     String?
+
+  // Subject Line
+  subject         String
+
+  // Content
+  htmlContent     String            // HTML version
+  textContent     String?           // Plain text version
+
+  // Variables
+  availableVariables String[]       // e.g., ["orderNumber", "customerName"]
+
+  // Settings
+  fromName        String            @default("Store Name")
+  fromEmail       String?
+  replyToEmail    String?
+
+  // CC/BCC
+  ccEmails        String[]
+  bccEmails       String[]
+
+  // Status
+  isActive        Boolean           @default(true)
+  isDefault       Boolean           @default(false)
+
+  // Testing
+  testEmailsSent  Int               @default(0)
+
+  // Usage Stats
+  emailsSent      Int               @default(0)
+  lastSentAt      DateTime?
+
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  logs            EmailLog[]
+
+  @@index([type])
+  @@index([isActive])
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+  COMPLAINED
+}
+
+model EmailLog {
+  id              String        @id @default(cuid())
+  templateId      String?
+
+  // Recipient
+  toEmail         String
+  toName          String?
+
+  // Subject & Content
+  subject         String
+  htmlContent     String?
+
+  // Metadata
+  emailType       String
+  userId          String?
+  orderId         String?
+
+  // Status
+  status          EmailStatus   @default(PENDING)
+
+  // Provider Info
+  provider        String?       // "resend", "sendgrid", "ses"
+  providerId      String?       // Provider's message ID
+
+  // Tracking
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+
+  // Error Info
+  error           String?
+  errorCode       String?
+
+  // Attempts
+  attempts        Int           @default(0)
+  lastAttemptAt   DateTime?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  template        EmailTemplate? @relation(fields: [templateId], references: [id])
+  user            User?          @relation("UserEmailLogs", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([templateId])
+  @@index([toEmail])
+  @@index([status])
+  @@index([userId])
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+// ============================================
+// EMAIL SERVICE SETTINGS
+// ============================================
+
+enum EmailProviderType {
+  RESEND
+  SENDGRID
+  SES
+  MAILGUN
+  POSTMARK
+}
+
+model EmailServiceSettings {
+  id              String            @id @default(cuid())
+
+  provider        EmailProviderType
+
+  // API Credentials (encrypted)
+  apiKey          String
+
+  // Additional Settings
+  domain          String?
+  region          String?           // For SES
+
+  // Default Settings
+  defaultFromEmail String
+  defaultFromName String
+
+  // Features
+  trackOpens      Boolean           @default(true)
+  trackClicks     Boolean           @default(true)
+
+  // Rate Limits
+  dailyLimit      Int?
+  monthlyLimit    Int?
+
+  // Usage Stats
+  emailsSentToday Int               @default(0)
+  emailsSentMonth Int               @default(0)
+  lastResetDate   DateTime          @default(now())
+
+  isActive        Boolean           @default(true)
+  isDefault       Boolean           @default(true)
+
+  // Test Mode
+  testMode        Boolean           @default(true)
+  testEmail       String?
+
+  updatedBy       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([provider])
+  @@index([isActive])
+}
+
+// ============================================
+// ERROR TRACKING (Sentry Integration)
+// ============================================
+
+enum ErrorSeverity {
+  DEBUG
+  INFO
+  WARNING
+  ERROR
+  FATAL
+}
+
+model ErrorLog {
+  id              String        @id @default(cuid())
+
+  // Error Info
+  message         String
+  stack           String?
+
+  // Severity
+  level           ErrorSeverity @default(ERROR)
+
+  // Context
+  environment     String        @default("production")
+  release         String?
+
+  // Request Info
+  url             String?
+  method          String?
+  headers         String?       // JSON
+  body            String?       // JSON
+
+  // User Info
+  userId          String?
+  userEmail       String?
+  ipAddress       String?
+  userAgent       String?
+
+  // Additional Context
+  tags            String?       // JSON object
+  extra           String?       // JSON object
+
+  // Sentry Integration
+  sentryEventId   String?       @unique
+  sentryIssueId   String?
+
+  // Grouping
+  fingerprint     String?
+
+  // Resolution
+  isResolved      Boolean       @default(false)
+  resolvedAt      DateTime?
+  resolvedBy      String?
+
+  // Occurrence
+  occurrenceCount Int           @default(1)
+  firstOccurred   DateTime      @default(now())
+  lastOccurred    DateTime      @default(now())
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User?         @relation("UserErrorLogs", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([level])
+  @@index([environment])
+  @@index([userId])
+  @@index([sentryEventId])
+  @@index([fingerprint])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+// ============================================
+// SENTRY SETTINGS
+// ============================================
+
+model SentrySettings {
+  id              String   @id @default(cuid())
+
+  // DSN (Data Source Name)
+  dsn             String
+
+  // Organization
+  organization    String?
+  project         String?
+
+  // Auth Token
+  authToken       String?
+
+  // Settings
+  enableTracing   Boolean  @default(true)
+  tracesSampleRate Decimal @default(0.1) @db.Decimal(3, 2)
+
+  enableProfiling Boolean  @default(false)
+  profilesSampleRate Decimal @default(0.1) @db.Decimal(3, 2)
+
+  // Environment
+  environment     String   @default("production")
+  release         String?
+
+  // Filtering
+  ignoreErrors    String[] // Array of error messages to ignore
+
+  // Features
+  captureConsole  Boolean  @default(false)
+  captureUnhandledRejections Boolean @default(true)
+
+  isActive        Boolean  @default(true)
+
+  updatedBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// ============================================
+// REDIS CACHE SETTINGS & ENTRIES
+// ============================================
+
+model RedisCacheSettings {
+  id              String   @id @default(cuid())
+
+  // Connection
+  host            String   @default("localhost")
+  port            Int      @default(6379)
+  password        String?
+  database        Int      @default(0)
+
+  // TLS
+  useTls          Boolean  @default(false)
+
+  // Sentinel (for HA)
+  useSentinel     Boolean  @default(false)
+  sentinelHosts   String[] // Array of sentinel hosts
+  sentinelMaster  String?
+
+  // Cluster
+  useCluster      Boolean  @default(false)
+  clusterNodes    String[] // Array of cluster nodes
+
+  // Default TTL
+  defaultTTL      Int      @default(3600) // seconds
+
+  // Key Prefix
+  keyPrefix       String   @default("app:")
+
+  // Settings
+  maxRetries      Int      @default(3)
+  enableOfflineQueue Boolean @default(true)
+
+  isActive        Boolean  @default(true)
+
+  updatedBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model CacheEntry {
+  id              String   @id @default(cuid())
+
+  key             String   @unique
+  value           String   // JSON serialized value
+
+  // TTL
+  ttl             Int      // seconds
+  expiresAt       DateTime
+
+  // Metadata
+  category        String?  // e.g., "product", "user", "session"
+  tags            String[] // For cache invalidation
+
+  // Stats
+  hits            Int      @default(0)
+  lastAccessedAt  DateTime @default(now())
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([key])
+  @@index([category])
+  @@index([expiresAt])
+  @@index([tags])
+}
+
+// ============================================
+// ADVANCED SEARCH (Algolia Integration)
+// ============================================
+
+model AlgoliaSettings {
+  id              String   @id @default(cuid())
+
+  // API Credentials
+  applicationId   String
+  adminApiKey     String   // For indexing (encrypted)
+  searchApiKey    String   // For search operations
+
+  // Indices
+  productIndexName String  @default("products")
+  categoryIndexName String @default("categories")
+
+  // Search Settings
+  enableTypoTolerance Boolean @default(true)
+  enableSynonyms    Boolean   @default(true)
+  enableRules       Boolean   @default(true)
+
+  // Ranking
+  customRanking   String[]  // Array of attributes
+
+  // Facets
+  searchableAttributes String[] // Array of searchable fields
+  facetAttributes String[]      // Array of facet fields
+
+  // Features
+  enablePersonalization Boolean @default(false)
+  enableABTesting   Boolean     @default(false)
+
+  // Sync Settings
+  autoSync          Boolean     @default(true)
+  syncFrequency     Int         @default(3600) // seconds
+  lastSyncedAt      DateTime?
+
+  isActive          Boolean     @default(true)
+
+  updatedBy         String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([isActive])
+}
+
+model SearchIndex {
+  id              String   @id @default(cuid())
+
+  // Entity Info
+  entityType      String   // "product", "category", "page"
+  entityId        String
+
+  // Algolia Object ID
+  algoliaObjectId String?  @unique
+
+  // Index Data (JSON)
+  indexData       String   // Searchable content
+
+  // Status
+  isSynced        Boolean  @default(false)
+  syncedAt        DateTime?
+  syncError       String?
+
+  // Version
+  version         Int      @default(1)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([entityType, entityId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([isSynced])
+}
+
+model SearchQuery {
+  id              String   @id @default(cuid())
+
+  query           String
+
+  // User Info
+  userId          String?
+  sessionId       String?
+
+  // Results
+  resultsCount    Int
+  clickedResults  String[] // Array of product IDs that were clicked
+
+  // Metadata
+  filters         String?  // JSON
+  facets          String?  // JSON
+
+  // Performance
+  responseTime    Int?     // milliseconds
+
+  createdAt       DateTime @default(now())
+
+  user            User?    @relation("UserSearchQueries", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([query])
+  @@index([userId])
+  @@index([createdAt])
 }

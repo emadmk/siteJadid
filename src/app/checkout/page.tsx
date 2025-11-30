@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, CreditCard, Truck, MapPin, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, CreditCard, Truck, MapPin, ArrowLeft, AlertTriangle, DollarSign } from 'lucide-react';
 import { db } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
 
 async function getCheckoutData(userId: string) {
-  const [cart, addresses, user] = await Promise.all([
+  const [cart, addresses, user, b2bMembership, costCenters] = await Promise.all([
     db.cart.findFirst({
       where: {
         userId,
@@ -49,9 +49,47 @@ async function getCheckoutData(userId: string) {
         accountType: true,
       },
     }),
+    db.b2BAccountMember.findFirst({
+      where: { userId },
+      include: {
+        account: {
+          select: {
+            companyName: true,
+            requiresApprovalAbove: true,
+          },
+        },
+        costCenter: {
+          select: {
+            id: true,
+            name: true,
+            budget: true,
+            spent: true,
+          },
+        },
+      },
+    }),
+    db.b2BAccountMember.findFirst({
+      where: { userId },
+      include: {
+        account: {
+          select: {
+            costCenters: {
+              where: { isActive: true },
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                budget: true,
+                spent: true,
+              },
+            },
+          },
+        },
+      },
+    }).then((member) => member?.account.costCenters || []),
   ]);
 
-  return { cart, addresses, user };
+  return { cart, addresses, user, b2bMembership, costCenters };
 }
 
 interface CheckoutPageProps {
@@ -67,7 +105,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     redirect('/auth/signin?callbackUrl=/checkout');
   }
 
-  const { cart, addresses, user } = await getCheckoutData(session.user.id);
+  const { cart, addresses, user, b2bMembership, costCenters } = await getCheckoutData(session.user.id);
 
   if (!cart || cart.items.length === 0) {
     redirect('/cart');
@@ -98,6 +136,16 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   const total = subtotal + estimatedShipping + tax;
 
   const defaultAddress = addresses.find((addr: any) => addr.isDefault) || addresses[0];
+
+  // Check if approval is required
+  const requiresApproval = b2bMembership &&
+    b2bMembership.account.requiresApprovalAbove &&
+    total > Number(b2bMembership.account.requiresApprovalAbove);
+
+  // Check if order limit exceeded
+  const exceedsOrderLimit = b2bMembership &&
+    b2bMembership.orderLimit &&
+    total > Number(b2bMembership.orderLimit);
 
   if (isB2BQuote) {
     return (
@@ -211,11 +259,91 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
               </Button>
             </div>
 
+            {/* Cost Center Selection (B2B Members) */}
+            {b2bMembership && costCenters.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                    2
+                  </div>
+                  <h2 className="text-xl font-bold text-black">Cost Center</h2>
+                </div>
+
+                <div className="space-y-3">
+                  {costCenters.map((cc: any) => {
+                    const remaining = Number(cc.budget) - Number(cc.spent);
+                    const canAfford = remaining >= total;
+
+                    return (
+                      <label
+                        key={cc.id}
+                        className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer ${
+                          canAfford ? 'border-gray-300 hover:border-blue-400' : 'border-red-300 bg-red-50 cursor-not-allowed'
+                        } ${b2bMembership.costCenter?.id === cc.id ? 'border-blue-600 bg-blue-50' : ''}`}
+                      >
+                        <input
+                          type="radio"
+                          name="costCenter"
+                          value={cc.id}
+                          defaultChecked={b2bMembership.costCenter?.id === cc.id}
+                          disabled={!canAfford}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-black">{cc.name}</div>
+                          <div className="text-sm text-gray-600">
+                            Code: {cc.code} • Remaining: ${remaining.toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-600">Budget</div>
+                          <div className="font-bold text-black">${Number(cc.budget).toLocaleString()}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {costCenters.every((cc: any) => Number(cc.budget) - Number(cc.spent) < total) && (
+                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-red-800">
+                      <div className="font-medium mb-1">Insufficient Budget</div>
+                      <div>None of your cost centers have sufficient budget for this order. Please contact your account administrator.</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Approval Warning */}
+            {requiresApproval && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold text-yellow-900 mb-2">Approval Required</div>
+                    <div className="text-sm text-yellow-800 mb-3">
+                      This order total (${total.toFixed(2)}) exceeds your company's approval threshold
+                      (${Number(b2bMembership.account.requiresApprovalAbove).toLocaleString()}).
+                      Your order will be sent for approval before processing.
+                    </div>
+                    {exceedsOrderLimit && (
+                      <div className="text-sm text-red-800 bg-red-50 border border-red-200 rounded p-2">
+                        ⚠️ This order also exceeds your personal order limit of ${Number(b2bMembership.orderLimit).toLocaleString()}.
+                        You may need additional authorization.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Shipping Method */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-full bg-safety-green-600 text-white flex items-center justify-center font-bold">
-                  2
+                  {b2bMembership && costCenters.length > 0 ? '3' : '2'}
                 </div>
                 <h2 className="text-xl font-bold text-black">Shipping Method</h2>
               </div>
@@ -256,7 +384,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 rounded-full bg-safety-green-600 text-white flex items-center justify-center font-bold">
-                  3
+                  {b2bMembership && costCenters.length > 0 ? '4' : '3'}
                 </div>
                 <h2 className="text-xl font-bold text-black">Payment Method</h2>
               </div>

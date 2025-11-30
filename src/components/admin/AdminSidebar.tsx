@@ -20,12 +20,14 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { hasAnyPermission, type UserRole, type Permission } from '@/lib/permissions';
 
 interface MenuItem {
   title: string;
   href?: string;
   icon: React.ComponentType<{ className?: string }>;
   children?: MenuItem[];
+  permissions?: Permission[];
 }
 
 const menuItems: MenuItem[] = [
@@ -33,67 +35,75 @@ const menuItems: MenuItem[] = [
     title: 'Dashboard',
     href: '/admin',
     icon: LayoutDashboard,
+    permissions: ['dashboard.view'],
   },
   {
     title: 'Products',
     icon: Package,
+    permissions: ['products.view'],
     children: [
-      { title: 'All Products', href: '/admin/products', icon: Package },
-      { title: 'Add Product', href: '/admin/products/new', icon: Package },
-      { title: 'Categories', href: '/admin/categories', icon: FolderTree },
-      { title: 'Inventory', href: '/admin/inventory', icon: Warehouse },
+      { title: 'All Products', href: '/admin/products', icon: Package, permissions: ['products.view'] },
+      { title: 'Add Product', href: '/admin/products/new', icon: Package, permissions: ['products.create'] },
+      { title: 'Categories', href: '/admin/categories', icon: FolderTree, permissions: ['products.view'] },
+      { title: 'Inventory', href: '/admin/inventory', icon: Warehouse, permissions: ['inventory.view'] },
     ],
   },
   {
     title: 'Orders',
     icon: ShoppingCart,
+    permissions: ['orders.view'],
     children: [
-      { title: 'All Orders', href: '/admin/orders', icon: ShoppingCart },
-      { title: 'Pending Orders', href: '/admin/orders?status=PENDING', icon: ShoppingCart },
-      { title: 'Shipped Orders', href: '/admin/orders?status=SHIPPED', icon: ShoppingCart },
+      { title: 'All Orders', href: '/admin/orders', icon: ShoppingCart, permissions: ['orders.view'] },
+      { title: 'Pending Orders', href: '/admin/orders?status=PENDING', icon: ShoppingCart, permissions: ['orders.view'] },
+      { title: 'Shipped Orders', href: '/admin/orders?status=SHIPPED', icon: ShoppingCart, permissions: ['orders.view'] },
     ],
   },
   {
     title: 'Customers',
     icon: Users,
+    permissions: ['customers.view'],
     children: [
-      { title: 'All Customers', href: '/admin/customers', icon: Users },
-      { title: 'B2B Customers', href: '/admin/customers/b2b', icon: Users },
-      { title: 'GSA Customers', href: '/admin/customers/gsa', icon: Users },
-      { title: 'GSA Approvals', href: '/admin/customers/gsa-approvals', icon: Users },
+      { title: 'All Customers', href: '/admin/customers', icon: Users, permissions: ['customers.view'] },
+      { title: 'B2B Customers', href: '/admin/customers/b2b', icon: Users, permissions: ['customers.view'] },
+      { title: 'GSA Customers', href: '/admin/customers/gsa', icon: Users, permissions: ['customers.view'] },
+      { title: 'GSA Approvals', href: '/admin/customers/gsa-approvals', icon: Users, permissions: ['customers.manage'] },
     ],
   },
   {
     title: 'Analytics',
     icon: BarChart3,
+    permissions: ['analytics.view'],
     children: [
-      { title: 'Overview', href: '/admin/analytics', icon: TrendingUp },
-      { title: 'Sales Report', href: '/admin/analytics/sales', icon: DollarSign },
-      { title: 'Product Performance', href: '/admin/analytics/products', icon: Package },
-      { title: 'Customer Insights', href: '/admin/analytics/customers', icon: Users },
+      { title: 'Overview', href: '/admin/analytics', icon: TrendingUp, permissions: ['analytics.view'] },
+      { title: 'Sales Report', href: '/admin/analytics/sales', icon: DollarSign, permissions: ['analytics.view'] },
+      { title: 'Product Performance', href: '/admin/analytics/products', icon: Package, permissions: ['analytics.view'] },
+      { title: 'Customer Insights', href: '/admin/analytics/customers', icon: Users, permissions: ['analytics.view'] },
     ],
   },
   {
     title: 'Accounting',
     icon: DollarSign,
+    permissions: ['accounting.view'],
     children: [
-      { title: 'Revenue', href: '/admin/accounting/revenue', icon: DollarSign },
-      { title: 'Payments', href: '/admin/accounting/payments', icon: DollarSign },
-      { title: 'Invoices', href: '/admin/accounting/invoices', icon: FileText },
+      { title: 'Revenue', href: '/admin/accounting/revenue', icon: DollarSign, permissions: ['accounting.view'] },
+      { title: 'Payments', href: '/admin/accounting/payments', icon: DollarSign, permissions: ['accounting.view'] },
+      { title: 'Invoices', href: '/admin/accounting/invoices', icon: FileText, permissions: ['accounting.view'] },
     ],
   },
   {
     title: 'Marketing',
     icon: Tag,
+    permissions: ['marketing.view'],
     children: [
-      { title: 'Promotions', href: '/admin/promotions', icon: Tag },
-      { title: 'Coupons', href: '/admin/coupons', icon: Tag },
+      { title: 'Promotions', href: '/admin/promotions', icon: Tag, permissions: ['marketing.view'] },
+      { title: 'Coupons', href: '/admin/coupons', icon: Tag, permissions: ['marketing.view'] },
     ],
   },
   {
     title: 'Settings',
     href: '/admin/settings',
     icon: Settings,
+    permissions: ['settings.view'],
   },
 ];
 
@@ -150,7 +160,24 @@ function SidebarMenuItem({ item, depth = 0 }: { item: MenuItem; depth?: number }
   );
 }
 
-export function AdminSidebar() {
+export function AdminSidebar({ userRole }: { userRole?: UserRole }) {
+  // Filter menu items based on user permissions
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (!userRole || !item.permissions) return true;
+    return hasAnyPermission(userRole, item.permissions);
+  }).map((item) => {
+    if (item.children && userRole) {
+      return {
+        ...item,
+        children: item.children.filter((child) => {
+          if (!child.permissions) return true;
+          return hasAnyPermission(userRole, child.permissions);
+        }),
+      };
+    }
+    return item;
+  });
+
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 overflow-y-auto">
       {/* Logo */}
@@ -168,7 +195,7 @@ export function AdminSidebar() {
 
       {/* Navigation */}
       <nav className="p-4 space-y-1">
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <SidebarMenuItem key={item.title} item={item} />
         ))}
       </nav>

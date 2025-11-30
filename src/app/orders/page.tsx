@@ -28,6 +28,35 @@ async function getOrders(userId: string) {
           status: true,
         },
       },
+      approvals: {
+        include: {
+          approver: {
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      costCenter: {
+        select: {
+          name: true,
+        },
+      },
+      createdByMember: {
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -91,7 +120,7 @@ export default async function OrdersPage() {
                   <div className="p-6 border-b border-gray-200">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       <div>
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="text-xl font-bold text-black">{order.orderNumber}</h3>
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[order.status]}`}>
                             {order.status}
@@ -99,6 +128,19 @@ export default async function OrdersPage() {
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${paymentStatusColors[order.paymentStatus]}`}>
                             {order.paymentStatus}
                           </span>
+                          {order.approvals.length > 0 && (
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              order.approvals[0].status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                              order.approvals[0].status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                              order.approvals[0].status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {order.approvals[0].status === 'PENDING' && '⏳ Pending Approval'}
+                              {order.approvals[0].status === 'APPROVED' && '✓ Approved'}
+                              {order.approvals[0].status === 'REJECTED' && '✗ Rejected'}
+                              {order.approvals[0].status === 'CANCELLED' && 'Cancelled'}
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm text-gray-600">
                           Placed on {new Date(order.createdAt).toLocaleDateString('en-US', {
@@ -106,6 +148,10 @@ export default async function OrdersPage() {
                             month: 'long',
                             day: 'numeric',
                           })}
+                          {order.costCenter && ` • Cost Center: ${order.costCenter.name}`}
+                          {order.createdByMember && order.createdByMember.user && (
+                            ` • Created by: ${order.createdByMember.user.name || order.createdByMember.user.email}`
+                          )}
                         </div>
                         {order.shipments.length > 0 && order.shipments[0].trackingNumber && (
                           <div className="text-sm text-safety-green-600 mt-1">

@@ -2,7 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AccountType, LoyaltyTier } from '@prisma/client';
+
+type AccountType = 'B2C' | 'B2B' | 'GSA';
+type LoyaltyTier = 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
+
+const ACCOUNT_TYPES: AccountType[] = ['B2C', 'B2B', 'GSA'];
+const LOYALTY_TIERS: LoyaltyTier[] = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM'];
 
 export default function CustomerGroupForm() {
   const router = useRouter();
@@ -129,7 +134,7 @@ export default function CustomerGroupForm() {
             Account Types
           </label>
           <div className="space-y-2">
-            {Object.values(AccountType).map((type) => (
+            {ACCOUNT_TYPES.map((type) => (
               <label key={type} className="flex items-center">
                 <input
                   type="checkbox"
@@ -150,7 +155,7 @@ export default function CustomerGroupForm() {
             Loyalty Tiers
           </label>
           <div className="space-y-2">
-            {Object.values(LoyaltyTier).map((tier) => (
+            {LOYALTY_TIERS.map((tier) => (
               <label key={tier} className="flex items-center">
                 <input
                   type="checkbox"
