@@ -2991,6 +2991,23 @@ model ChatMessage {
 }
 
 // ============================================
+// WEBHOOKS
+// ============================================
+
+model Webhook {
+  id        String   @id @default(cuid())
+  url       String
+  events    String[] // Array of event types: ORDER_CREATED, ORDER_UPDATED, etc.
+  secret    String   // Webhook signing secret
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// ============================================
 // TAX SETTINGS (TaxJar Integration)
 // ============================================
 
