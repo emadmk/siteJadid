@@ -57,7 +57,7 @@ async function getUserProfile(userId: string) {
     db.b2BAccountMember.findFirst({
       where: { userId },
       include: {
-        account: {
+        b2bProfile: {
           select: {
             companyName: true,
           },
@@ -65,8 +65,8 @@ async function getUserProfile(userId: string) {
         costCenter: {
           select: {
             name: true,
-            budget: true,
-            spent: true,
+            budgetAmount: true,
+            currentSpent: true,
           },
         },
       },
@@ -306,7 +306,7 @@ export default async function ProfilePage() {
                     <div>
                       <div className="text-sm text-gray-600 mb-1">Company</div>
                       <div className="text-base font-medium text-black">
-                        {b2bMembership.account.companyName}
+                        {b2bMembership.b2bProfile.companyName}
                       </div>
                     </div>
 
@@ -350,14 +350,14 @@ export default async function ProfilePage() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="text-sm text-gray-600">Cost Center Budget</div>
                         <div className="text-lg font-bold text-black">
-                          ${Number(b2bMembership.costCenter.spent).toLocaleString()} / ${Number(b2bMembership.costCenter.budget).toLocaleString()}
+                          ${Number(b2bMembership.costCenter.currentSpent).toLocaleString()} / ${Number(b2bMembership.costCenter.budgetAmount).toLocaleString()}
                         </div>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-blue-600 h-2 rounded-full"
                           style={{
-                            width: `${Math.min((Number(b2bMembership.costCenter.spent) / Number(b2bMembership.costCenter.budget)) * 100, 100)}%`,
+                            width: `${Math.min((Number(b2bMembership.costCenter.currentSpent) / Number(b2bMembership.costCenter.budgetAmount)) * 100, 100)}%`,
                           }}
                         />
                       </div>

@@ -149,11 +149,13 @@ export async function POST(request: NextRequest) {
     const b2bMembership = await db.b2BAccountMember.findFirst({
       where: { userId: session.user.id },
       include: {
-        account: {
+        b2bProfile: {
           select: {
-            requiresApprovalAbove: true,
-            approvers: {
-              where: { isActive: true },
+            members: {
+              where: {
+                isActive: true,
+                role: { in: ['ACCOUNT_ADMIN', 'APPROVER'] }
+              },
               select: { id: true },
               take: 1,
             },
@@ -197,8 +199,9 @@ export async function POST(request: NextRequest) {
     // Determine if approval is needed
     const requiresApproval =
       b2bMembership &&
-      b2bMembership.account.requiresApprovalAbove &&
-      total > Number(b2bMembership.account.requiresApprovalAbove);
+      b2bMembership.requiresApproval &&
+      b2bMembership.approvalThreshold &&
+      total > Number(b2bMembership.approvalThreshold);
 
     // Create order
     const order = await db.order.create({
@@ -241,12 +244,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Create approval request if needed
-    if (requiresApproval && b2bMembership?.account.approvers[0]) {
+    if (requiresApproval && b2bMembership?.b2bProfile.members[0]) {
       await db.orderApproval.create({
         data: {
           orderId: order.id,
           requestedById: b2bMembership.id,
-          approverId: b2bMembership.account.approvers[0].id,
+          approverId: b2bMembership.b2bProfile.members[0].id,
           orderTotal: total,
           status: 'PENDING',
         },

@@ -64,7 +64,7 @@ async function getDashboardData(userId: string) {
     db.b2BAccountMember.findFirst({
       where: { userId },
       include: {
-        account: {
+        b2bProfile: {
           select: {
             companyName: true,
           },
@@ -72,8 +72,8 @@ async function getDashboardData(userId: string) {
         costCenter: {
           select: {
             name: true,
-            budget: true,
-            spent: true,
+            budgetAmount: true,
+            currentSpent: true,
           },
         },
       },
@@ -172,7 +172,7 @@ export default async function DashboardPage() {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="w-5 h-5" />
-                  <h3 className="font-bold text-lg">{b2bMembership.account.companyName}</h3>
+                  <h3 className="font-bold text-lg">{b2bMembership.b2bProfile.companyName}</h3>
                 </div>
                 <div className="text-sm text-blue-100">
                   Role: {b2bMembership.role.replace(/_/g, ' ')}

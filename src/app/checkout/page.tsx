@@ -52,18 +52,17 @@ async function getCheckoutData(userId: string) {
     db.b2BAccountMember.findFirst({
       where: { userId },
       include: {
-        account: {
+        b2bProfile: {
           select: {
             companyName: true,
-            requiresApprovalAbove: true,
           },
         },
         costCenter: {
           select: {
             id: true,
             name: true,
-            budget: true,
-            spent: true,
+            budgetAmount: true,
+            currentSpent: true,
           },
         },
       },
@@ -71,7 +70,7 @@ async function getCheckoutData(userId: string) {
     db.b2BAccountMember.findFirst({
       where: { userId },
       include: {
-        account: {
+        b2bProfile: {
           select: {
             costCenters: {
               where: { isActive: true },
@@ -79,14 +78,14 @@ async function getCheckoutData(userId: string) {
                 id: true,
                 name: true,
                 code: true,
-                budget: true,
-                spent: true,
+                budgetAmount: true,
+                currentSpent: true,
               },
             },
           },
         },
       },
-    }).then((member) => member?.account.costCenters || []),
+    }).then((member) => member?.b2bProfile.costCenters || []),
   ]);
 
   return { cart, addresses, user, b2bMembership, costCenters };
@@ -139,8 +138,9 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 
   // Check if approval is required
   const requiresApproval = b2bMembership &&
-    b2bMembership.account.requiresApprovalAbove &&
-    total > Number(b2bMembership.account.requiresApprovalAbove);
+    b2bMembership.requiresApproval &&
+    b2bMembership.approvalThreshold &&
+    total > Number(b2bMembership.approvalThreshold);
 
   // Check if order limit exceeded
   const exceedsOrderLimit = b2bMembership &&
@@ -271,7 +271,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 
                 <div className="space-y-3">
                   {costCenters.map((cc: any) => {
-                    const remaining = Number(cc.budget) - Number(cc.spent);
+                    const remaining = Number(cc.budgetAmount) - Number(cc.currentSpent);
                     const canAfford = remaining >= total;
 
                     return (
@@ -297,14 +297,14 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
                         </div>
                         <div className="text-right">
                           <div className="text-sm text-gray-600">Budget</div>
-                          <div className="font-bold text-black">${Number(cc.budget).toLocaleString()}</div>
+                          <div className="font-bold text-black">${Number(cc.budgetAmount).toLocaleString()}</div>
                         </div>
                       </label>
                     );
                   })}
                 </div>
 
-                {costCenters.every((cc: any) => Number(cc.budget) - Number(cc.spent) < total) && (
+                {costCenters.every((cc: any) => Number(cc.budgetAmount) - Number(cc.currentSpent) < total) && (
                   <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-red-800">
@@ -325,7 +325,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
                     <div className="font-bold text-yellow-900 mb-2">Approval Required</div>
                     <div className="text-sm text-yellow-800 mb-3">
                       This order total (${total.toFixed(2)}) exceeds your company's approval threshold
-                      (${Number(b2bMembership.account.requiresApprovalAbove).toLocaleString()}).
+                      (${Number(b2bMembership.approvalThreshold).toLocaleString()}).
                       Your order will be sent for approval before processing.
                     </div>
                     {exceedsOrderLimit && (
