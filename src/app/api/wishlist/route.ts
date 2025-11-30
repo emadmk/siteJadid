@@ -55,7 +55,29 @@ export async function GET(request: NextRequest) {
         include: {
           items: {
             include: {
-              product: true,
+              product: {
+                select: {
+                  id: true,
+                  sku: true,
+                  name: true,
+                  slug: true,
+                  description: true,
+                  basePrice: true,
+                  salePrice: true,
+                  wholesalePrice: true,
+                  gsaPrice: true,
+                  images: true,
+                  stockQuantity: true,
+                  rating: true,
+                  category: {
+                    select: {
+                      id: true,
+                      name: true,
+                      slug: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
