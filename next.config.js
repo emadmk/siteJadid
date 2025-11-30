@@ -69,13 +69,22 @@ const nextConfig = {
         tls: false,
         crypto: false,
       };
-      // Exclude server-only modules from client bundle
-      config.externals = config.externals || [];
-      config.externals.push({
-        '@elastic/elasticsearch': 'commonjs @elastic/elasticsearch',
-        'undici': 'commonjs undici',
-      });
     }
+
+    // Exclude elasticsearch and undici from webpack bundling entirely
+    // This prevents webpack from parsing private class fields (#target)
+    const originalExternals = config.externals || [];
+    config.externals = [
+      ...originalExternals,
+      function ({ context, request }, callback) {
+        // Externalize undici and elastic packages
+        if (/^undici/.test(request) || /^@elastic/.test(request)) {
+          return callback(null, 'commonjs ' + request);
+        }
+        callback();
+      },
+    ];
+
     return config;
   },
 }
