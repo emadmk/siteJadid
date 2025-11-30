@@ -14,38 +14,53 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const wishlist = await db.wishlist.findMany({
-      where: {
-        userId: session.user.id,
-      },
+    // Get or create wishlist for user
+    let wishlist = await db.wishlist.findUnique({
+      where: { userId: session.user.id },
       include: {
-        product: {
-          select: {
-            id: true,
-            sku: true,
-            name: true,
-            slug: true,
-            description: true,
-            basePrice: true,
-            salePrice: true,
-            wholesalePrice: true,
-            gsaPrice: true,
-            images: true,
-            stockQuantity: true,
-            rating: true,
-            isActive: true,
-            category: {
+        items: {
+          include: {
+            product: {
               select: {
                 id: true,
+                sku: true,
                 name: true,
                 slug: true,
+                description: true,
+                basePrice: true,
+                salePrice: true,
+                wholesalePrice: true,
+                gsaPrice: true,
+                images: true,
+                stockQuantity: true,
+                rating: true,
+                category: {
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                  },
+                },
               },
             },
           },
+          orderBy: { createdAt: 'desc' },
         },
       },
-      orderBy: { createdAt: 'desc' },
     });
+
+    if (!wishlist) {
+      wishlist = await db.wishlist.create({
+        data: { userId: session.user.id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+    }
 
     return NextResponse.json(wishlist);
   } catch (error) {
@@ -90,11 +105,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get or create wishlist for user
+    let wishlist = await db.wishlist.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!wishlist) {
+      wishlist = await db.wishlist.create({
+        data: { userId: session.user.id },
+      });
+    }
+
     // Check if already in wishlist
-    const existing = await db.wishlist.findFirst({
+    const existing = await db.wishlistItem.findUnique({
       where: {
-        userId: session.user.id,
-        productId,
+        wishlistId_productId: {
+          wishlistId: wishlist.id,
+          productId,
+        },
       },
     });
 
@@ -106,9 +134,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Add to wishlist
-    const wishlistItem = await db.wishlist.create({
+    const wishlistItem = await db.wishlistItem.create({
       data: {
-        userId: session.user.id,
+        wishlistId: wishlist.id,
         productId,
       },
       include: {
@@ -160,10 +188,22 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Get user's wishlist
+    const wishlist = await db.wishlist.findUnique({
+      where: { userId: session.user.id },
+    });
+
+    if (!wishlist) {
+      return NextResponse.json(
+        { error: 'Wishlist not found' },
+        { status: 404 }
+      );
+    }
+
     // Delete from wishlist
-    await db.wishlist.deleteMany({
+    await db.wishlistItem.deleteMany({
       where: {
-        userId: session.user.id,
+        wishlistId: wishlist.id,
         productId,
       },
     });
