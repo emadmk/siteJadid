@@ -5,15 +5,15 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { productId } = params;
+    const { id } = params;
 
     // Get all approved questions for the product
     const questions = await prisma.productQuestion.findMany({
       where: {
-        productId,
+        productId: id,
         status: 'APPROVED',
         isPublic: true,
       },
@@ -36,11 +36,11 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    const { productId } = params;
+    const { id } = params;
     const body = await request.json();
     const { question, askerName, askerEmail } = body;
 
@@ -53,7 +53,7 @@ export async function POST(
 
     // Check if product exists
     const product = await prisma.product.findUnique({
-      where: { id: productId },
+      where: { id },
     });
 
     if (!product) {
@@ -85,7 +85,7 @@ export async function POST(
     // Create the question
     const newQuestion = await prisma.productQuestion.create({
       data: {
-        productId,
+        productId: id,
         userId: session?.user?.id || null,
         question: question.trim(),
         askerName: askerName || session?.user?.name || null,
