@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { cache } from '@/lib/redis';
 import { productSearch } from '@/lib/elasticsearch';
-import { Prisma } from '@prisma/client';
 
 // GET /api/products - List products with filters
 export async function GET(request: NextRequest) {
