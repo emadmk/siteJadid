@@ -83,7 +83,7 @@ interface ProductDetailProps {
 }
 
 export function ProductDetail({ product, relatedProducts }: ProductDetailProps) {
-  const { isInWishlist, toggleWishlist, loading: wishlistLoading } = useWishlist();
+  const { isInWishlist, toggleWishlist, isLoading: wishlistLoading } = useWishlist();
   const { addProduct } = useRecentlyViewed();
   const [selectedImage, setSelectedImage] = useState(0);
   const [showZoom, setShowZoom] = useState(false);
