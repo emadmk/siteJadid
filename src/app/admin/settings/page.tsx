@@ -1,413 +1,672 @@
-import { Button } from '@/components/ui/button';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
-  Settings as SettingsIcon,
   Store,
   Mail,
   CreditCard,
   Truck,
   Shield,
-  Bell,
   Globe,
+  Save,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 
-export default async function SettingsPage() {
+interface Settings {
+  store: {
+    name: string;
+    description: string;
+    email: string;
+    phone: string;
+    address: string;
+    logo: string;
+  };
+  email: {
+    orderConfirmation: boolean;
+    shippingUpdates: boolean;
+    lowStockAlerts: boolean;
+    marketingEmails: boolean;
+  };
+  shipping: {
+    freeThreshold: number;
+    standardRate: number;
+    expressRate: number;
+    international: boolean;
+  };
+  tax: {
+    defaultRate: number;
+    applyToShipping: boolean;
+    gsaExempt: boolean;
+  };
+  payment: {
+    stripe: boolean;
+    paypal: boolean;
+    gsaSmartpay: boolean;
+  };
+  security: {
+    twoFactorAuth: boolean;
+    sessionTimeout: number;
+    passwordExpiry: number;
+  };
+}
+
+const defaultSettings: Settings = {
+  store: {
+    name: '',
+    description: '',
+    email: '',
+    phone: '',
+    address: '',
+    logo: '',
+  },
+  email: {
+    orderConfirmation: true,
+    shippingUpdates: true,
+    lowStockAlerts: true,
+    marketingEmails: false,
+  },
+  shipping: {
+    freeThreshold: 100,
+    standardRate: 9.99,
+    expressRate: 24.99,
+    international: true,
+  },
+  tax: {
+    defaultRate: 8.5,
+    applyToShipping: true,
+    gsaExempt: true,
+  },
+  payment: {
+    stripe: true,
+    paypal: false,
+    gsaSmartpay: true,
+  },
+  security: {
+    twoFactorAuth: true,
+    sessionTimeout: 15,
+    passwordExpiry: 0,
+  },
+};
+
+export default function SettingsPage() {
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string; category?: string } | null>(null);
+
+  // Fetch settings on mount
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/settings');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.settings) {
+          setSettings(prev => ({
+            store: { ...prev.store, ...data.settings.store },
+            email: { ...prev.email, ...data.settings.email },
+            shipping: { ...prev.shipping, ...data.settings.shipping },
+            tax: { ...prev.tax, ...data.settings.tax },
+            payment: { ...prev.payment, ...data.settings.payment },
+            security: { ...prev.security, ...data.settings.security },
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveSettings = async (category: keyof Settings) => {
+    setSaving(category);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category,
+          settings: settings[category],
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setMessage({ type: 'success', text: 'Settings saved successfully!', category });
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to save settings', category });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'An error occurred while saving', category });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const updateSetting = <K extends keyof Settings>(
+    category: K,
+    key: keyof Settings[K],
+    value: any
+  ) => {
+    setSettings(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [key]: value,
+      },
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-8">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="p-8"
+    >
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-black mb-2">Settings</h1>
-        <p className="text-gray-600">Manage your store settings and configurations</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Settings</h1>
+        <p className="text-gray-600 dark:text-gray-400">Manage your store settings and configurations</p>
       </div>
 
       {/* Settings Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Store Settings */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-safety-green-100 rounded-lg flex items-center justify-center">
-                <Store className="w-5 h-5 text-safety-green-600" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-black">Store Information</h2>
-                <p className="text-sm text-gray-600">Basic store details</p>
-              </div>
-            </div>
+        <SettingsCard
+          icon={<Store className="w-5 h-5 text-green-600" />}
+          iconBg="bg-green-100 dark:bg-green-900/30"
+          title="Store Information"
+          subtitle="Basic store details"
+          saving={saving === 'store'}
+          message={message?.category === 'store' ? message : null}
+          onSave={() => saveSettings('store')}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Store Name"
+              value={settings.store.name}
+              onChange={(v) => updateSetting('store', 'name', v)}
+            />
+            <Textarea
+              label="Store Description"
+              value={settings.store.description}
+              onChange={(v) => updateSetting('store', 'description', v)}
+              rows={3}
+            />
+            <Input
+              label="Contact Email"
+              type="email"
+              value={settings.store.email}
+              onChange={(v) => updateSetting('store', 'email', v)}
+            />
+            <Input
+              label="Phone Number"
+              type="tel"
+              value={settings.store.phone}
+              onChange={(v) => updateSetting('store', 'phone', v)}
+            />
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Store Name
-                </label>
-                <input
-                  type="text"
-                  defaultValue="SafetyPro Store"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Store Description
-                </label>
-                <textarea
-                  rows={3}
-                  defaultValue="Professional safety equipment and supplies"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contact Email
-                </label>
-                <input
-                  type="email"
-                  defaultValue="info@safetypro.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  defaultValue="+1 (555) 123-4567"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                />
-              </div>
-              <Button className="w-full bg-safety-green-600 hover:bg-safety-green-700">
-                Save Store Settings
-              </Button>
-            </div>
-          </div>
-        </div>
+        </SettingsCard>
 
         {/* Email Settings */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Mail className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-black">Email Notifications</h2>
-                <p className="text-sm text-gray-600">Configure email settings</p>
-              </div>
-            </div>
+        <SettingsCard
+          icon={<Mail className="w-5 h-5 text-blue-600" />}
+          iconBg="bg-blue-100 dark:bg-blue-900/30"
+          title="Email Notifications"
+          subtitle="Configure email settings"
+          saving={saving === 'email'}
+          message={message?.category === 'email' ? message : null}
+          onSave={() => saveSettings('email')}
+        >
+          <div className="space-y-4">
+            <Toggle
+              label="Order Confirmations"
+              description="Send email when orders are placed"
+              checked={settings.email.orderConfirmation}
+              onChange={(v) => updateSetting('email', 'orderConfirmation', v)}
+            />
+            <Toggle
+              label="Shipping Updates"
+              description="Notify customers of shipping status"
+              checked={settings.email.shippingUpdates}
+              onChange={(v) => updateSetting('email', 'shippingUpdates', v)}
+            />
+            <Toggle
+              label="Low Stock Alerts"
+              description="Alert admins when inventory is low"
+              checked={settings.email.lowStockAlerts}
+              onChange={(v) => updateSetting('email', 'lowStockAlerts', v)}
+            />
+            <Toggle
+              label="Marketing Emails"
+              description="Send promotional content to customers"
+              checked={settings.email.marketingEmails}
+              onChange={(v) => updateSetting('email', 'marketingEmails', v)}
+            />
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-black">Order Confirmations</div>
-                  <div className="text-sm text-gray-600">
-                    Send email when orders are placed
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-5 h-5 text-safety-green-600 rounded focus:ring-safety-green-500"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-black">Shipping Updates</div>
-                  <div className="text-sm text-gray-600">
-                    Notify customers of shipping status
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-5 h-5 text-safety-green-600 rounded focus:ring-safety-green-500"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-black">Low Stock Alerts</div>
-                  <div className="text-sm text-gray-600">
-                    Alert admins when inventory is low
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-5 h-5 text-safety-green-600 rounded focus:ring-safety-green-500"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-black">Marketing Emails</div>
-                  <div className="text-sm text-gray-600">
-                    Send promotional content to customers
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  className="w-5 h-5 text-safety-green-600 rounded focus:ring-safety-green-500"
-                />
-              </div>
-              <Button className="w-full bg-safety-green-600 hover:bg-safety-green-700">
-                Save Email Settings
-              </Button>
-            </div>
-          </div>
-        </div>
+        </SettingsCard>
 
         {/* Payment Settings */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-black">Payment Methods</h2>
-                <p className="text-sm text-gray-600">Manage payment options</p>
-              </div>
-            </div>
+        <SettingsCard
+          icon={<CreditCard className="w-5 h-5 text-purple-600" />}
+          iconBg="bg-purple-100 dark:bg-purple-900/30"
+          title="Payment Methods"
+          subtitle="Manage payment options"
+          saving={saving === 'payment'}
+          message={message?.category === 'payment' ? message : null}
+          onSave={() => saveSettings('payment')}
+        >
+          <div className="space-y-4">
+            <PaymentMethod
+              icon={<CreditCard className="w-6 h-6 text-gray-600" />}
+              name="Credit/Debit Cards"
+              description="Stripe Integration"
+              active={settings.payment.stripe}
+              onChange={(v) => updateSetting('payment', 'stripe', v)}
+            />
+            <PaymentMethod
+              icon={<CreditCard className="w-6 h-6 text-gray-600" />}
+              name="PayPal"
+              description="PayPal Integration"
+              active={settings.payment.paypal}
+              onChange={(v) => updateSetting('payment', 'paypal', v)}
+            />
+            <PaymentMethod
+              icon={<Shield className="w-6 h-6 text-gray-600" />}
+              name="GSA SmartPay"
+              description="Government Procurement"
+              active={settings.payment.gsaSmartpay}
+              onChange={(v) => updateSetting('payment', 'gsaSmartpay', v)}
+            />
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="w-6 h-6 text-gray-600" />
-                  <div>
-                    <div className="font-medium text-black">Credit/Debit Cards</div>
-                    <div className="text-sm text-gray-600">Stripe Integration</div>
-                  </div>
-                </div>
-                <span className="px-3 py-1 bg-safety-green-100 text-safety-green-800 rounded-full text-xs font-medium">
-                  Active
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="w-6 h-6 text-gray-600" />
-                  <div>
-                    <div className="font-medium text-black">PayPal</div>
-                    <div className="text-sm text-gray-600">PayPal Integration</div>
-                  </div>
-                </div>
-                <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
-                  Inactive
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Shield className="w-6 h-6 text-gray-600" />
-                  <div>
-                    <div className="font-medium text-black">GSA SmartPay</div>
-                    <div className="text-sm text-gray-600">Government Procurement</div>
-                  </div>
-                </div>
-                <span className="px-3 py-1 bg-safety-green-100 text-safety-green-800 rounded-full text-xs font-medium">
-                  Active
-                </span>
-              </div>
-              <Button className="w-full bg-safety-green-600 hover:bg-safety-green-700">
-                Configure Payment Methods
-              </Button>
-            </div>
-          </div>
-        </div>
+        </SettingsCard>
 
         {/* Shipping Settings */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Truck className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-black">Shipping Options</h2>
-                <p className="text-sm text-gray-600">Configure shipping methods</p>
-              </div>
-            </div>
+        <SettingsCard
+          icon={<Truck className="w-5 h-5 text-orange-600" />}
+          iconBg="bg-orange-100 dark:bg-orange-900/30"
+          title="Shipping Options"
+          subtitle="Configure shipping methods"
+          saving={saving === 'shipping'}
+          message={message?.category === 'shipping' ? message : null}
+          onSave={() => saveSettings('shipping')}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Free Shipping Threshold"
+              type="number"
+              prefix="$"
+              value={settings.shipping.freeThreshold}
+              onChange={(v) => updateSetting('shipping', 'freeThreshold', parseFloat(v) || 0)}
+            />
+            <Input
+              label="Standard Shipping Rate"
+              type="number"
+              prefix="$"
+              step="0.01"
+              value={settings.shipping.standardRate}
+              onChange={(v) => updateSetting('shipping', 'standardRate', parseFloat(v) || 0)}
+            />
+            <Input
+              label="Express Shipping Rate"
+              type="number"
+              prefix="$"
+              step="0.01"
+              value={settings.shipping.expressRate}
+              onChange={(v) => updateSetting('shipping', 'expressRate', parseFloat(v) || 0)}
+            />
+            <Toggle
+              label="International Shipping"
+              description="Enable international shipping"
+              checked={settings.shipping.international}
+              onChange={(v) => updateSetting('shipping', 'international', v)}
+            />
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Free Shipping Threshold
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    defaultValue="100"
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Standard Shipping Rate
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    defaultValue="9.99"
-                    step="0.01"
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Express Shipping Rate
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    defaultValue="24.99"
-                    step="0.01"
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-5 h-5 text-safety-green-600 rounded focus:ring-safety-green-500"
-                />
-                <label className="text-sm text-gray-700">
-                  Enable international shipping
-                </label>
-              </div>
-              <Button className="w-full bg-safety-green-600 hover:bg-safety-green-700">
-                Save Shipping Settings
-              </Button>
-            </div>
-          </div>
-        </div>
+        </SettingsCard>
 
         {/* Tax Settings */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <Globe className="w-5 h-5 text-indigo-600" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-black">Tax Settings</h2>
-                <p className="text-sm text-gray-600">Configure tax rates</p>
-              </div>
+        <SettingsCard
+          icon={<Globe className="w-5 h-5 text-indigo-600" />}
+          iconBg="bg-indigo-100 dark:bg-indigo-900/30"
+          title="Tax Settings"
+          subtitle="Configure tax rates"
+          saving={saving === 'tax'}
+          message={message?.category === 'tax' ? message : null}
+          onSave={() => saveSettings('tax')}
+        >
+          <div className="space-y-4">
+            <Input
+              label="Default Tax Rate (%)"
+              type="number"
+              step="0.1"
+              value={settings.tax.defaultRate}
+              onChange={(v) => updateSetting('tax', 'defaultRate', parseFloat(v) || 0)}
+            />
+            <Toggle
+              label="Apply Tax to Shipping"
+              description="Include shipping in tax calculations"
+              checked={settings.tax.applyToShipping}
+              onChange={(v) => updateSetting('tax', 'applyToShipping', v)}
+            />
+            <Toggle
+              label="GSA Tax Exempt"
+              description="GSA orders are tax-exempt"
+              checked={settings.tax.gsaExempt}
+              onChange={(v) => updateSetting('tax', 'gsaExempt', v)}
+            />
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                For state-specific tax rates, configure them in the tax management section.
+              </p>
             </div>
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Default Tax Rate (%)
-                </label>
-                <input
-                  type="number"
-                  defaultValue="8.5"
-                  step="0.1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-5 h-5 text-safety-green-600 rounded focus:ring-safety-green-500"
-                />
-                <label className="text-sm text-gray-700">Apply tax to shipping</label>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="w-5 h-5 text-safety-green-600 rounded focus:ring-safety-green-500"
-                />
-                <label className="text-sm text-gray-700">
-                  GSA orders are tax-exempt
-                </label>
-              </div>
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  For state-specific tax rates, configure them in the tax management
-                  section.
-                </p>
-              </div>
-              <Button className="w-full bg-safety-green-600 hover:bg-safety-green-700">
-                Save Tax Settings
-              </Button>
-            </div>
-          </div>
-        </div>
+        </SettingsCard>
 
         {/* Security Settings */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-black">Security</h2>
-                <p className="text-sm text-gray-600">Security and privacy settings</p>
-              </div>
-            </div>
+        <SettingsCard
+          icon={<Shield className="w-5 h-5 text-red-600" />}
+          iconBg="bg-red-100 dark:bg-red-900/30"
+          title="Security"
+          subtitle="Security and privacy settings"
+          saving={saving === 'security'}
+          message={message?.category === 'security' ? message : null}
+          onSave={() => saveSettings('security')}
+        >
+          <div className="space-y-4">
+            <Toggle
+              label="Two-Factor Authentication"
+              description="Require 2FA for admin accounts"
+              checked={settings.security.twoFactorAuth}
+              onChange={(v) => updateSetting('security', 'twoFactorAuth', v)}
+            />
+            <Select
+              label="Session Timeout"
+              description="Auto-logout after inactivity"
+              value={String(settings.security.sessionTimeout)}
+              options={[
+                { value: '15', label: '15 minutes' },
+                { value: '30', label: '30 minutes' },
+                { value: '60', label: '1 hour' },
+                { value: '120', label: '2 hours' },
+              ]}
+              onChange={(v) => updateSetting('security', 'sessionTimeout', parseInt(v))}
+            />
+            <Select
+              label="Password Expiry"
+              description="Force password reset"
+              value={String(settings.security.passwordExpiry)}
+              options={[
+                { value: '0', label: 'Never' },
+                { value: '30', label: '30 days' },
+                { value: '90', label: '90 days' },
+                { value: '180', label: '180 days' },
+              ]}
+              onChange={(v) => updateSetting('security', 'passwordExpiry', parseInt(v))}
+            />
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-black">Two-Factor Authentication</div>
-                  <div className="text-sm text-gray-600">
-                    Require 2FA for admin accounts
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-5 h-5 text-safety-green-600 rounded focus:ring-safety-green-500"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-black">Session Timeout</div>
-                  <div className="text-sm text-gray-600">Auto-logout after inactivity</div>
-                </div>
-                <select className="px-3 py-1 border border-gray-300 rounded-lg text-sm">
-                  <option>15 minutes</option>
-                  <option>30 minutes</option>
-                  <option>1 hour</option>
-                  <option>2 hours</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-black">Password Expiry</div>
-                  <div className="text-sm text-gray-600">Force password reset</div>
-                </div>
-                <select className="px-3 py-1 border border-gray-300 rounded-lg text-sm">
-                  <option>Never</option>
-                  <option>30 days</option>
-                  <option>90 days</option>
-                  <option>180 days</option>
-                </select>
-              </div>
-              <Button className="w-full bg-safety-green-600 hover:bg-safety-green-700">
-                Save Security Settings
-              </Button>
-            </div>
+        </SettingsCard>
+      </div>
+    </motion.div>
+  );
+}
+
+// Reusable Components
+function SettingsCard({
+  icon,
+  iconBg,
+  title,
+  subtitle,
+  children,
+  saving,
+  message,
+  onSave,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+  saving: boolean;
+  message: { type: 'success' | 'error'; text: string } | null;
+  onSave: () => void;
+}) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center`}>
+            {icon}
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{subtitle}</p>
           </div>
         </div>
       </div>
+      <div className="p-6">
+        {children}
+        {message && (
+          <div
+            className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${
+              message.type === 'success'
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+            }`}
+          >
+            {message.type === 'success' ? (
+              <CheckCircle className="w-4 h-4" />
+            ) : (
+              <AlertCircle className="w-4 h-4" />
+            )}
+            <span className="text-sm">{message.text}</span>
+          </div>
+        )}
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="mt-4 w-full py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+        >
+          {saving ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <Save className="w-5 h-5" />
+              Save {title}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Input({
+  label,
+  type = 'text',
+  value,
+  onChange,
+  prefix,
+  step,
+}: {
+  label: string;
+  type?: string;
+  value: string | number;
+  onChange: (value: string) => void;
+  prefix?: string;
+  step?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        {label}
+      </label>
+      <div className="relative">
+        {prefix && (
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400">
+            {prefix}
+          </span>
+        )}
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          step={step}
+          className={`w-full ${prefix ? 'pl-8' : 'px-3'} pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white`}
+        />
+      </div>
+    </div>
+  );
+}
+
+function Textarea({
+  label,
+  value,
+  onChange,
+  rows = 3,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        {label}
+      </label>
+      <textarea
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white resize-none"
+      />
+    </div>
+  );
+}
+
+function Toggle({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="font-medium text-gray-900 dark:text-white">{label}</div>
+        {description && (
+          <div className="text-sm text-gray-600 dark:text-gray-400">{description}</div>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          checked ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+            checked ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
+function Select({
+  label,
+  description,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  description?: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <div className="font-medium text-gray-900 dark:text-white">{label}</div>
+        {description && (
+          <div className="text-sm text-gray-600 dark:text-gray-400">{description}</div>
+        )}
+      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function PaymentMethod({
+  icon,
+  name,
+  description,
+  active,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  name: string;
+  description: string;
+  active: boolean;
+  onChange: (active: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+      <div className="flex items-center gap-3">
+        {icon}
+        <div>
+          <div className="font-medium text-gray-900 dark:text-white">{name}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{description}</div>
+        </div>
+      </div>
+      <button
+        onClick={() => onChange(!active)}
+        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+          active
+            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        {active ? 'Active' : 'Inactive'}
+      </button>
     </div>
   );
 }
