@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
       const buffer = Buffer.from(bytes);
       await writeFile(filepath, buffer);
 
-      // Return the public URL
-      uploadedUrls.push(`/uploads/products/${filename}`);
+      // Return the public URL (via API route for dynamic serving)
+      uploadedUrls.push(`/api/uploads/products/${filename}`);
     }
 
     if (uploadedUrls.length === 0) {
