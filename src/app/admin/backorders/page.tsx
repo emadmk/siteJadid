@@ -38,7 +38,8 @@ async function getBackorders() {
 export default async function BackordersPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== 'ADMIN') {
+  const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER'];
+  if (!session || !adminRoles.includes(session.user.role)) {
     redirect('/');
   }
 

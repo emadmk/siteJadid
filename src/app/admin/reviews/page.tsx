@@ -32,7 +32,8 @@ async function getReviews() {
 export default async function ReviewsPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== 'ADMIN') {
+  const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'CONTENT_MANAGER'];
+  if (!session || !adminRoles.includes(session.user.role)) {
     redirect('/');
   }
 

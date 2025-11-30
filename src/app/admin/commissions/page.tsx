@@ -49,7 +49,8 @@ async function getCommissions() {
 export default async function CommissionsPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== 'ADMIN') {
+  const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'];
+  if (!session || !adminRoles.includes(session.user.role)) {
     redirect('/');
   }
 

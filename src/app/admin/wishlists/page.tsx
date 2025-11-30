@@ -45,7 +45,8 @@ async function getWishlists() {
 export default async function WishlistsPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session || session.user.role !== 'ADMIN') {
+  const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'];
+  if (!session || !adminRoles.includes(session.user.role)) {
     redirect('/');
   }
 
