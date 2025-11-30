@@ -160,7 +160,7 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
     images: product.images as string[],
     isFeatured: product.isFeatured,
     stockQuantity: product.stockQuantity,
-    category: product.category,
+    category: product.category || undefined,
     averageRating: ratingMap.get(product.id) || 0,
     reviewCount: product._count.reviews,
   }));
