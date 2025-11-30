@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { ConditionalHeader } from '@/components/ConditionalHeader';
+import { ConditionalFooter } from '@/components/ConditionalFooter';
+import { GlobalModals } from '@/components/GlobalModals';
 
 export const metadata: Metadata = {
-  title: 'SafetyPro Store - Professional Safety Equipment',
-  description: 'Premium safety equipment for professionals. ANSI certified products including safety footwear, head protection, hi-vis clothing, and more.',
+  title: 'AdaSupply - Professional Safety Equipment',
+  description: 'Your trusted source for professional safety equipment. ANSI certified products for industrial, construction, and workplace safety needs. B2B and GSA approved.',
 };
 
 export default function RootLayout({
@@ -15,10 +17,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased min-h-screen flex flex-col">
         <Providers>
           <ConditionalHeader />
-          {children}
+          <main className="flex-1">{children}</main>
+          <ConditionalFooter />
+          <GlobalModals />
         </Providers>
       </body>
     </html>

@@ -1,64 +1,53 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Package, ShoppingCart, CheckCircle } from 'lucide-react';
+import { ShoppingCart, CheckCircle, Loader2, Minus, Plus } from 'lucide-react';
+import { useCart } from '@/contexts/CartContext';
 
 interface AddToCartButtonProps {
   productId: string;
   stockQuantity: number;
   disabled?: boolean;
+  showQuantitySelector?: boolean;
 }
 
-export function AddToCartButton({ productId, stockQuantity, disabled = false }: AddToCartButtonProps) {
-  const { data: session } = useSession();
-  const router = useRouter();
+export function AddToCartButton({
+  productId,
+  stockQuantity,
+  disabled = false,
+  showQuantitySelector = true,
+}: AddToCartButtonProps) {
+  const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [quantity, setQuantity] = useState(1);
 
   const handleAddToCart = async () => {
-    if (!session) {
-      // Redirect to signin if not logged in
-      router.push(`/auth/signin?callbackUrl=${window.location.pathname}`);
-      return;
-    }
-
     setIsAdding(true);
 
     try {
-      const response = await fetch('/api/cart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId,
-          quantity: 1,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to add to cart');
-      }
-
-      // Show success state
+      await addToCart(productId, quantity);
       setJustAdded(true);
-
-      // Trigger cart update by dispatching custom event
-      window.dispatchEvent(new CustomEvent('cartUpdated'));
-
-      // Reset after 2 seconds
       setTimeout(() => {
         setJustAdded(false);
       }, 2000);
     } catch (error) {
       console.error('Add to cart error:', error);
-      alert(error instanceof Error ? error.message : 'Failed to add to cart');
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const incrementQuantity = () => {
+    if (quantity < stockQuantity) {
+      setQuantity(quantity + 1);
+    }
+  };
+
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(quantity - 1);
     }
   };
 
@@ -68,7 +57,7 @@ export function AddToCartButton({ productId, stockQuantity, disabled = false }: 
     return (
       <Button
         size="lg"
-        className="w-full bg-green-600 hover:bg-green-700 text-lg"
+        className="w-full bg-safety-green-600 hover:bg-safety-green-700 text-lg"
         disabled
       >
         <CheckCircle className="w-5 h-5 mr-2" />
@@ -78,23 +67,63 @@ export function AddToCartButton({ productId, stockQuantity, disabled = false }: 
   }
 
   return (
-    <Button
-      size="lg"
-      className="w-full bg-primary hover:bg-primary/90 text-lg"
-      onClick={handleAddToCart}
-      disabled={isDisabled}
-    >
-      {isAdding ? (
-        <>
-          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-          Adding...
-        </>
-      ) : (
-        <>
-          <ShoppingCart className="w-5 h-5 mr-2" />
-          {stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-        </>
+    <div className="space-y-3">
+      {showQuantitySelector && stockQuantity > 0 && (
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-black">Quantity:</span>
+          <div className="flex items-center border border-gray-300 rounded-lg">
+            <button
+              onClick={decrementQuantity}
+              disabled={quantity <= 1}
+              className="p-2 hover:bg-gray-100 rounded-l-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <input
+              type="number"
+              min="1"
+              max={stockQuantity}
+              value={quantity}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 1;
+                setQuantity(Math.min(Math.max(1, val), stockQuantity));
+              }}
+              className="w-16 text-center border-x border-gray-300 py-2 focus:outline-none"
+            />
+            <button
+              onClick={incrementQuantity}
+              disabled={quantity >= stockQuantity}
+              className="p-2 hover:bg-gray-100 rounded-r-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          {stockQuantity < 20 && (
+            <span className="text-sm text-orange-600">
+              {stockQuantity} available
+            </span>
+          )}
+        </div>
       )}
-    </Button>
+
+      <Button
+        size="lg"
+        className="w-full bg-safety-green-600 hover:bg-safety-green-700 text-lg"
+        onClick={handleAddToCart}
+        disabled={isDisabled}
+      >
+        {isAdding ? (
+          <>
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            Adding...
+          </>
+        ) : (
+          <>
+            <ShoppingCart className="w-5 h-5 mr-2" />
+            {stockQuantity === 0 ? 'Out of Stock' : `Add to Cart${quantity > 1 ? ` (${quantity})` : ''}`}
+          </>
+        )}
+      </Button>
+    </div>
   );
 }

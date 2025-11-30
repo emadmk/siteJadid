@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { Header } from './Header';
+import { StorefrontHeader } from './storefront/layout/StorefrontHeader';
 
 export function ConditionalHeader() {
   const pathname = usePathname();
@@ -11,5 +11,5 @@ export function ConditionalHeader() {
     return null;
   }
 
-  return <Header />;
+  return <StorefrontHeader />;
 }
