@@ -306,12 +306,12 @@ export async function GET(
         ${order.items.map(item => `
           <tr>
             <td>
-              <div class="item-name">${item.product?.name || item.productName || 'Product'}</div>
+              <div class="item-name">${item.product?.name || item.name || 'Product'}</div>
               <div class="item-sku">SKU: ${item.product?.sku || item.sku || 'N/A'}</div>
             </td>
             <td class="text-right">${item.quantity}</td>
-            <td class="text-right">$${Number(item.unitPrice).toFixed(2)}</td>
-            <td class="text-right">$${Number(item.totalPrice).toFixed(2)}</td>
+            <td class="text-right">$${Number(item.price).toFixed(2)}</td>
+            <td class="text-right">$${Number(item.total).toFixed(2)}</td>
           </tr>
         `).join('')}
       </tbody>
