@@ -1,135 +1,180 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { FileText, Search, Download, Eye, Printer } from 'lucide-react';
-import { db } from '@/lib/db';
+import { FileText, Search, Download, Eye, Printer, RefreshCw, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-async function getInvoices(searchParams: {
-  status?: string;
-  accountType?: string;
-  search?: string;
-}) {
-  const where: any = {};
-
-  // Map invoice status filter to order status
-  if (searchParams.status === 'paid') {
-    where.paymentStatus = 'PAID';
-  } else if (searchParams.status === 'unpaid') {
-    where.paymentStatus = { in: ['PENDING', 'FAILED'] };
-  } else if (searchParams.status === 'overdue') {
-    where.AND = [
-      { paymentStatus: { in: ['PENDING', 'FAILED'] } },
-      {
-        createdAt: {
-          lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-        },
-      },
-    ];
-  }
-
-  if (searchParams.accountType) {
-    where.accountType = searchParams.accountType;
-  }
-
-  if (searchParams.search) {
-    where.OR = [
-      { orderNumber: { contains: searchParams.search, mode: 'insensitive' } },
-      {
-        user: {
-          OR: [
-            { name: { contains: searchParams.search, mode: 'insensitive' } },
-            { email: { contains: searchParams.search, mode: 'insensitive' } },
-          ],
-        },
-      },
-    ];
-  }
-
-  const invoices = await db.order.findMany({
-    where,
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          accountType: true,
-        },
-      },
-      billingAddress: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: 100,
-  });
-
-  return invoices;
-}
-
-async function getInvoiceStats() {
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-  const [total, paid, unpaid, overdue] = await Promise.all([
-    db.order.count(),
-    db.order.count({
-      where: {
-        paymentStatus: 'PAID',
-      },
-    }),
-    db.order.count({
-      where: {
-        paymentStatus: { in: ['PENDING', 'FAILED'] },
-      },
-    }),
-    db.order.count({
-      where: {
-        paymentStatus: { in: ['PENDING', 'FAILED'] },
-        createdAt: {
-          lt: thirtyDaysAgo,
-        },
-      },
-    }),
-  ]);
-
-  const [paidAmount, unpaidAmount, overdueAmount] = await Promise.all([
-    db.order.aggregate({
-      _sum: { totalAmount: true },
-      where: { paymentStatus: 'PAID' },
-    }),
-    db.order.aggregate({
-      _sum: { totalAmount: true },
-      where: { paymentStatus: { in: ['PENDING', 'FAILED'] } },
-    }),
-    db.order.aggregate({
-      _sum: { totalAmount: true },
-      where: {
-        paymentStatus: { in: ['PENDING', 'FAILED'] },
-        createdAt: { lt: thirtyDaysAgo },
-      },
-    }),
-  ]);
-
-  return {
-    total,
-    paid,
-    unpaid,
-    overdue,
-    paidAmount: Number(paidAmount._sum.totalAmount || 0),
-    unpaidAmount: Number(unpaidAmount._sum.totalAmount || 0),
-    overdueAmount: Number(overdueAmount._sum.totalAmount || 0),
+interface Invoice {
+  id: string;
+  orderNumber: string;
+  accountType: string;
+  createdAt: string;
+  totalAmount: number;
+  paymentStatus: string;
+  user?: {
+    id: string;
+    name: string | null;
+    email: string;
+    accountType: string;
+  };
+  billingAddress?: {
+    firstName: string;
+    lastName: string;
+    company?: string;
   };
 }
 
-export default async function InvoicesPage({
-  searchParams,
-}: {
-  searchParams: { status?: string; accountType?: string; search?: string };
-}) {
-  const [invoices, stats] = await Promise.all([
-    getInvoices(searchParams),
-    getInvoiceStats(),
-  ]);
+interface InvoiceStats {
+  total: number;
+  paid: number;
+  unpaid: number;
+  overdue: number;
+  paidAmount: number;
+  unpaidAmount: number;
+  overdueAmount: number;
+}
+
+export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [stats, setStats] = useState<InvoiceStats>({
+    total: 0,
+    paid: 0,
+    unpaid: 0,
+    overdue: 0,
+    paidAmount: 0,
+    unpaidAmount: 0,
+    overdueAmount: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [accountTypeFilter, setAccountTypeFilter] = useState('');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [printingId, setPrintingId] = useState<string | null>(null);
+
+  const fetchInvoices = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (statusFilter) params.append('status', statusFilter);
+      if (accountTypeFilter) params.append('accountType', accountTypeFilter);
+
+      const response = await fetch(`/api/admin/invoices?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setInvoices(data.invoices || []);
+        setStats(data.stats || {
+          total: 0,
+          paid: 0,
+          unpaid: 0,
+          overdue: 0,
+          paidAmount: 0,
+          unpaidAmount: 0,
+          overdueAmount: 0,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchInvoices();
+  };
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('');
+    setAccountTypeFilter('');
+    setTimeout(fetchInvoices, 0);
+  };
+
+  const handleDownload = async (invoiceId: string, orderNumber: string) => {
+    setDownloadingId(invoiceId);
+    try {
+      const response = await fetch(`/api/admin/invoices/${invoiceId}/pdf`);
+      if (response.ok) {
+        const html = await response.text();
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice-${orderNumber}.html`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handlePrint = async (invoiceId: string) => {
+    setPrintingId(invoiceId);
+    try {
+      const response = await fetch(`/api/admin/invoices/${invoiceId}/pdf`);
+      if (response.ok) {
+        const html = await response.text();
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(html);
+          printWindow.document.close();
+          printWindow.onload = () => {
+            printWindow.print();
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Error printing invoice:', error);
+    } finally {
+      setPrintingId(null);
+    }
+  };
+
+  const handleExportAll = async () => {
+    // Export all invoices as CSV
+    const csvContent = [
+      ['Invoice #', 'Customer', 'Email', 'Account Type', 'Issue Date', 'Due Date', 'Amount', 'Status'].join(','),
+      ...invoices.map(invoice => {
+        const dueDate = new Date(invoice.createdAt);
+        dueDate.setDate(dueDate.getDate() + 30);
+        const status = getInvoiceStatus(invoice);
+        return [
+          `INV-${invoice.orderNumber}`,
+          invoice.user?.name || 'Guest',
+          invoice.user?.email || '',
+          invoice.accountType,
+          new Date(invoice.createdAt).toLocaleDateString(),
+          dueDate.toLocaleDateString(),
+          Number(invoice.totalAmount).toFixed(2),
+          status,
+        ].join(',');
+      }),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `invoices-export-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
 
   const accountTypeColors: Record<string, string> = {
     B2C: 'bg-blue-100 text-blue-800',
@@ -137,7 +182,7 @@ export default async function InvoicesPage({
     GSA: 'bg-safety-green-100 text-safety-green-800',
   };
 
-  const getInvoiceStatus = (order: any) => {
+  const getInvoiceStatus = (order: Invoice) => {
     if (order.paymentStatus === 'PAID') return 'paid';
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     if (
@@ -170,20 +215,43 @@ export default async function InvoicesPage({
           <h1 className="text-3xl font-bold text-black mb-2">Invoices</h1>
           <p className="text-gray-600">Manage and track customer invoices</p>
         </div>
-        <Button variant="outline" className="border-gray-300">
-          <Download className="w-4 h-4 mr-2" />
-          Export All
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="border-gray-300"
+            onClick={fetchInvoices}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button
+            variant="outline"
+            className="border-gray-300"
+            onClick={handleExportAll}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export All
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-lg border border-gray-200 p-6"
+        >
           <div className="text-3xl font-bold text-black mb-1">{stats.total}</div>
           <div className="text-sm text-gray-600">Total Invoices</div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-lg border border-gray-200 p-6"
+        >
           <div className="text-3xl font-bold text-safety-green-600 mb-1">
             {stats.paid}
           </div>
@@ -191,28 +259,38 @@ export default async function InvoicesPage({
           <div className="text-xs text-gray-500 mt-1">
             ${stats.paidAmount.toFixed(2)}
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-lg border border-gray-200 p-6"
+        >
           <div className="text-3xl font-bold text-yellow-600 mb-1">{stats.unpaid}</div>
           <div className="text-sm text-gray-600">Unpaid Invoices</div>
           <div className="text-xs text-gray-500 mt-1">
             ${stats.unpaidAmount.toFixed(2)}
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white rounded-lg border border-gray-200 p-6"
+        >
           <div className="text-3xl font-bold text-red-600 mb-1">{stats.overdue}</div>
           <div className="text-sm text-gray-600">Overdue Invoices</div>
           <div className="text-xs text-gray-500 mt-1">
             ${stats.overdueAmount.toFixed(2)}
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <form className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -222,8 +300,8 @@ export default async function InvoicesPage({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                name="search"
-                defaultValue={searchParams.search}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by invoice number, customer..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
               />
@@ -236,8 +314,8 @@ export default async function InvoicesPage({
               Status
             </label>
             <select
-              name="status"
-              defaultValue={searchParams.status || ''}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
             >
               <option value="">All Status</option>
@@ -253,8 +331,8 @@ export default async function InvoicesPage({
               Account Type
             </label>
             <select
-              name="accountType"
-              defaultValue={searchParams.accountType || ''}
+              value={accountTypeFilter}
+              onChange={(e) => setAccountTypeFilter(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
             >
               <option value="">All Types</option>
@@ -268,11 +346,9 @@ export default async function InvoicesPage({
             <Button type="submit" className="bg-safety-green-600 hover:bg-safety-green-700">
               Apply Filters
             </Button>
-            <Link href="/admin/accounting/invoices">
-              <Button type="button" variant="outline" className="border-gray-300">
-                Clear
-              </Button>
-            </Link>
+            <Button type="button" variant="outline" className="border-gray-300" onClick={clearFilters}>
+              Clear
+            </Button>
           </div>
         </form>
       </div>
@@ -280,12 +356,17 @@ export default async function InvoicesPage({
       {/* Invoices Table */}
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="overflow-x-auto">
-          {invoices.length === 0 ? (
+          {loading ? (
+            <div className="p-12 text-center">
+              <RefreshCw className="w-8 h-8 text-safety-green-600 mx-auto mb-4 animate-spin" />
+              <p className="text-gray-600">Loading invoices...</p>
+            </div>
+          ) : invoices.length === 0 ? (
             <div className="p-12 text-center">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-black mb-2">No invoices found</h3>
               <p className="text-gray-600">
-                {searchParams.search || searchParams.status || searchParams.accountType
+                {search || statusFilter || accountTypeFilter
                   ? 'Try adjusting your filters'
                   : 'No invoices have been generated yet'}
               </p>
@@ -321,83 +402,103 @@ export default async function InvoicesPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {invoices.map((invoice) => {
-                  const status = getInvoiceStatus(invoice);
-                  const dueDate = new Date(invoice.createdAt);
-                  dueDate.setDate(dueDate.getDate() + 30); // 30 days payment term
+                <AnimatePresence>
+                  {invoices.map((invoice, index) => {
+                    const status = getInvoiceStatus(invoice);
+                    const dueDate = new Date(invoice.createdAt);
+                    dueDate.setDate(dueDate.getDate() + 30);
 
-                  return (
-                    <tr key={invoice.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <span className="font-mono text-sm font-medium text-black">
-                          INV-{invoice.orderNumber}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-black">
-                          {invoice.user?.name || 'Guest'}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {invoice.user?.email || '-'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            accountTypeColors[invoice.accountType]
-                          }`}
-                        >
-                          {invoice.accountType}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {new Date(invoice.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {dueDate.toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-safety-green-600">
-                        ${Number(invoice.totalAmount).toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium uppercase ${getInvoiceStatusColor(
-                            status
-                          )}`}
-                        >
-                          {status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/admin/orders/${invoice.id}`}>
+                    return (
+                      <motion.tr
+                        key={invoice.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03 }}
+                        className="hover:bg-gray-50"
+                      >
+                        <td className="px-6 py-4">
+                          <span className="font-mono text-sm font-medium text-black">
+                            INV-{invoice.orderNumber}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-black">
+                            {invoice.user?.name || 'Guest'}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {invoice.user?.email || '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              accountTypeColors[invoice.accountType] || 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {invoice.accountType}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {new Date(invoice.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {dueDate.toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-semibold text-safety-green-600">
+                          ${Number(invoice.totalAmount).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium uppercase ${getInvoiceStatusColor(
+                              status
+                            )}`}
+                          >
+                            {status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link href={`/admin/orders/${invoice.id}`}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-gray-300 hover:border-blue-600 hover:text-blue-600"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </Link>
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-gray-300 hover:border-blue-600 hover:text-blue-600"
+                              className="border-gray-300 hover:border-safety-green-600 hover:text-safety-green-600"
+                              onClick={() => handleDownload(invoice.id, invoice.orderNumber)}
+                              disabled={downloadingId === invoice.id}
                             >
-                              <Eye className="w-4 h-4" />
+                              {downloadingId === invoice.id ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Download className="w-4 h-4" />
+                              )}
                             </Button>
-                          </Link>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-gray-300 hover:border-safety-green-600 hover:text-safety-green-600"
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-gray-300 hover:border-gray-600 hover:text-gray-600"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-gray-300 hover:border-gray-600 hover:text-gray-600"
+                              onClick={() => handlePrint(invoice.id)}
+                              disabled={printingId === invoice.id}
+                            >
+                              {printingId === invoice.id ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Printer className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
               </tbody>
             </table>
           )}
