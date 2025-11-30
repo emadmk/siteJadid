@@ -257,7 +257,7 @@ export async function GET(
         ${billingAddress?.company ? `<p>${billingAddress.company}</p>` : ''}
         <p>${billingAddress?.addressLine1 || ''}</p>
         ${billingAddress?.addressLine2 ? `<p>${billingAddress.addressLine2}</p>` : ''}
-        <p>${billingAddress?.city || ''}, ${billingAddress?.state || ''} ${billingAddress?.postalCode || ''}</p>
+        <p>${billingAddress?.city || ''}, ${billingAddress?.state || ''} ${billingAddress?.zipCode || ''}</p>
         <p>${billingAddress?.country || ''}</p>
         <p>${order.user?.email || ''}</p>
       </div>
@@ -267,7 +267,7 @@ export async function GET(
         ${shippingAddress?.company ? `<p>${shippingAddress.company}</p>` : ''}
         <p>${shippingAddress?.addressLine1 || ''}</p>
         ${shippingAddress?.addressLine2 ? `<p>${shippingAddress.addressLine2}</p>` : ''}
-        <p>${shippingAddress?.city || ''}, ${shippingAddress?.state || ''} ${shippingAddress?.postalCode || ''}</p>
+        <p>${shippingAddress?.city || ''}, ${shippingAddress?.state || ''} ${shippingAddress?.zipCode || ''}</p>
         <p>${shippingAddress?.country || ''}</p>
       </div>
     </div>
