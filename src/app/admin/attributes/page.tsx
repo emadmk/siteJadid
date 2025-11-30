@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react';
 
 export default async function AttributesPage() {
   const attributes = await db.productAttribute.findMany({
-    include: { _count: { select: { products: true } } },
+    include: { _count: { select: { values: true } } },
   });
 
   return (
@@ -19,7 +19,7 @@ export default async function AttributesPage() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Products</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Products Using</th>
             </tr>
           </thead>
           <tbody>
@@ -27,7 +27,7 @@ export default async function AttributesPage() {
               <tr key={attr.id}>
                 <td className="px-6 py-4">{attr.name}</td>
                 <td className="px-6 py-4">{attr.type}</td>
-                <td className="px-6 py-4">{attr._count.products}</td>
+                <td className="px-6 py-4">{attr._count.values}</td>
               </tr>
             ))}
           </tbody>
