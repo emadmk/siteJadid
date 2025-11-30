@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import {
   User,
   Mail,
@@ -19,7 +20,10 @@ import {
 export default function AdminProfilePage() {
   const { data: session, update: updateSession } = useSession();
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -37,8 +41,93 @@ export default function AdminProfilePage() {
         name: session.user.name || '',
         email: session.user.email || '',
       }));
+      if (session.user.image) {
+        setProfileImage(session.user.image);
+      }
     }
   }, [session]);
+
+  // Fetch user profile to get phone and image
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/user/profile');
+        if (res.ok) {
+          const data = await res.json();
+          setFormData(prev => ({
+            ...prev,
+            phone: data.phone || '',
+          }));
+          if (data.image) {
+            setProfileImage(data.image);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    };
+    if (session?.user) {
+      fetchProfile();
+    }
+  }, [session]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setMessage({ type: 'error', text: 'Please select a valid image file (JPEG, PNG, GIF, WebP)' });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image size must be less than 5MB' });
+      return;
+    }
+
+    setUploadingImage(true);
+    setMessage(null);
+
+    try {
+      // Upload image
+      const formData = new FormData();
+      formData.append('files', file);
+
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const uploadData = await uploadRes.json();
+      const imageUrl = uploadData.urls[0];
+
+      // Update profile with new image
+      const profileRes = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageUrl }),
+      });
+
+      if (profileRes.ok) {
+        setProfileImage(imageUrl);
+        setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
+        await updateSession({ image: imageUrl });
+      } else {
+        throw new Error('Failed to update profile');
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to upload profile picture. Please try again.' });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,11 +253,38 @@ export default function AdminProfilePage() {
         <div className="px-6 pb-6">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12">
             <div className="relative">
-              <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold border-4 border-white dark:border-gray-800 shadow-lg">
-                {getUserInitials(session?.user?.name)}
-              </div>
-              <button className="absolute bottom-0 right-0 p-1.5 bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                <Camera className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              {profileImage ? (
+                <div className="w-24 h-24 rounded-2xl border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden">
+                  <Image
+                    src={profileImage}
+                    alt="Profile"
+                    width={96}
+                    height={96}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold border-4 border-white dark:border-gray-800 shadow-lg">
+                  {getUserInitials(session?.user?.name)}
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImage}
+                className="absolute bottom-0 right-0 p-1.5 bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+              >
+                {uploadingImage ? (
+                  <Loader2 className="w-4 h-4 text-gray-600 dark:text-gray-400 animate-spin" />
+                ) : (
+                  <Camera className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                )}
               </button>
             </div>
             <div className="flex-1 pt-2">
