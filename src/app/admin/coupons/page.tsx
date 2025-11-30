@@ -114,48 +114,68 @@ export default async function CouponsPage() {
         </form>
       </div>
 
-      {/* Coupons List - Placeholder */}
+      {/* Coupons List */}
       <div className="bg-white rounded-lg border border-gray-200">
-        <div className="p-12 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Tag className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-black mb-2">Coupons Feature</h3>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            The coupons feature requires database schema updates. Add the Coupon model to
-            your Prisma schema to enable this functionality.
-          </p>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto text-left">
-            <h4 className="font-semibold text-blue-900 mb-2">
-              Suggested Coupon Model:
-            </h4>
-            <pre className="text-sm text-blue-800 overflow-x-auto">
-              {`model Coupon {
-  id               String    @id @default(uuid())
-  code             String    @unique
-  description      String?
-  discountType     String    // PERCENTAGE, FIXED, FREE_SHIPPING
-  discountValue    Decimal
-  minPurchase      Decimal?
-  maxDiscount      Decimal?
-  startDate        DateTime
-  endDate          DateTime
-  usageLimit       Int?
-  usageCount       Int       @default(0)
-  perCustomerLimit Int?
-  isActive         Boolean   @default(true)
-  accountTypes     String[]  // B2C, B2B, GSA
-  productIds       String[]
-  categoryIds      String[]
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usage</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valid Until</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {coupons.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                  No coupons found. Create your first coupon to get started.
+                </td>
+              </tr>
+            ) : (
+              coupons.map((coupon) => {
+                const isExpired = coupon.endsAt && coupon.endsAt < new Date();
+                const status = !coupon.isActive ? 'Disabled' : isExpired ? 'Expired' : 'Active';
+                const statusColor = status === 'Active' ? 'bg-green-100 text-green-800' : status === 'Expired' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800';
 
-  // Relations
-  orders           Order[]
-}`}
-            </pre>
-          </div>
-        </div>
+                return (
+                  <tr key={coupon.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="font-mono font-medium text-black">{coupon.code}</div>
+                      {coupon.description && (
+                        <div className="text-sm text-gray-500">{coupon.description}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {coupon.discountType === 'PERCENTAGE' ? 'Percentage' :
+                       coupon.discountType === 'FIXED' ? 'Fixed Amount' : 'Free Shipping'}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-black">
+                      {coupon.discountType === 'PERCENTAGE'
+                        ? `${Number(coupon.discountValue)}%`
+                        : coupon.discountType === 'FIXED'
+                        ? `$${Number(coupon.discountValue).toFixed(2)}`
+                        : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {coupon.usageCount}{coupon.usageLimit ? ` / ${coupon.usageLimit}` : ''}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {coupon.endsAt ? new Date(coupon.endsAt).toLocaleDateString() : 'No expiration'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColor}`}>
+                        {status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
