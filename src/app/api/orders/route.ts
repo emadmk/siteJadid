@@ -176,12 +176,16 @@ export async function POST(request: NextRequest) {
         price = Number(item.product.gsaPrice);
       }
 
-      subtotal += price * item.quantity;
+      const itemTotal = price * item.quantity;
+      subtotal += itemTotal;
 
       return {
         productId: item.productId,
+        sku: item.product.sku,
+        name: item.product.name,
         quantity: item.quantity,
         price,
+        total: itemTotal,
       };
     });
 
