@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import { OrderStatusUpdater } from '@/components/admin/OrderStatusUpdater';
-import { ArrowLeft, Package, MapPin, CreditCard, Truck, User, Building2, Warehouse } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, CreditCard, Truck, User, Building2, Warehouse, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -27,6 +27,26 @@ async function getOrder(id: string) {
               slug: true,
               images: true,
               sku: true,
+              brand: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              defaultSupplier: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
+              defaultWarehouse: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
             },
           },
           supplier: {
@@ -165,18 +185,24 @@ export default async function OrderDetailPage({
                           Discount: -${Number(item.discount).toFixed(2)}
                         </div>
                       )}
-                      {/* Supplier & Warehouse Info */}
+                      {/* Brand, Supplier & Warehouse Info */}
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {item.supplier && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">
-                            <Building2 className="w-3 h-3" />
-                            {item.supplier.name}
+                        {item.product.brand && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
+                            <Tag className="w-3 h-3" />
+                            {item.product.brand.name}
                           </span>
                         )}
-                        {item.warehouse && (
+                        {(item.supplier || item.product.defaultSupplier) && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">
+                            <Building2 className="w-3 h-3" />
+                            {item.supplier?.name || item.product.defaultSupplier?.name}
+                          </span>
+                        )}
+                        {(item.warehouse || item.product.defaultWarehouse) && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded">
                             <Warehouse className="w-3 h-3" />
-                            {item.warehouse.name}
+                            {item.warehouse?.name || item.product.defaultWarehouse?.name}
                           </span>
                         )}
                         {item.stockSource && item.stockSource !== 'OUR_WAREHOUSE' && (
