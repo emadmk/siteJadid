@@ -90,8 +90,8 @@ export async function POST(request: NextRequest) {
           processedRows: result.processedRows,
           successCount: result.successCount,
           errorCount: result.errorCount,
-          errors: result.errors as unknown as Record<string, unknown>[],
-          warnings: result.warnings as unknown as Record<string, unknown>[],
+          errors: JSON.parse(JSON.stringify(result.errors)),
+          warnings: JSON.parse(JSON.stringify(result.warnings)),
           summary: {
             createdProducts: result.createdProducts,
             updatedProducts: result.updatedProducts,
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         where: { id: importJob.id },
         data: {
           status: 'FAILED',
-          errors: [
+          errors: JSON.parse(JSON.stringify([
             {
               row: 0,
               field: 'general',
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
                   ? importError.message
                   : 'Unknown error during import',
             },
-          ] as unknown as Record<string, unknown>[],
+          ])),
           completedAt: new Date(),
         },
       });
