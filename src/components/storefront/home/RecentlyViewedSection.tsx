@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, Eye, X } from 'lucide-react';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { getImageSize } from '@/lib/image-utils';
 
 export function RecentlyViewedSection() {
   const { products, clearProducts } = useRecentlyViewed();
@@ -33,12 +34,12 @@ export function RecentlyViewedSection() {
               <div className="h-32 bg-white rounded-lg overflow-hidden border border-gray-200 group-hover:border-safety-green-300 transition-colors">
                 {product.images && product.images.length > 0 ? (
                   <img
-                    src={product.images[0]}
+                    src={getImageSize(product.images[0], 'medium')}
                     alt={product.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-1"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                  <div className="w-full h-full flex items-center justify-center bg-gray-50">
                     <Eye className="w-8 h-8 text-gray-300" />
                   </div>
                 )}
