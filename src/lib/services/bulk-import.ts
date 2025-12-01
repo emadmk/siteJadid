@@ -681,7 +681,7 @@ export class BulkImportService {
               },
               data: {
                 quantity: product.stockQuantity || 0,
-                availableQuantity: product.stockQuantity || 0,
+                available: product.stockQuantity || 0,
               },
             });
           } else {
@@ -691,8 +691,8 @@ export class BulkImportService {
                 warehouseId: defaultWarehouseId,
                 productId: savedProduct.id,
                 quantity: product.stockQuantity || 0,
-                availableQuantity: product.stockQuantity || 0,
-                reservedQuantity: 0,
+                available: product.stockQuantity || 0,
+                reserved: 0,
                 reorderPoint: 10,
                 reorderQuantity: 50,
               },
