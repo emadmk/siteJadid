@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search, X, Clock, TrendingUp, ArrowRight, Package, Loader2 } from 'lucide-react';
 import { useSearch } from '@/contexts/SearchContext';
+import { getImageSize } from '@/lib/image-utils';
 
 export function SearchModal() {
   const router = useRouter();
@@ -175,15 +176,15 @@ export function SearchModal() {
                         }`}
                       >
                         {/* Product Image */}
-                        <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                        <div className="w-16 h-16 bg-white rounded-lg overflow-hidden flex-shrink-0 border border-gray-100">
                           {product.images && product.images.length > 0 ? (
                             <img
-                              src={product.images[0]}
+                              src={getImageSize(product.images[0], 'thumb')}
                               alt={product.name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain p-1"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center">
+                            <div className="w-full h-full flex items-center justify-center bg-gray-50">
                               <Package className="w-8 h-8 text-gray-300" />
                             </div>
                           )}
