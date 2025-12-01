@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { X, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Loader2, Tag, Truck } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
@@ -10,6 +10,21 @@ export function CartDrawer() {
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(100);
+
+  // Fetch shipping settings
+  useEffect(() => {
+    fetch('/api/settings/shipping')
+      .then(res => res.json())
+      .then(data => {
+        if (data.freeThreshold) {
+          setFreeShippingThreshold(data.freeThreshold);
+        }
+      })
+      .catch(() => {
+        // Keep default on error
+      });
+  }, []);
 
   if (!isCartOpen) return null;
 
@@ -62,7 +77,6 @@ export function CartDrawer() {
   };
 
   const subtotal = cart?.subtotal || 0;
-  const freeShippingThreshold = 99;
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
   const progressPercentage = Math.min((subtotal / freeShippingThreshold) * 100, 100);
 

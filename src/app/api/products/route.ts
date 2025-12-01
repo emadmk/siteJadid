@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search') || '';
+    const sku = searchParams.get('sku') || '';
     const categoryId = searchParams.get('categoryId') || '';
     const featured = searchParams.get('featured') === 'true';
     const bestSeller = searchParams.get('bestSeller') === 'true';
@@ -19,6 +20,34 @@ export async function GET(request: NextRequest) {
     const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined;
     const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined;
     const sort = searchParams.get('sort') || 'createdAt_desc';
+
+    // SKU search - direct database lookup
+    if (sku) {
+      const products = await db.product.findMany({
+        where: {
+          status: 'ACTIVE',
+          OR: [
+            { sku: { equals: sku, mode: 'insensitive' } },
+            { sku: { contains: sku, mode: 'insensitive' } },
+          ],
+        },
+        include: {
+          category: true,
+          _count: {
+            select: { reviews: true },
+          },
+        },
+        take: limit,
+      });
+
+      return NextResponse.json({
+        products,
+        total: products.length,
+        page: 1,
+        limit,
+        totalPages: 1,
+      });
+    }
 
     // Build cache key
     const cacheKey = `products:${page}:${limit}:${search}:${categoryId}:${featured}:${bestSeller}:${newArrival}:${minPrice}:${maxPrice}:${sort}`;
