@@ -107,14 +107,23 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
     setError('');
 
     try {
-      const formData = new FormData();
+      const uploadFormData = new FormData();
       Array.from(files).forEach(file => {
-        formData.append('files', file);
+        uploadFormData.append('files', file);
       });
+
+      // Add brand and sku for organized folder structure
+      const selectedBrand = brands.find(b => b.id === formData.brandId);
+      if (selectedBrand) {
+        uploadFormData.append('brandSlug', selectedBrand.name);
+      }
+      if (formData.sku) {
+        uploadFormData.append('productSku', formData.sku);
+      }
 
       const response = await fetch('/api/upload', {
         method: 'POST',
-        body: formData,
+        body: uploadFormData,
       });
 
       const data = await response.json();
@@ -143,16 +152,25 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
     setError('');
 
     try {
-      const formData = new FormData();
+      const uploadFormData = new FormData();
       Array.from(files).forEach(file => {
         if (file.type.startsWith('image/')) {
-          formData.append('files', file);
+          uploadFormData.append('files', file);
         }
       });
 
+      // Add brand and sku for organized folder structure
+      const selectedBrand = brands.find(b => b.id === formData.brandId);
+      if (selectedBrand) {
+        uploadFormData.append('brandSlug', selectedBrand.name);
+      }
+      if (formData.sku) {
+        uploadFormData.append('productSku', formData.sku);
+      }
+
       const response = await fetch('/api/upload', {
         method: 'POST',
-        body: formData,
+        body: uploadFormData,
       });
 
       const data = await response.json();

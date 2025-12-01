@@ -15,11 +15,12 @@ const mimeTypes: Record<string, string> = {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
     // Construct the file path
-    const filePath = params.path.join('/');
+    const resolvedParams = await params;
+    const filePath = resolvedParams.path.join('/');
 
     // Prevent directory traversal attacks
     if (filePath.includes('..')) {
