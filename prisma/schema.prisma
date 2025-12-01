@@ -103,6 +103,7 @@ model User {
   emailLogs EmailLog[] @relation("UserEmailLogs")
   errorLogs ErrorLog[] @relation("UserErrorLogs")
   searchQueries SearchQuery[] @relation("UserSearchQueries")
+  bulkImportJobs BulkImportJob[]
 
   @@index([email])
   @@index([role])
@@ -458,6 +459,7 @@ model Product {
   bulkOrderTemplateItems BulkOrderTemplateItem[]
   shoppingListItems ShoppingListItem[]
   stockNotifications StockNotification[]
+  productImages     ProductImage[]
 
   @@index([slug])
   @@index([sku])
@@ -486,6 +488,133 @@ model ProductVariant {
 
   @@index([productId])
   @@index([sku])
+}
+
+// ============================================
+// PRODUCT IMAGES (Professional Image Management)
+// ============================================
+
+model ProductImage {
+  id          String   @id @default(cuid())
+  productId   String
+
+  // Image URLs for different sizes
+  originalUrl String   // Original uploaded image
+  largeUrl    String?  // 1200px width
+  mediumUrl   String?  // 600px width
+  thumbUrl    String?  // 200px width
+
+  // Metadata
+  altText     String?  // SEO alt text
+  title       String?  // Image title
+  position    Int      @default(0) // Display order
+  isPrimary   Boolean  @default(false) // Main product image
+
+  // File info
+  originalName String? // Original filename
+  fileSize    Int?     // Size in bytes
+  mimeType    String?  // image/jpeg, image/webp, etc.
+  width       Int?     // Original width
+  height      Int?     // Original height
+  hash        String?  // File hash for deduplication
+
+  // Storage path info
+  storagePath String?  // e.g., brands/3m/SKU-001/
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([hash])
+  @@index([isPrimary])
+}
+
+// ============================================
+// BULK IMPORT SYSTEM
+// ============================================
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ImportType {
+  PRODUCTS
+  IMAGES
+  INVENTORY
+  PRICES
+}
+
+model BulkImportJob {
+  id              String       @id @default(cuid())
+  type            ImportType
+  status          ImportStatus @default(PENDING)
+
+  // File info
+  fileName        String
+  fileSize        Int?
+
+  // Progress tracking
+  totalRows       Int          @default(0)
+  processedRows   Int          @default(0)
+  successCount    Int          @default(0)
+  errorCount      Int          @default(0)
+
+  // Results
+  errors          Json?        // Array of {row, field, message}
+  warnings        Json?        // Array of {row, field, message}
+  summary         Json?        // Import summary stats
+
+  // Config used for this import
+  fieldMapping    Json?        // Column to field mapping
+  options         Json?        // Import options
+
+  // User who initiated
+  userId          String
+
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  user            User         @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// IMPORT FIELD CONFIGURATION
+// ============================================
+
+model ImportFieldConfig {
+  id              String   @id @default(cuid())
+  name            String   @unique // e.g., "default", "gsa_format"
+  description     String?
+
+  // Field mappings: Excel column -> Database field
+  fieldMappings   Json     // {excelColumn: dbField, ...}
+
+  // Required fields
+  requiredFields  String[] // List of required database fields
+
+  // Validation rules
+  validationRules Json?    // {field: {type, min, max, pattern, ...}}
+
+  // Image naming pattern
+  imagePattern    String?  // e.g., "{partNumber}_{index}"
+
+  isDefault       Boolean  @default(false)
+  isActive        Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 // ============================================
