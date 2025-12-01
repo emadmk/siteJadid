@@ -447,15 +447,15 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                 {products.map((product) => (
                   <Link key={product.id} href={`/products/${product.slug}`}>
                     <div className="group bg-white rounded-lg border border-gray-200 hover:border-safety-green-400 transition-all hover:shadow-xl cursor-pointer overflow-hidden h-full flex flex-col">
-                      <div className="relative w-full h-56 bg-gray-100 overflow-hidden">
+                      <div className="relative w-full h-56 bg-white overflow-hidden">
                         {product.images?.[0] ? (
                           <img
                             src={getImageSize(product.images[0], 'medium')}
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-full h-full flex items-center justify-center bg-gray-50">
                             <ShieldCheck className="w-16 h-16 text-gray-300" />
                           </div>
                         )}
@@ -552,15 +552,15 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                 {products.map((product) => (
                   <Link key={product.id} href={`/products/${product.slug}`}>
                     <div className="group bg-white rounded-lg border border-gray-200 hover:border-safety-green-400 transition-all hover:shadow-lg cursor-pointer overflow-hidden flex">
-                      <div className="relative w-48 h-48 flex-shrink-0 bg-gray-100 overflow-hidden">
+                      <div className="relative w-48 h-48 flex-shrink-0 bg-white overflow-hidden">
                         {product.images?.[0] ? (
                           <img
                             src={getImageSize(product.images[0], 'medium')}
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-full h-full flex items-center justify-center bg-gray-50">
                             <ShieldCheck className="w-12 h-12 text-gray-300" />
                           </div>
                         )}

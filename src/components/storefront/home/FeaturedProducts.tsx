@@ -116,15 +116,15 @@ export function FeaturedProducts() {
                 className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-safety-green-200 hover:shadow-xl transition-all duration-300"
               >
                 {/* Image */}
-                <div className="relative h-48 bg-gray-100 overflow-hidden">
+                <div className="relative h-48 bg-white overflow-hidden">
                   {product.images && product.images.length > 0 ? (
                     <img
                       src={getImageSize(product.images[0], 'medium')}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-full h-full flex items-center justify-center bg-gray-50">
                       <Eye className="w-12 h-12 text-gray-300" />
                     </div>
                   )}
