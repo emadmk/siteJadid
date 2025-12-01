@@ -79,6 +79,11 @@ interface ProductDetailProps {
       name: string;
       slug: string;
     } | null;
+    brand: {
+      id: string;
+      name: string;
+      slug: string;
+    } | null;
     reviews: Review[];
     tieredPrices: TieredPrice[];
   };
@@ -314,14 +319,22 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
 
           {/* Product Info */}
           <div className="space-y-6">
-            {/* Category & SKU */}
-            <div className="flex items-center gap-4 text-sm">
+            {/* Category, Brand & SKU */}
+            <div className="flex items-center gap-4 text-sm flex-wrap">
               {product.category && (
                 <Link
                   href={`/categories/${product.category.slug}`}
                   className="text-safety-green-600 hover:text-safety-green-700 font-medium"
                 >
                   {product.category.name}
+                </Link>
+              )}
+              {product.brand && (
+                <Link
+                  href={`/brands/${product.brand.slug}`}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  {product.brand.name}
                 </Link>
               )}
               <span className="text-gray-500">SKU: {product.sku}</span>
@@ -585,6 +598,14 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="text-sm text-gray-600 mb-1">Category</div>
                     <div className="font-medium text-black">{product.category.name}</div>
+                  </div>
+                )}
+                {product.brand && (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="text-sm text-gray-600 mb-1">Brand</div>
+                    <Link href={`/brands/${product.brand.slug}`} className="font-medium text-blue-600 hover:underline">
+                      {product.brand.name}
+                    </Link>
                   </div>
                 )}
               </div>

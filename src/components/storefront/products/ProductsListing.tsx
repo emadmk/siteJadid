@@ -46,6 +46,11 @@ interface Product {
     name: string;
     slug: string;
   };
+  brand?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
 }
 
 interface ProductsListingProps {
@@ -731,11 +736,22 @@ function ProductGridCard({
 
         <div className="p-4 flex-1 flex flex-col">
           <div className="text-xs text-gray-500 mb-1">{product.sku}</div>
-          {product.category && (
-            <div className="text-xs text-safety-green-600 font-medium mb-1">
-              {product.category.name}
-            </div>
-          )}
+          <div className="flex items-center gap-2 mb-1">
+            {product.category && (
+              <span className="text-xs text-safety-green-600 font-medium">
+                {product.category.name}
+              </span>
+            )}
+            {product.brand && (
+              <Link
+                href={`/brands/${product.brand.slug}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs text-blue-600 font-medium hover:underline"
+              >
+                {product.brand.name}
+              </Link>
+            )}
+          </div>
 
           {/* Rating */}
           {product.reviewCount > 0 && (
@@ -814,7 +830,18 @@ function ProductListCard({
         <div className="flex-1 p-6 flex flex-col">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <div className="text-xs text-gray-500 mb-1">{product.sku}</div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs text-gray-500">{product.sku}</span>
+                {product.brand && (
+                  <Link
+                    href={`/brands/${product.brand.slug}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs text-blue-600 font-medium hover:underline"
+                  >
+                    {product.brand.name}
+                  </Link>
+                )}
+              </div>
               <h3 className="text-lg font-semibold text-black group-hover:text-safety-green-700 transition-colors">
                 {product.name}
               </h3>

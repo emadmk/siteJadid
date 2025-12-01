@@ -14,12 +14,26 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const sku = searchParams.get('sku') || '';
     const categoryId = searchParams.get('categoryId') || '';
+    const brandId = searchParams.get('brandId') || '';
+    const brandSlug = searchParams.get('brandSlug') || '';
     const featured = searchParams.get('featured') === 'true';
     const bestSeller = searchParams.get('bestSeller') === 'true';
     const newArrival = searchParams.get('newArrival') === 'true';
     const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined;
     const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined;
     const sort = searchParams.get('sort') || 'createdAt_desc';
+
+    // If brandSlug provided, get brandId first
+    let resolvedBrandId = brandId;
+    if (brandSlug && !brandId) {
+      const brand = await db.brand.findUnique({
+        where: { slug: brandSlug },
+        select: { id: true },
+      });
+      if (brand) {
+        resolvedBrandId = brand.id;
+      }
+    }
 
     // SKU search - direct database lookup
     if (sku) {
@@ -33,6 +47,7 @@ export async function GET(request: NextRequest) {
         },
         include: {
           category: true,
+          brand: true,
           _count: {
             select: { reviews: true },
           },
@@ -50,7 +65,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build cache key
-    const cacheKey = `products:${page}:${limit}:${search}:${categoryId}:${featured}:${bestSeller}:${newArrival}:${minPrice}:${maxPrice}:${sort}`;
+    const cacheKey = `products:${page}:${limit}:${search}:${categoryId}:${resolvedBrandId}:${featured}:${bestSeller}:${newArrival}:${minPrice}:${maxPrice}:${sort}`;
 
     // Try cache first
     const cached = await cache.get(cacheKey);
@@ -80,6 +95,7 @@ export async function GET(request: NextRequest) {
     const where: any = {
       status: 'ACTIVE',
       ...(categoryId && { categoryId }),
+      ...(resolvedBrandId && { brandId: resolvedBrandId }),
       ...(featured && { isFeatured: true }),
       ...(bestSeller && { isBestSeller: true }),
       ...(newArrival && { isNewArrival: true }),
@@ -103,6 +119,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           category: true,
+          brand: true,
           _count: {
             select: { reviews: true },
           },

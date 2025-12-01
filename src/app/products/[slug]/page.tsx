@@ -14,6 +14,7 @@ async function getProduct(slug: string) {
     where: { slug },
     include: {
       category: true,
+      brand: true,
       reviews: {
         where: {
           status: 'APPROVED',
@@ -65,6 +66,13 @@ async function getProduct(slug: string) {
           id: product.category.id,
           name: product.category.name,
           slug: product.category.slug,
+        }
+      : null,
+    brand: product.brand
+      ? {
+          id: product.brand.id,
+          name: product.brand.name,
+          slug: product.brand.slug,
         }
       : null,
     reviews: product.reviews.map((r) => ({
