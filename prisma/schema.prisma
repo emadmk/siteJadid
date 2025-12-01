@@ -335,6 +335,25 @@ model Category {
   @@index([parentId])
 }
 
+model Brand {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  logo        String?
+  website     String?
+  isActive    Boolean   @default(true)
+  displayOrder Int      @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products    Product[]
+
+  @@index([slug])
+  @@index([name])
+}
+
 model Product {
   id              String        @id @default(cuid())
   sku             String        @unique
@@ -401,6 +420,8 @@ model Product {
   // Relations
   categoryId      String?
   category        Category?     @relation(fields: [categoryId], references: [id])
+  brandId         String?
+  brand           Brand?        @relation(fields: [brandId], references: [id])
   variants        ProductVariant[]
   reviews         Review[]
   cartItems       CartItem[]
@@ -429,6 +450,7 @@ model Product {
   @@index([sku])
   @@index([status])
   @@index([categoryId])
+  @@index([brandId])
   @@index([isFeatured])
 }
 

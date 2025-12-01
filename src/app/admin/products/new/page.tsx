@@ -16,8 +16,24 @@ async function getCategories() {
   });
 }
 
+async function getBrands() {
+  return await db.brand.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+}
+
 export default async function NewProductPage() {
-  const categories = await getCategories();
+  const [categories, brands] = await Promise.all([
+    getCategories(),
+    getBrands(),
+  ]);
 
   return (
     <div className="p-8">
@@ -26,7 +42,7 @@ export default async function NewProductPage() {
         <p className="text-gray-600">Create a new product in your catalog</p>
       </div>
 
-      <ProductForm categories={categories} />
+      <ProductForm categories={categories} brands={brands} />
     </div>
   );
 }

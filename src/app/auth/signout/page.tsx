@@ -6,8 +6,9 @@ import { Loader2 } from 'lucide-react';
 
 export default function SignOutPage() {
   useEffect(() => {
-    // Automatically sign out and redirect to home
-    signOut({ callbackUrl: '/' });
+    // Automatically sign out and redirect to home using current origin
+    const baseUrl = window.location.origin;
+    signOut({ callbackUrl: baseUrl });
   }, []);
 
   return (

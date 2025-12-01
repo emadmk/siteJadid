@@ -12,6 +12,12 @@ async function getProduct(id: string) {
           name: true,
         },
       },
+      brand: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
   });
 }
@@ -31,14 +37,28 @@ async function getCategories() {
   });
 }
 
+async function getBrands() {
+  return await db.brand.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+}
+
 export default async function EditProductPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const [product, categories] = await Promise.all([
+  const [product, categories, brands] = await Promise.all([
     getProduct(params.id),
     getCategories(),
+    getBrands(),
   ]);
 
   if (!product) {
@@ -52,7 +72,7 @@ export default async function EditProductPage({
         <p className="text-gray-600">Update product details</p>
       </div>
 
-      <ProductForm product={product} categories={categories} />
+      <ProductForm product={product} categories={categories} brands={brands} />
     </div>
   );
 }

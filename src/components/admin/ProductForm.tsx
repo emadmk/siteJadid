@@ -9,9 +9,10 @@ import Link from 'next/link';
 interface ProductFormProps {
   product?: any;
   categories: { id: string; name: string; parentId: string | null; slug: string }[];
+  brands?: { id: string; name: string }[];
 }
 
-export function ProductForm({ product, categories }: ProductFormProps) {
+export function ProductForm({ product, categories, brands = [] }: ProductFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -37,8 +38,9 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     stockQuantity: product?.stockQuantity?.toString() || '0',
     lowStockThreshold: product?.lowStockThreshold?.toString() || '10',
 
-    // Category & Status
+    // Category, Brand & Status
     categoryId: product?.categoryId || '',
+    brandId: product?.brandId || '',
     status: product?.status || 'ACTIVE',
 
     // Physical
@@ -214,6 +216,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
           width: formData.width ? parseFloat(formData.width) : null,
           height: formData.height ? parseFloat(formData.height) : null,
           categoryId: formData.categoryId || null,
+          brandId: formData.brandId || null,
           images,
           tierPricing,
         }),
@@ -637,7 +640,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             </select>
           </div>
 
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Category
             </label>
@@ -648,6 +651,22 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             >
               <option value="">-- Select Category --</option>
               {buildCategoryOptions(categories)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Brand
+            </label>
+            <select
+              value={formData.brandId}
+              onChange={(e) => setFormData(prev => ({ ...prev, brandId: e.target.value }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+            >
+              <option value="">-- Select Brand --</option>
+              {brands.map(brand => (
+                <option key={brand.id} value={brand.id}>{brand.name}</option>
+              ))}
             </select>
           </div>
 

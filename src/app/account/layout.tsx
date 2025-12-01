@@ -145,7 +145,7 @@ export default function AccountLayout({
             Continue Shopping
           </Link>
           <button
-            onClick={() => signOut({ callbackUrl: '/' })}
+            onClick={() => signOut({ callbackUrl: window.location.origin })}
             className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 w-full"
           >
             <LogOut className="w-5 h-5" />
@@ -192,7 +192,7 @@ export default function AccountLayout({
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => signOut({ callbackUrl: '/' })}
+                  onClick={() => signOut({ callbackUrl: window.location.origin })}
                 >
                   <LogOut className="w-4 h-4" />
                   Sign Out

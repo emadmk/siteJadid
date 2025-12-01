@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -36,28 +36,31 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
 
-    const { name, code, type, isFilterable, isRequired, options } = body;
+    const { name, type, isFilterable, isRequired, options } = body;
 
-    if (!name || !type || !code) {
+    if (!name || !type) {
       return NextResponse.json(
-        { error: 'Name, code, and type are required' },
+        { error: 'Name and type are required' },
         { status: 400 }
       );
     }
+
+    // Generate code from name
+    const code = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
 
     const attribute = await prisma.productAttribute.create({
       data: {
         name,
         code,
         type,
-        isFilterable: isFilterable !== false,
-        isRequired: isRequired || false,
+        isFilterable: isFilterable ?? true,
+        isRequired: isRequired ?? false,
         options: options || [],
       },
     });
