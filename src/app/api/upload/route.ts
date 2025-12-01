@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import path from 'path';
-import crypto from 'crypto';
+import { imageProcessor } from '@/lib/services/image-processor';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,17 +13,21 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
 
+    // Optional: get brand and sku for folder organization
+    const brandSlug = formData.get('brandSlug') as string | null;
+    const productSku = formData.get('productSku') as string | null;
+
     if (!files || files.length === 0) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
     const uploadedUrls: string[] = [];
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'products');
-
-    // Create upload directory if it doesn't exist
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
+    const allSizes: Array<{
+      original: string;
+      large: string;
+      medium: string;
+      thumb: string;
+    }> = [];
 
     for (const file of files) {
       // Validate file type
@@ -35,34 +36,47 @@ export async function POST(request: NextRequest) {
         continue; // Skip invalid files
       }
 
-      // Validate file size (max 5MB)
-      const maxSize = 5 * 1024 * 1024;
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
         continue; // Skip files that are too large
       }
 
-      // Generate unique filename
-      const ext = path.extname(file.name) || '.jpg';
-      const filename = `${crypto.randomUUID()}${ext}`;
-      const filepath = path.join(uploadDir, filename);
-
-      // Convert file to buffer and save
+      // Convert file to buffer
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      await writeFile(filepath, buffer);
 
-      // Return the public URL (via API route for dynamic serving)
-      uploadedUrls.push(`/api/uploads/products/${filename}`);
+      // Process image with professional handler (4 sizes + WebP conversion)
+      const processed = await imageProcessor.processImage(buffer, file.name, {
+        brandSlug: brandSlug || undefined,
+        productSku: productSku || undefined,
+        convertToWebp: true,
+      });
+
+      // Return thumbnail URL for backward compatibility (used in product.images array)
+      uploadedUrls.push(processed.thumbUrl);
+
+      // Also return all sizes for new implementations
+      allSizes.push({
+        original: processed.originalUrl,
+        large: processed.largeUrl,
+        medium: processed.mediumUrl,
+        thumb: processed.thumbUrl,
+      });
     }
 
     if (uploadedUrls.length === 0) {
       return NextResponse.json(
-        { error: 'No valid files were uploaded. Allowed types: JPEG, PNG, GIF, WebP. Max size: 5MB' },
+        { error: 'No valid files were uploaded. Allowed types: JPEG, PNG, GIF, WebP. Max size: 10MB' },
         { status: 400 }
       );
     }
 
-    return NextResponse.json({ urls: uploadedUrls });
+    return NextResponse.json({
+      urls: uploadedUrls,
+      images: allSizes, // New: all sizes for each image
+      message: `${uploadedUrls.length} image(s) processed with 4 sizes each`
+    });
   } catch (error) {
     console.error('Error uploading files:', error);
     return NextResponse.json(
