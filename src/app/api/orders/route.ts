@@ -121,13 +121,22 @@ export async function POST(request: NextRequest) {
       notes,
     } = body;
 
-    // Get cart
+    // Get cart with product details including supplier and warehouse
     const cart = await db.cart.findFirst({
       where: { userId: session.user.id },
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              include: {
+                defaultSupplier: {
+                  select: { id: true, name: true },
+                },
+                defaultWarehouse: {
+                  select: { id: true, name: true },
+                },
+              },
+            },
           },
         },
       },
@@ -179,6 +188,19 @@ export async function POST(request: NextRequest) {
       const itemTotal = price * item.quantity;
       subtotal += itemTotal;
 
+      // Determine stock source based on availability
+      let stockSource: 'OUR_WAREHOUSE' | 'SUPPLIER_STOCK' | 'BACKORDER' = 'OUR_WAREHOUSE';
+      const availableStock = item.product.stockQuantity || 0;
+
+      if (availableStock < item.quantity) {
+        // Not enough stock in our warehouse
+        if (item.product.defaultSupplierId) {
+          stockSource = 'SUPPLIER_STOCK'; // Will be ordered from supplier
+        } else {
+          stockSource = 'BACKORDER'; // No supplier, backorder
+        }
+      }
+
       return {
         productId: item.productId,
         sku: item.product.sku,
@@ -186,6 +208,9 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity,
         price,
         total: itemTotal,
+        supplierId: item.product.defaultSupplierId || null,
+        warehouseId: item.product.defaultWarehouseId || null,
+        stockSource,
       };
     });
 

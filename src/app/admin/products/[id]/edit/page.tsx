@@ -18,6 +18,20 @@ async function getProduct(id: string) {
           name: true,
         },
       },
+      defaultSupplier: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      },
+      defaultWarehouse: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      },
     },
   });
 }
@@ -50,15 +64,45 @@ async function getBrands() {
   });
 }
 
+async function getSuppliers() {
+  return await db.supplier.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+}
+
+async function getWarehouses() {
+  return await db.warehouse.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+}
+
 export default async function EditProductPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const [product, categories, brands] = await Promise.all([
+  const [product, categories, brands, suppliers, warehouses] = await Promise.all([
     getProduct(params.id),
     getCategories(),
     getBrands(),
+    getSuppliers(),
+    getWarehouses(),
   ]);
 
   if (!product) {
@@ -72,7 +116,13 @@ export default async function EditProductPage({
         <p className="text-gray-600">Update product details</p>
       </div>
 
-      <ProductForm product={product} categories={categories} brands={brands} />
+      <ProductForm
+        product={product}
+        categories={categories}
+        brands={brands}
+        suppliers={suppliers}
+        warehouses={warehouses}
+      />
     </div>
   );
 }

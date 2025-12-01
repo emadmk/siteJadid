@@ -308,6 +308,12 @@ enum ProductStatus {
   DISCONTINUED
 }
 
+enum StockSource {
+  OUR_WAREHOUSE      // In stock at our warehouse
+  SUPPLIER_STOCK     // Available from supplier (drop-ship or order from supplier)
+  BACKORDER          // Not in stock, will be ordered
+}
+
 model Category {
   id               String    @id @default(cuid())
   name             String
@@ -422,6 +428,13 @@ model Product {
   category        Category?     @relation(fields: [categoryId], references: [id])
   brandId         String?
   brand           Brand?        @relation(fields: [brandId], references: [id])
+
+  // Default supplier and warehouse for this product
+  defaultSupplierId   String?
+  defaultSupplier     Supplier?     @relation("DefaultSupplier", fields: [defaultSupplierId], references: [id])
+  defaultWarehouseId  String?
+  defaultWarehouse    Warehouse?    @relation("DefaultWarehouse", fields: [defaultWarehouseId], references: [id])
+
   variants        ProductVariant[]
   reviews         Review[]
   cartItems       CartItem[]
@@ -451,6 +464,8 @@ model Product {
   @@index([status])
   @@index([categoryId])
   @@index([brandId])
+  @@index([defaultSupplierId])
+  @@index([defaultWarehouseId])
   @@index([isFeatured])
 }
 
@@ -689,12 +704,21 @@ model OrderItem {
   tax         Decimal @default(0) @db.Decimal(12, 2)
   total       Decimal @db.Decimal(12, 2)
 
+  // Stock source tracking for admin visibility
+  supplierId    String?
+  warehouseId   String?
+  stockSource   StockSource  @default(OUR_WAREHOUSE)
+
   order         Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product       Product        @relation(fields: [productId], references: [id])
+  supplier      Supplier?      @relation("OrderItemSupplier", fields: [supplierId], references: [id])
+  warehouse     Warehouse?     @relation("OrderItemWarehouse", fields: [warehouseId], references: [id])
   shipmentItems ShipmentItem[]
 
   @@index([orderId])
   @@index([productId])
+  @@index([supplierId])
+  @@index([warehouseId])
 }
 
 model OrderStatusHistory {
@@ -1072,7 +1096,9 @@ model Supplier {
 
   // Relations
   products          ProductSupplier[]
+  defaultProducts   Product[]          @relation("DefaultSupplier")
   purchaseOrders    PurchaseOrder[]
+  orderItems        OrderItem[]        @relation("OrderItemSupplier")
 
   @@index([code])
   @@index([status])
@@ -1352,6 +1378,8 @@ model Warehouse {
   transfers       WarehouseTransfer[] @relation("SourceWarehouse")
   receivedTransfers WarehouseTransfer[] @relation("DestinationWarehouse")
   purchaseOrders  PurchaseOrder[]
+  defaultProducts Product[]           @relation("DefaultWarehouse")
+  orderItems      OrderItem[]         @relation("OrderItemWarehouse")
 
   @@index([code])
   @@index([isActive])

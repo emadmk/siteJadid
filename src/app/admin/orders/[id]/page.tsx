@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import { OrderStatusUpdater } from '@/components/admin/OrderStatusUpdater';
-import { ArrowLeft, Package, MapPin, CreditCard, Truck, User } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, CreditCard, Truck, User, Building2, Warehouse } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -27,6 +27,20 @@ async function getOrder(id: string) {
               slug: true,
               images: true,
               sku: true,
+            },
+          },
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          warehouse: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
             },
           },
         },
@@ -151,6 +165,30 @@ export default async function OrderDetailPage({
                           Discount: -${Number(item.discount).toFixed(2)}
                         </div>
                       )}
+                      {/* Supplier & Warehouse Info */}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {item.supplier && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">
+                            <Building2 className="w-3 h-3" />
+                            {item.supplier.name}
+                          </span>
+                        )}
+                        {item.warehouse && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded">
+                            <Warehouse className="w-3 h-3" />
+                            {item.warehouse.name}
+                          </span>
+                        )}
+                        {item.stockSource && item.stockSource !== 'OUR_WAREHOUSE' && (
+                          <span className={`px-2 py-0.5 text-xs rounded ${
+                            item.stockSource === 'SUPPLIER_STOCK'
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {item.stockSource === 'SUPPLIER_STOCK' ? 'From Supplier' : 'Backorder'}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-black">

@@ -29,10 +29,40 @@ async function getBrands() {
   });
 }
 
+async function getSuppliers() {
+  return await db.supplier.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+}
+
+async function getWarehouses() {
+  return await db.warehouse.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+}
+
 export default async function NewProductPage() {
-  const [categories, brands] = await Promise.all([
+  const [categories, brands, suppliers, warehouses] = await Promise.all([
     getCategories(),
     getBrands(),
+    getSuppliers(),
+    getWarehouses(),
   ]);
 
   return (
@@ -42,7 +72,12 @@ export default async function NewProductPage() {
         <p className="text-gray-600">Create a new product in your catalog</p>
       </div>
 
-      <ProductForm categories={categories} brands={brands} />
+      <ProductForm
+        categories={categories}
+        brands={brands}
+        suppliers={suppliers}
+        warehouses={warehouses}
+      />
     </div>
   );
 }

@@ -10,9 +10,11 @@ interface ProductFormProps {
   product?: any;
   categories: { id: string; name: string; parentId: string | null; slug: string }[];
   brands?: { id: string; name: string }[];
+  suppliers?: { id: string; name: string; code: string }[];
+  warehouses?: { id: string; name: string; code: string }[];
 }
 
-export function ProductForm({ product, categories, brands = [] }: ProductFormProps) {
+export function ProductForm({ product, categories, brands = [], suppliers = [], warehouses = [] }: ProductFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -41,6 +43,8 @@ export function ProductForm({ product, categories, brands = [] }: ProductFormPro
     // Category, Brand & Status
     categoryId: product?.categoryId || '',
     brandId: product?.brandId || '',
+    defaultSupplierId: product?.defaultSupplierId || '',
+    defaultWarehouseId: product?.defaultWarehouseId || '',
     status: product?.status || 'ACTIVE',
 
     // Physical
@@ -217,6 +221,8 @@ export function ProductForm({ product, categories, brands = [] }: ProductFormPro
           height: formData.height ? parseFloat(formData.height) : null,
           categoryId: formData.categoryId || null,
           brandId: formData.brandId || null,
+          defaultSupplierId: formData.defaultSupplierId || null,
+          defaultWarehouseId: formData.defaultWarehouseId || null,
           images,
           tierPricing,
         }),
@@ -666,6 +672,38 @@ export function ProductForm({ product, categories, brands = [] }: ProductFormPro
               <option value="">-- Select Brand --</option>
               {brands.map(brand => (
                 <option key={brand.id} value={brand.id}>{brand.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Default Supplier
+            </label>
+            <select
+              value={formData.defaultSupplierId}
+              onChange={(e) => setFormData(prev => ({ ...prev, defaultSupplierId: e.target.value }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+            >
+              <option value="">-- Select Supplier --</option>
+              {suppliers.map(supplier => (
+                <option key={supplier.id} value={supplier.id}>{supplier.name} ({supplier.code})</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Default Warehouse
+            </label>
+            <select
+              value={formData.defaultWarehouseId}
+              onChange={(e) => setFormData(prev => ({ ...prev, defaultWarehouseId: e.target.value }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+            >
+              <option value="">-- Select Warehouse --</option>
+              {warehouses.map(warehouse => (
+                <option key={warehouse.id} value={warehouse.id}>{warehouse.name} ({warehouse.code})</option>
               ))}
             </select>
           </div>
