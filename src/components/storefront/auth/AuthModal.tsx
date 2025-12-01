@@ -22,7 +22,7 @@ export function AuthModal() {
     email: '',
     password: '',
     confirmPassword: '',
-    accountType: 'CUSTOMER' as 'CUSTOMER' | 'B2B' | 'GSA',
+    accountType: 'B2C' as 'B2C' | 'B2B' | 'GSA',
     companyName: '',
   });
 
@@ -300,14 +300,14 @@ export function AuthModal() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { value: 'CUSTOMER', label: 'Personal' },
+                    { value: 'B2C', label: 'Personal' },
                     { value: 'B2B', label: 'Business' },
                     { value: 'GSA', label: 'Government' },
                   ].map((type) => (
                     <button
                       key={type.value}
                       type="button"
-                      onClick={() => setRegisterData({ ...registerData, accountType: type.value as any })}
+                      onClick={() => setRegisterData({ ...registerData, accountType: type.value as 'B2C' | 'B2B' | 'GSA' })}
                       className={`py-2 px-3 rounded-lg border-2 text-sm font-medium transition-colors ${
                         registerData.accountType === type.value
                           ? 'border-safety-green-600 bg-safety-green-50 text-safety-green-700'
@@ -320,7 +320,7 @@ export function AuthModal() {
                 </div>
               </div>
 
-              {registerData.accountType !== 'CUSTOMER' && (
+              {registerData.accountType !== 'B2C' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {registerData.accountType === 'GSA' ? 'Agency Name' : 'Company Name'}
