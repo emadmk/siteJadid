@@ -37,12 +37,17 @@ async function getBrandProducts(brandId: string, page: number = 1, limit: number
         salePrice: true,
         images: true,
         stockQuantity: true,
-        averageRating: true,
-        reviewCount: true,
         category: {
           select: {
             name: true,
             slug: true,
+          },
+        },
+        _count: {
+          select: {
+            reviews: {
+              where: { status: 'APPROVED' },
+            },
           },
         },
       },
@@ -172,19 +177,10 @@ export default async function BrandPage({ params, searchParams }: BrandPageProps
                           </div>
                         )}
 
-                        {product.reviewCount > 0 && (
+                        {product._count.reviews > 0 && (
                           <div className="flex items-center gap-1 mb-2">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-3 h-3 ${
-                                  i < Math.round(Number(product.averageRating))
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'fill-gray-200 text-gray-200'
-                                }`}
-                              />
-                            ))}
-                            <span className="text-xs text-gray-500 ml-1">({product.reviewCount})</span>
+                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                            <span className="text-xs text-gray-500 ml-1">({product._count.reviews} reviews)</span>
                           </div>
                         )}
 
