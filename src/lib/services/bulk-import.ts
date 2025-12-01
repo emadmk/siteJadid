@@ -7,62 +7,157 @@ import { imageProcessor } from './image-processor';
 import { Decimal } from '@prisma/client/runtime/library';
 
 // Default field mapping - can be customized
+// Supports GSA format and standard formats
 export const DEFAULT_FIELD_MAPPING: Record<string, string> = {
-  // Excel Column -> Database Field
+  // === SKU / Part Number ===
   'Vendor Part Number': 'sku',
   'vendor_part_number': 'sku',
   'SKU': 'sku',
   'sku': 'sku',
   'Part Number': 'sku',
   'part_number': 'sku',
+  'manufacturer_part_number': 'sku',
 
+  // === Product Name ===
+  'Product Information': 'name',
   'Item_name': 'name',
   'item_name': 'name',
   'Product Name': 'name',
   'Name': 'name',
   'name': 'name',
 
+  // === Description ===
   'Item_description': 'description',
   'item_description': 'description',
   'Description': 'description',
   'description': 'description',
 
+  // === Brand / Manufacturer ===
   'Manufacturer Information': 'brandName',
   'manufacturer_information': 'brandName',
+  'manufacturer': 'brandName',
   'Brand': 'brandName',
   'brand': 'brandName',
   'Manufacturer': 'brandName',
 
+  // === Pricing ===
+  'Commercial Price / Manufacturer\'s Suggested Retail Price': 'basePrice',
+  'commercial_price': 'basePrice',
+  'commerci_al_price': 'basePrice',
   'Unit Price': 'basePrice',
   'unit_price': 'basePrice',
   'Price': 'basePrice',
   'price': 'basePrice',
   'Retail Price': 'basePrice',
+  'mfc_price': 'basePrice',
 
+  // GSA Price
+  'Price Proposal': 'gsaPrice',
+  'govt_price_with_fee': 'gsaPrice',
+  'govt_price_with_fe': 'gsaPrice',
   'GSA Price': 'gsaPrice',
   'gsa_price': 'gsaPrice',
+  'govt_price_no_fee': 'gsaPriceNoFee',
+  'govt_pric_e_no_fe': 'gsaPriceNoFee',
 
+  // Wholesale / Dealer Cost
+  'Sup Cost': 'wholesalePrice',
+  'sup_cost': 'wholesalePrice',
+  'dealer_cost': 'wholesalePrice',
+  'dealer_co_st': 'wholesalePrice',
   'Wholesale Price': 'wholesalePrice',
   'wholesale_price': 'wholesalePrice',
 
+  // === GSA Specific ===
+  'Special Item Number': 'gsaSin',
+  'sin': 'gsaSin',
+  'National Stock Number': 'nsn',
+  'nsn': 'nsn',
+  'Country of Origin': 'countryOfOrigin',
+  'country_of_origin': 'countryOfOrigin',
+  'country_of_origi': 'countryOfOrigin',
+
+  // === UPC ===
   'UPC': 'upc',
   'upc': 'upc',
+  'unspsc': 'unspsc',
 
+  // === Category ===
   'Category': 'categoryName',
   'category': 'categoryName',
+  'Product Information / Categorization': 'categoryName',
+  'product_info_code': 'categoryName',
+  'product_info_cod_e': 'categoryName',
 
+  // === Stock / Quantity ===
   'Stock': 'stockQuantity',
   'stock': 'stockQuantity',
   'Quantity': 'stockQuantity',
   'quantity': 'stockQuantity',
+  'Quantity Per Pack': 'quantityPerPack',
+  'quantity_per_pack': 'quantityPerPack',
+  'quantity_per_pa': 'quantityPerPack',
 
+  // === Unit of Measure ===
+  'Unit of Measure': 'unitOfMeasure',
+  'uom': 'unitOfMeasure',
+  'unit_uom': 'unitOfMeasure',
+  'unit_uc': 'unitOfMeasure',
+
+  // === Dimensions ===
   'Weight': 'weight',
   'weight': 'weight',
+  'weight_lbs': 'weight',
+  'weight_lb_s': 'weight',
+  'length': 'length',
+  'width': 'width',
+  'height': 'height',
+  'physical_uom': 'dimensionUnit',
+  'physical_uom_s': 'dimensionUnit',
 
+  // === Delivery ===
+  'Delivery Information': 'deliveryDays',
+  'delivery_days': 'deliveryDays',
+  'delivery_day': 'deliveryDays',
+  'lead_time': 'leadTime',
+  'lead_tim': 'leadTime',
+
+  // === Photos (your format: default_photo, photo, photo_2, photo_3, photo_4) ===
+  'Photo File References': 'imagePattern',
   'Photo File Reference': 'imagePattern',
   'photo_file_reference': 'imagePattern',
-  'Image': 'imagePattern',
-  'image': 'imagePattern',
+  'default_photo': 'imagePattern',
+  'default_p_hoto': 'imagePattern',
+  'photo': 'photo1',
+  'photo_2': 'photo2',
+  'photo_3': 'photo3',
+  'photo_4': 'photo4',
+
+  // === Warranty ===
+  'Warranty Duration': 'warrantyDuration',
+  'product_warranty_period': 'warrantyDuration',
+  'product_warranty_peri': 'warrantyDuration',
+  'warranty_unit_of_time': 'warrantyUnit',
+  'warranty_unit_of_tim': 'warrantyUnit',
+
+  // === Other GSA fields ===
+  'hazmat': 'hazmat',
+  'url_508': 'accessibilityUrl',
+  'mfc_name': 'mfcName',
+  'mfc_nam_e': 'mfcName',
+  'Most Favored Customer': 'mfcName',
+  'mfc_markup_percentage': 'mfcMarkup',
+  'mfc_markup_perc': 'mfcMarkup',
+  'govt_markup_percentage': 'govtMarkup',
+  'govt_mar_kup_perc': 'govtMarkup',
+  'Dealer Markup': 'dealerMarkup',
+  'dealer_markup': 'dealerMarkup',
+  'recycled_content_percent': 'recycledContent',
+  'recycled_content_perce': 'recycledContent',
+  'Greenest ep Cost': 'greenestCost',
+  'greenest_ep_cost': 'greenestCost',
+  'item_type': 'itemType',
+  'Base Product or Accessory': 'itemType',
 };
 
 export interface ImportError {
@@ -111,8 +206,24 @@ interface ParsedProduct {
   wholesalePrice?: number;
   stockQuantity?: number;
   weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
   upc?: string;
   imagePattern?: string;
+  // GSA specific fields
+  gsaSin?: string;
+  nsn?: string;
+  countryOfOrigin?: string;
+  quantityPerPack?: number;
+  unitOfMeasure?: string;
+  // Photo fields from your Excel
+  photo1?: string;
+  photo2?: string;
+  photo3?: string;
+  photo4?: string;
+  // Extra metadata (stored as JSON)
+  metadata?: Record<string, unknown>;
   rowNumber: number;
   rawData: Record<string, unknown>;
 }
@@ -201,6 +312,18 @@ export class BulkImportService {
         });
       }
 
+      // Collect extra GSA metadata
+      const metadata: Record<string, unknown> = {};
+      const gsaFields = ['gsaPriceNoFee', 'nsn', 'countryOfOrigin', 'deliveryDays', 'leadTime',
+        'hazmat', 'accessibilityUrl', 'mfcName', 'mfcMarkup', 'govtMarkup', 'dealerMarkup',
+        'recycledContent', 'greenestCost', 'itemType', 'warrantyDuration', 'warrantyUnit',
+        'dimensionUnit', 'unspsc'];
+      for (const field of gsaFields) {
+        if (mappedData[field]) {
+          metadata[field] = mappedData[field];
+        }
+      }
+
       products.push({
         sku,
         name: name || sku,
@@ -216,8 +339,21 @@ export class BulkImportService {
           ? parseInt(String(mappedData.stockQuantity))
           : undefined,
         weight: mappedData.weight ? parseFloat(String(mappedData.weight)) : undefined,
+        length: mappedData.length ? parseFloat(String(mappedData.length)) : undefined,
+        width: mappedData.width ? parseFloat(String(mappedData.width)) : undefined,
+        height: mappedData.height ? parseFloat(String(mappedData.height)) : undefined,
         upc: String(mappedData.upc || '').trim() || undefined,
+        // GSA fields
+        gsaSin: String(mappedData.gsaSin || '').trim() || undefined,
+        quantityPerPack: mappedData.quantityPerPack ? parseInt(String(mappedData.quantityPerPack)) : undefined,
+        unitOfMeasure: String(mappedData.unitOfMeasure || '').trim() || undefined,
+        // Photo fields (your Excel format)
         imagePattern: String(mappedData.imagePattern || '').trim() || undefined,
+        photo1: String(mappedData.photo1 || '').trim() || undefined,
+        photo2: String(mappedData.photo2 || '').trim() || undefined,
+        photo3: String(mappedData.photo3 || '').trim() || undefined,
+        photo4: String(mappedData.photo4 || '').trim() || undefined,
+        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         rowNumber,
         rawData,
       });
@@ -409,7 +545,16 @@ export class BulkImportService {
             ? new Decimal(product.wholesalePrice)
             : undefined,
           stockQuantity: product.stockQuantity,
+          minimumOrderQty: product.quantityPerPack || 1,
+          // Dimensions
           weight: product.weight ? new Decimal(product.weight) : undefined,
+          length: product.length ? new Decimal(product.length) : undefined,
+          width: product.width ? new Decimal(product.width) : undefined,
+          height: product.height ? new Decimal(product.height) : undefined,
+          // GSA fields
+          gsaSin: product.gsaSin,
+          // Store extra metadata as JSON
+          ...(product.metadata && { complianceCertifications: product.metadata }),
           ...(brandId && { brand: { connect: { id: brandId } } }),
           ...(categoryId && { category: { connect: { id: categoryId } } }),
         };
