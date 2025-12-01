@@ -90,8 +90,8 @@ export async function POST(request: NextRequest) {
           processedRows: result.processedRows,
           successCount: result.successCount,
           errorCount: result.errorCount,
-          errors: result.errors,
-          warnings: result.warnings,
+          errors: result.errors as unknown as Record<string, unknown>[],
+          warnings: result.warnings as unknown as Record<string, unknown>[],
           summary: {
             createdProducts: result.createdProducts,
             updatedProducts: result.updatedProducts,
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
                   ? importError.message
                   : 'Unknown error during import',
             },
-          ],
+          ] as unknown as Record<string, unknown>[],
           completedAt: new Date(),
         },
       });
