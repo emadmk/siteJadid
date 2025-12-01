@@ -675,55 +675,257 @@ export class BulkImportService {
   }
 
   /**
-   * Generate sample Excel template
+   * Generate GSA Excel template (matches your exact format A-AY)
    */
   async generateTemplate(): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Products');
 
-    // Add headers
-    worksheet.columns = [
-      { header: 'Vendor Part Number', key: 'sku', width: 20 },
-      { header: 'Item_name', key: 'name', width: 40 },
-      { header: 'Item_description', key: 'description', width: 60 },
-      { header: 'Manufacturer Information', key: 'brand', width: 25 },
-      { header: 'Category', key: 'category', width: 20 },
-      { header: 'Unit Price', key: 'price', width: 15 },
-      { header: 'GSA Price', key: 'gsaPrice', width: 15 },
-      { header: 'Wholesale Price', key: 'wholesalePrice', width: 15 },
-      { header: 'Stock', key: 'stock', width: 10 },
-      { header: 'Weight', key: 'weight', width: 10 },
-      { header: 'UPC', key: 'upc', width: 15 },
+    // Define all columns A-AY (51 columns)
+    const columns = [
+      // A-N (Basic Info)
+      { key: 'item_type', width: 15 },
+      { key: 'manufacturer', width: 25 },
+      { key: 'manufacturer_part_number', width: 20 },
+      { key: 'vendor_part_number', width: 20 },
+      { key: 'sin', width: 15 },
+      { key: 'item_name', width: 40 },
+      { key: 'item_description', width: 60 },
+      { key: 'recycled_content_percent', width: 12 },
+      { key: 'uom', width: 10 },
+      { key: 'quantity_per_pack', width: 12 },
+      { key: 'unit_uom', width: 10 },
+      { key: 'commercial_price', width: 15 },
+      { key: 'mfc_name', width: 20 },
+      { key: 'mfc_price', width: 12 },
+      // O-R (Action & Costs)
+      { key: 'Action', width: 10 },
+      { key: 'greenest_ep_cost', width: 12 },
+      { key: 'sup_cost', width: 12 },
+      { key: 'gm', width: 10 },
+      // S-T (Price Proposal)
+      { key: 'govt_price_no_fee', width: 15 },
+      { key: 'govt_price_with_fee', width: 15 },
+      // U (Country)
+      { key: 'country_of_origin', width: 15 },
+      // V-AB (Delivery)
+      { key: 'delivery_days', width: 12 },
+      { key: 'e_code', width: 10 },
+      { key: 'lead_time', width: 10 },
+      { key: 'fob_us', width: 10 },
+      { key: 'fob_ak', width: 10 },
+      { key: 'fob_hi', width: 10 },
+      { key: 'fob_pr', width: 10 },
+      // AC-AE (Codes)
+      { key: 'nsn', width: 18 },
+      { key: 'upc', width: 15 },
+      { key: 'unspsc', width: 12 },
+      // AF-AI (TPR)
+      { key: 'sale_price', width: 12 },
+      { key: 'e_with_fee', width: 12 },
+      { key: 'start_date', width: 12 },
+      { key: 'stop_date', width: 12 },
+      // AJ-AN (Photos)
+      { key: 'default_photo', width: 20 },
+      { key: 'photo', width: 20 },
+      { key: 'photo_2', width: 20 },
+      { key: 'photo_3', width: 20 },
+      { key: 'photo_4', width: 20 },
+      // AO-AP (Warranty)
+      { key: 'product_warranty_period', width: 15 },
+      { key: 'warranty_unit_of_time', width: 15 },
+      // AQ-AU (Dimensions)
+      { key: 'length', width: 10 },
+      { key: 'width', width: 10 },
+      { key: 'height', width: 10 },
+      { key: 'physical_uom', width: 12 },
+      { key: 'weight_lbs', width: 10 },
+      // AV-AY (Categorization & Markup)
+      { key: 'product_info_code', width: 15 },
+      { key: 'url_508', width: 20 },
+      { key: 'hazmat', width: 10 },
+      { key: 'dealer_cost', width: 12 },
+      { key: 'mfc_markup_percentage', width: 15 },
+      { key: 'govt_markup_percentage', width: 15 },
     ];
 
-    // Style header row
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
+    worksheet.columns = columns;
+
+    // Row 1: Main Headers (with merged cells style)
+    const mainHeaders = [
+      'Base Product or Accessory', // A
+      'Manufacturer Information', // B
+      '', // C (part of B)
+      'Vendor Part Number', // D
+      'Special Item Number', // E
+      'Product Information', // F
+      '', // G (part of F)
+      'Unit of Measure', // H
+      '', // I
+      'Quantity Per Pack', // J
+      '', // K
+      'Commercial Price / Manufacturer\'s Suggested Retail Price', // L
+      'Most Favored Customer', // M
+      '', // N
+      'Action', // O
+      'Greenest ep Cost', // P
+      'Sup Cost', // Q
+      'GM', // R
+      'Price Proposal', // S
+      '', // T
+      'Country of Origin', // U
+      'Delivery Information', // V
+      '', '', '', '', '', '', // W-AB
+      'National Stock Number', // AC
+      'UPC', // AD
+      'United Nations Standard Products and Services Code', // AE
+      'Temporary Price Reduction (TPR)', // AF
+      '', '', '', // AG-AI
+      'Photo File References', // AJ
+      '', '', '', '', // AK-AN
+      'Warranty Duration', // AO
+      '', // AP
+      'Product Dimensions', // AQ
+      '', '', '', '', // AR-AU
+      'Product Information / Categorization', // AV
+      '', '', // AW-AX
+      'Dealer Markup', // AY
+      '', '', // AZ-BA (extra)
+    ];
+
+    // Row 2: Field Names (technical names)
+    const fieldNames = [
+      'item_type', 'manufacturer', 'manufacturer_part_number', 'vendor_part_number',
+      'sin', 'item_name', 'item_description', 'recycled_content_percent',
+      'uom', 'quantity_per_pack', 'unit_uom', 'commercial_price',
+      'mfc_name', 'mfc_price', 'Action', 'greenest_ep_cost',
+      'sup_cost', 'gm', 'govt_price_no_fee', 'govt_price_with_fee',
+      'country_of_origin', 'delivery_days', 'e_code', 'lead_time',
+      'fob_us', 'fob_ak', 'fob_hi', 'fob_pr',
+      'nsn', 'upc', 'unspsc', 'sale_price',
+      'e_with_fee', 'start_date', 'stop_date', 'default_photo',
+      'photo', 'photo_2', 'photo_3', 'photo_4',
+      'product_warranty_period', 'warranty_unit_of_time',
+      'length', 'width', 'height', 'physical_uom', 'weight_lbs',
+      'product_info_code', 'url_508', 'hazmat', 'dealer_cost',
+      'mfc_markup_percentage', 'govt_markup_percentage',
+    ];
+
+    // Insert Row 1 (Main Headers)
+    const row1 = worksheet.insertRow(1, mainHeaders);
+    row1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    row1.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' },
+      fgColor: { argb: 'FF2E7D87' }, // Teal color like your screenshot
+    };
+    row1.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    row1.height = 60;
+
+    // Insert Row 2 (Field Names)
+    const row2 = worksheet.insertRow(2, fieldNames);
+    row2.font = { bold: true };
+    row2.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF4A9BA8' }, // Lighter teal
+    };
+    row2.alignment = { horizontal: 'center', vertical: 'middle' };
+    row2.height = 25;
+
+    // Add sample data row
+    const sampleData = {
+      item_type: 'Base',
+      manufacturer: '3M',
+      manufacturer_part_number: '1006980',
+      vendor_part_number: '1006980',
+      sin: '339113',
+      item_name: 'Safety Helmet - Hard Hat Class E',
+      item_description: 'Professional safety helmet with 4-point ratchet suspension, ANSI/ISEA Z89.1 Type I Class E certified',
+      recycled_content_percent: '0',
+      uom: 'EA',
+      quantity_per_pack: '1',
+      unit_uom: 'EA',
+      commercial_price: '45.99',
+      mfc_name: 'GSA Advantage',
+      mfc_price: '42.50',
+      Action: '',
+      greenest_ep_cost: '',
+      sup_cost: '28.00',
+      gm: '35%',
+      govt_price_no_fee: '41.50',
+      govt_price_with_fee: '42.50',
+      country_of_origin: 'US',
+      delivery_days: '5',
+      e_code: 'A',
+      lead_time: '3',
+      fob_us: 'Y',
+      fob_ak: 'Y',
+      fob_hi: 'Y',
+      fob_pr: 'Y',
+      nsn: '',
+      upc: '012345678901',
+      unspsc: '46181504',
+      sale_price: '',
+      e_with_fee: '',
+      start_date: '',
+      stop_date: '',
+      default_photo: '1006980.jpg',
+      photo: '1006980.jpg',
+      photo_2: '1006980_2.jpg',
+      photo_3: '1006980_3.jpg',
+      photo_4: '',
+      product_warranty_period: '12',
+      warranty_unit_of_time: 'MO',
+      length: '10',
+      width: '8',
+      height: '6',
+      physical_uom: 'IN',
+      weight_lbs: '0.75',
+      product_info_code: '',
+      url_508: '',
+      hazmat: 'N',
+      dealer_cost: '32.00',
+      mfc_markup_percentage: '25',
+      govt_markup_percentage: '20',
     };
 
-    // Add sample data
-    worksheet.addRow({
-      sku: '1006980',
-      name: 'Sample Safety Helmet',
-      description: 'Professional safety helmet with adjustable straps',
-      brand: '3M',
-      category: 'Head Protection',
-      price: 45.99,
-      gsaPrice: 42.50,
-      wholesalePrice: 38.00,
-      stock: 100,
-      weight: 0.5,
-      upc: '012345678901',
-    });
+    worksheet.addRow(Object.values(sampleData));
 
-    // Add data validation notes
-    worksheet.getCell('A1').note = 'Required: Unique product identifier (Part Number)';
-    worksheet.getCell('B1').note = 'Required: Product name';
-    worksheet.getCell('F1').note = 'Required: Base price in USD';
+    // Highlight required columns (yellow like your screenshot)
+    const requiredCols = ['D', 'F', 'L']; // vendor_part_number, item_name, commercial_price
+    for (const col of requiredCols) {
+      const cell1 = worksheet.getCell(`${col}1`);
+      const cell2 = worksheet.getCell(`${col}2`);
+      cell1.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFFF00' }, // Yellow
+      };
+      cell1.font = { bold: true };
+      cell2.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFFF00' },
+      };
+    }
+
+    // Add borders to all cells
+    const borderStyle = {
+      top: { style: 'thin' as const },
+      left: { style: 'thin' as const },
+      bottom: { style: 'thin' as const },
+      right: { style: 'thin' as const },
+    };
+
+    for (let row = 1; row <= 3; row++) {
+      for (let col = 1; col <= columns.length; col++) {
+        worksheet.getCell(row, col).border = borderStyle;
+      }
+    }
+
+    // Freeze first 2 rows
+    worksheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 2 }];
 
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
