@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Edit, Eye, Package, Search } from 'lucide-react';
 import { db } from '@/lib/db';
 
-async function getProducts(searchParams: { status?: string; category?: string; search?: string }) {
+async function getProducts(searchParams: { status?: string; category?: string; search?: string; brand?: string }) {
   const where: any = {};
 
   if (searchParams.status) {
@@ -14,11 +14,39 @@ async function getProducts(searchParams: { status?: string; category?: string; s
     where.categoryId = searchParams.category;
   }
 
+  if (searchParams.brand) {
+    where.brandId = searchParams.brand;
+  }
+
   if (searchParams.search) {
+    const search = searchParams.search;
+    // Check if search is a number (for price search)
+    const searchNumber = parseFloat(search);
+    const isNumericSearch = !isNaN(searchNumber);
+
     where.OR = [
-      { name: { contains: searchParams.search, mode: 'insensitive' } },
-      { sku: { contains: searchParams.search, mode: 'insensitive' } },
+      { name: { contains: search, mode: 'insensitive' } },
+      { sku: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { shortDescription: { contains: search, mode: 'insensitive' } },
+      { metaKeywords: { contains: search, mode: 'insensitive' } },
+      // Search by brand name
+      { brand: { name: { contains: search, mode: 'insensitive' } } },
+      // Search by category name
+      { category: { name: { contains: search, mode: 'insensitive' } } },
+      // Search by supplier name
+      { defaultSupplier: { name: { contains: search, mode: 'insensitive' } } },
+      // Search by warehouse name
+      { defaultWarehouse: { name: { contains: search, mode: 'insensitive' } } },
     ];
+
+    // If it's a numeric search, also search by price
+    if (isNumericSearch) {
+      where.OR.push(
+        { basePrice: { equals: searchNumber } },
+        { salePrice: { equals: searchNumber } },
+      );
+    }
   }
 
   const products = await db.product.findMany({
@@ -30,11 +58,29 @@ async function getProducts(searchParams: { status?: string; category?: string; s
           name: true,
         },
       },
+      brand: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      defaultSupplier: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      defaultWarehouse: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: {
       createdAt: 'desc',
     },
-    take: 50,
+    take: 100,
   });
 
   return products;
@@ -53,14 +99,28 @@ async function getCategories() {
   });
 }
 
+async function getBrands() {
+  return await db.brand.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: 'asc',
+    },
+  });
+}
+
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: { status?: string; category?: string; search?: string };
+  searchParams: { status?: string; category?: string; search?: string; brand?: string };
 }) {
-  const [products, categories] = await Promise.all([
+  const [products, categories, brands] = await Promise.all([
     getProducts(searchParams),
     getCategories(),
+    getBrands(),
   ]);
 
   const stats = {
@@ -105,9 +165,9 @@ export default async function ProductsPage({
 
       {/* Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <form className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {/* Search */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-5">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Search
             </label>
@@ -117,7 +177,7 @@ export default async function ProductsPage({
                 type="text"
                 name="search"
                 defaultValue={searchParams.search}
-                placeholder="Search by name or SKU..."
+                placeholder="Search by name, SKU, brand, description, price..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
               />
             </div>
@@ -160,7 +220,26 @@ export default async function ProductsPage({
             </select>
           </div>
 
-          <div className="md:col-span-4 flex gap-2">
+          {/* Brand Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Brand
+            </label>
+            <select
+              name="brand"
+              defaultValue={searchParams.brand || ''}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+            >
+              <option value="">All Brands</option>
+              {brands.map((brand) => (
+                <option key={brand.id} value={brand.id}>
+                  {brand.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="md:col-span-5 flex gap-2">
             <Button type="submit" className="bg-safety-green-600 hover:bg-safety-green-700">
               Apply Filters
             </Button>
@@ -204,6 +283,9 @@ export default async function ProductsPage({
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
                     Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+                    Brand
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
                     Price
@@ -261,6 +343,9 @@ export default async function ProductsPage({
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
                         {product.category?.name || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {product.brand?.name || '-'}
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm">

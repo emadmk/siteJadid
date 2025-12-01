@@ -39,6 +39,12 @@ export async function GET(request: NextRequest) {
               { sku: { contains: searchQuery, mode: 'insensitive' } },
               { description: { contains: searchQuery, mode: 'insensitive' } },
               { shortDescription: { contains: searchQuery, mode: 'insensitive' } },
+              // Search by brand name
+              { brand: { name: { contains: searchQuery, mode: 'insensitive' } } },
+              // Search by category name
+              { category: { name: { contains: searchQuery, mode: 'insensitive' } } },
+              // Search by meta keywords
+              { metaKeywords: { contains: searchQuery, mode: 'insensitive' } },
             ],
           },
         ],
@@ -47,6 +53,13 @@ export async function GET(request: NextRequest) {
         category: {
           select: {
             name: true,
+            slug: true,
+          },
+        },
+        brand: {
+          select: {
+            name: true,
+            slug: true,
           },
         },
       },
@@ -69,6 +82,11 @@ export async function GET(request: NextRequest) {
       images: product.images as string[],
       category: product.category ? {
         name: product.category.name,
+        slug: product.category.slug,
+      } : undefined,
+      brand: product.brand ? {
+        name: product.brand.name,
+        slug: product.brand.slug,
       } : undefined,
     }));
 
