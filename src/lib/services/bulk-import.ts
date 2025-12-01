@@ -553,8 +553,8 @@ export class BulkImportService {
           height: product.height ? new Decimal(product.height) : undefined,
           // GSA fields
           gsaSin: product.gsaSin,
-          // Store extra metadata as JSON
-          ...(product.metadata && { complianceCertifications: product.metadata }),
+          // Store extra metadata as JSON (convert to plain JSON for Prisma)
+          ...(product.metadata && { complianceCertifications: JSON.parse(JSON.stringify(product.metadata)) }),
           ...(brandId && { brand: { connect: { id: brandId } } }),
           ...(categoryId && { category: { connect: { id: categoryId } } }),
         };
