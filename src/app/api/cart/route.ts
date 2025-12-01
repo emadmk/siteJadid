@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Return updated cart
+    // Return updated cart with totals
     const updatedCart = await db.cart.findUnique({
       where: { id: cart.id },
       include: {
@@ -168,7 +168,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(updatedCart);
+    // Calculate totals
+    const subtotal = updatedCart?.items.reduce((sum: number, item: any) => {
+      return sum + parseFloat(item.price.toString()) * item.quantity;
+    }, 0) || 0;
+
+    const result = {
+      ...updatedCart,
+      subtotal,
+      itemCount: updatedCart?.items.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
+    };
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Add to cart error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
