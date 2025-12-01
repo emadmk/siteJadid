@@ -82,7 +82,7 @@ export function AuthModal() {
           email: registerData.email,
           password: registerData.password,
           accountType: registerData.accountType,
-          companyName: registerData.accountType !== 'CUSTOMER' ? registerData.companyName : undefined,
+          companyName: registerData.accountType !== 'B2C' ? registerData.companyName : undefined,
         }),
       });
 
