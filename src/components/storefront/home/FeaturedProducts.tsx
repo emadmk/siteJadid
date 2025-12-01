@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, Heart, ShoppingCart, Star, Eye, Loader2 } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/hooks/useWishlist';
+import { getImageSize } from '@/lib/image-utils';
 
 interface Product {
   id: string;
@@ -118,7 +119,7 @@ export function FeaturedProducts() {
                 <div className="relative h-48 bg-gray-100 overflow-hidden">
                   {product.images && product.images.length > 0 ? (
                     <img
-                      src={product.images[0]}
+                      src={getImageSize(product.images[0], 'medium')}
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />

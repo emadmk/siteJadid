@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/hooks/useWishlist';
+import { getImageSize } from '@/lib/image-utils';
 
 interface Category {
   id: string;
@@ -449,7 +450,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                       <div className="relative w-full h-56 bg-gray-100 overflow-hidden">
                         {product.images?.[0] ? (
                           <img
-                            src={product.images[0]}
+                            src={getImageSize(product.images[0], 'medium')}
                             alt={product.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
@@ -554,7 +555,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                       <div className="relative w-48 h-48 flex-shrink-0 bg-gray-100 overflow-hidden">
                         {product.images?.[0] ? (
                           <img
-                            src={product.images[0]}
+                            src={getImageSize(product.images[0], 'medium')}
                             alt={product.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />

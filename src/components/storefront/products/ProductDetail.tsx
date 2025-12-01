@@ -27,6 +27,7 @@ import { AddToCartButton } from '@/components/product/AddToCartButton';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { toast } from '@/lib/toast';
+import { getImageSize, getOptimizedImageUrl } from '@/lib/image-utils';
 
 interface Review {
   id: string;
@@ -237,7 +238,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
             >
               {images[selectedImage] ? (
                 <img
-                  src={images[selectedImage]}
+                  src={getImageSize(images[selectedImage], 'large')}
                   alt={product.name}
                   className="w-full h-full object-contain"
                 />
@@ -696,7 +697,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                     <div className="w-full h-40 md:h-48 bg-gray-100 overflow-hidden">
                       {relatedProduct.images?.[0] ? (
                         <img
-                          src={relatedProduct.images[0]}
+                          src={getImageSize(relatedProduct.images[0], 'medium')}
                           alt={relatedProduct.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
@@ -744,7 +745,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
             </svg>
           </button>
           <img
-            src={images[selectedImage]}
+            src={getImageSize(images[selectedImage], 'original')}
             alt={product.name}
             className="max-w-full max-h-[90vh] object-contain"
             onClick={(e) => e.stopPropagation()}
