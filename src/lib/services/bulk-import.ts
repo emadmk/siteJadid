@@ -193,6 +193,11 @@ export interface ImportOptions {
   imagePattern?: string; // e.g., "{partNumber}_{index}" or "{sku}-{index}"
   fieldMapping?: Record<string, string>;
   dryRun?: boolean;
+  // Default assignments for all imported products
+  defaultBrandId?: string;
+  defaultCategoryId?: string;
+  defaultWarehouseId?: string;
+  defaultSupplierId?: string;
 }
 
 interface ParsedProduct {
@@ -494,6 +499,10 @@ export class BulkImportService {
       importImages = true,
       imageBasePath = path.join(process.cwd(), 'import-images'),
       dryRun = false,
+      defaultBrandId,
+      defaultCategoryId,
+      defaultWarehouseId,
+      defaultSupplierId,
     } = options;
 
     this.errors = [];
@@ -519,13 +528,16 @@ export class BulkImportService {
           continue;
         }
 
-        // Find or create brand and category
-        const brandId = product.brandName
-          ? await this.findOrCreateBrand(product.brandName)
-          : null;
-        const categoryId = product.categoryName
-          ? await this.findOrCreateCategory(product.categoryName)
-          : null;
+        // Use default brand/category if provided, otherwise find or create from product data
+        const brandId = defaultBrandId
+          ? defaultBrandId
+          : (product.brandName ? await this.findOrCreateBrand(product.brandName) : null);
+        const categoryId = defaultCategoryId
+          ? defaultCategoryId
+          : (product.categoryName ? await this.findOrCreateCategory(product.categoryName) : null);
+
+        // Store supplier ID for later use
+        const supplierId = defaultSupplierId || null;
 
         // Get brand slug for image storage path
         let brandSlug: string | undefined;
@@ -557,6 +569,8 @@ export class BulkImportService {
           ...(product.metadata && { complianceCertifications: JSON.parse(JSON.stringify(product.metadata)) }),
           ...(brandId && { brand: { connect: { id: brandId } } }),
           ...(categoryId && { category: { connect: { id: categoryId } } }),
+          ...(supplierId && { defaultSupplier: { connect: { id: supplierId } } }),
+          ...(defaultWarehouseId && { defaultWarehouse: { connect: { id: defaultWarehouseId } } }),
         };
 
         if (dryRun) {
@@ -641,6 +655,47 @@ export class BulkImportService {
               row: product.rowNumber,
               field: 'images',
               message: `No images found for ${product.sku} in ${imageBasePath}`,
+            });
+          }
+        }
+
+        // Create/Update warehouse stock if warehouse is selected
+        if (defaultWarehouseId && savedProduct) {
+          const existingStock = await prisma.warehouseStock.findUnique({
+            where: {
+              warehouseId_productId: {
+                warehouseId: defaultWarehouseId,
+                productId: savedProduct.id,
+              },
+            },
+          });
+
+          if (existingStock) {
+            // Update existing stock
+            await prisma.warehouseStock.update({
+              where: {
+                warehouseId_productId: {
+                  warehouseId: defaultWarehouseId,
+                  productId: savedProduct.id,
+                },
+              },
+              data: {
+                quantity: product.stockQuantity || 0,
+                availableQuantity: product.stockQuantity || 0,
+              },
+            });
+          } else {
+            // Create new stock entry
+            await prisma.warehouseStock.create({
+              data: {
+                warehouseId: defaultWarehouseId,
+                productId: savedProduct.id,
+                quantity: product.stockQuantity || 0,
+                availableQuantity: product.stockQuantity || 0,
+                reservedQuantity: 0,
+                reorderPoint: 10,
+                reorderQuantity: 50,
+              },
             });
           }
         }

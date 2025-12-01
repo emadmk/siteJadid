@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +17,36 @@ import {
   Settings,
   ChevronDown,
   ChevronUp,
+  Building2,
+  Tag,
+  Warehouse,
+  Truck,
 } from 'lucide-react';
+
+interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  parentId: string | null;
+}
+
+interface WarehouseType {
+  id: string;
+  name: string;
+  code: string;
+}
+
+interface Supplier {
+  id: string;
+  name: string;
+  code: string;
+}
 
 interface ImportError {
   row: number;
@@ -50,13 +79,63 @@ export default function ProductImportPage() {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Import options
+  // Dropdown data
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [warehouses, setWarehouses] = useState<WarehouseType[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [isLoadingDropdowns, setIsLoadingDropdowns] = useState(true);
+
+  // Import options (now includes selected IDs)
   const [options, setOptions] = useState({
     updateExisting: true,
     importImages: true,
     imageBasePath: '/home/user/siteJadid/import-images',
     dryRun: false,
+    // Default assignments for all imported products
+    defaultBrandId: '',
+    defaultCategoryId: '',
+    defaultWarehouseId: '',
+    defaultSupplierId: '',
   });
+
+  // Fetch dropdown data on mount
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      setIsLoadingDropdowns(true);
+      try {
+        const [brandsRes, categoriesRes, warehousesRes, suppliersRes] = await Promise.all([
+          fetch('/api/admin/brands'),
+          fetch('/api/categories'),
+          fetch('/api/admin/warehouses'),
+          fetch('/api/admin/suppliers'),
+        ]);
+
+        if (brandsRes.ok) {
+          const data = await brandsRes.json();
+          setBrands(data.brands || []);
+        }
+        if (categoriesRes.ok) {
+          const data = await categoriesRes.json();
+          setCategories(data.categories || []);
+        }
+        if (warehousesRes.ok) {
+          const data = await warehousesRes.json();
+          setWarehouses(Array.isArray(data) ? data : []);
+        }
+        if (suppliersRes.ok) {
+          const data = await suppliersRes.json();
+          setSuppliers(data.suppliers || []);
+        }
+      } catch (error) {
+        console.error('Error fetching dropdown data:', error);
+      } finally {
+        setIsLoadingDropdowns(false);
+      }
+    };
+
+    fetchDropdownData();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -250,11 +329,158 @@ export default function ProductImportPage() {
             </div>
           </div>
 
-          {/* Step 3: Upload Excel */}
+          {/* Step 3: Select Default Assignments */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-full bg-safety-green-100 flex items-center justify-center flex-shrink-0">
                 <span className="text-safety-green-600 font-bold">3</span>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-black mb-2">
+                  Select Default Assignments
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  All imported products will be assigned to these selections
+                </p>
+
+                {isLoadingDropdowns ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-safety-green-600" />
+                    <span className="ml-2 text-gray-600">Loading options...</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Brand Select */}
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <Tag className="w-4 h-4" />
+                        Brand
+                      </label>
+                      <select
+                        value={options.defaultBrandId}
+                        onChange={(e) =>
+                          setOptions({ ...options, defaultBrandId: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
+                      >
+                        <option value="">-- Select Brand --</option>
+                        {brands.map((brand) => (
+                          <option key={brand.id} value={brand.id}>
+                            {brand.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Category Select */}
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <Building2 className="w-4 h-4" />
+                        Category
+                      </label>
+                      <select
+                        value={options.defaultCategoryId}
+                        onChange={(e) =>
+                          setOptions({ ...options, defaultCategoryId: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
+                      >
+                        <option value="">-- Select Category --</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.parentId ? '└─ ' : ''}{category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Warehouse Select */}
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <Warehouse className="w-4 h-4" />
+                        Warehouse
+                      </label>
+                      <select
+                        value={options.defaultWarehouseId}
+                        onChange={(e) =>
+                          setOptions({ ...options, defaultWarehouseId: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
+                      >
+                        <option value="">-- Select Warehouse --</option>
+                        {warehouses.map((warehouse) => (
+                          <option key={warehouse.id} value={warehouse.id}>
+                            {warehouse.name} ({warehouse.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Supplier Select */}
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <Truck className="w-4 h-4" />
+                        Supplier
+                      </label>
+                      <select
+                        value={options.defaultSupplierId}
+                        onChange={(e) =>
+                          setOptions({ ...options, defaultSupplierId: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
+                      >
+                        <option value="">-- Select Supplier --</option>
+                        {suppliers.map((supplier) => (
+                          <option key={supplier.id} value={supplier.id}>
+                            {supplier.name} ({supplier.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Selection Summary */}
+                {(options.defaultBrandId || options.defaultCategoryId || options.defaultWarehouseId || options.defaultSupplierId) && (
+                  <div className="mt-4 p-3 bg-safety-green-50 rounded-lg border border-safety-green-200">
+                    <p className="text-sm text-safety-green-800 font-medium mb-2">Selected Defaults:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {options.defaultBrandId && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <Tag className="w-3 h-3 mr-1" />
+                          {brands.find(b => b.id === options.defaultBrandId)?.name}
+                        </span>
+                      )}
+                      {options.defaultCategoryId && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          <Building2 className="w-3 h-3 mr-1" />
+                          {categories.find(c => c.id === options.defaultCategoryId)?.name}
+                        </span>
+                      )}
+                      {options.defaultWarehouseId && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          <Warehouse className="w-3 h-3 mr-1" />
+                          {warehouses.find(w => w.id === options.defaultWarehouseId)?.name}
+                        </span>
+                      )}
+                      {options.defaultSupplierId && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <Truck className="w-3 h-3 mr-1" />
+                          {suppliers.find(s => s.id === options.defaultSupplierId)?.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Step 4: Upload Excel */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-safety-green-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-safety-green-600 font-bold">4</span>
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-black mb-2">
