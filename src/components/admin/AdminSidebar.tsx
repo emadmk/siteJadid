@@ -37,6 +37,7 @@ import {
   Link2,
   Menu,
   X,
+  Upload,
 } from 'lucide-react';
 import { useState, createContext, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -97,6 +98,7 @@ const menuItems: MenuItem[] = [
     children: [
       { title: 'All Products', href: '/admin/products', icon: Package, permissions: ['products.view'] },
       { title: 'Add Product', href: '/admin/products/new', icon: Package, permissions: ['products.create'] },
+      { title: 'Bulk Import', href: '/admin/products/import', icon: Upload, permissions: ['products.create'] },
       { title: 'Categories', href: '/admin/categories', icon: FolderTree, permissions: ['products.view'] },
       { title: 'Brands', href: '/admin/products/brands', icon: Building2, permissions: ['products.view'] },
       { title: 'Attributes', href: '/admin/attributes', icon: Layers, permissions: ['products.view'] },
