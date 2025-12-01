@@ -488,7 +488,7 @@ export class BulkImportService {
             await prisma.product.update({
               where: { id: savedProduct.id },
               data: {
-                images: processedImages.map((img) => img.thumbUrl),
+                images: processedImages.map((img) => img.thumbUrl).filter(Boolean) as string[],
               },
             });
           } else {

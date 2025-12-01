@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     await prisma.product.update({
       where: { id: productId },
       data: {
-        images: allImages.map((img) => img.thumbUrl),
+        images: allImages.map((img) => img.thumbUrl).filter((url): url is string => url !== null),
       },
     });
 
@@ -187,7 +187,7 @@ export async function DELETE(request: NextRequest) {
     await prisma.product.update({
       where: { id: image.productId },
       data: {
-        images: remainingImages.map((img) => img.thumbUrl),
+        images: remainingImages.map((img) => img.thumbUrl).filter((url): url is string => url !== null),
       },
     });
 
