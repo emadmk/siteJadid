@@ -17,6 +17,10 @@ interface Product {
   images: string[];
   isFeatured: boolean;
   stockQuantity: number;
+  hasVariants?: boolean;
+  _count?: {
+    variants: number;
+  };
   category?: {
     name: string;
     slug: string;
@@ -159,18 +163,26 @@ export function FeaturedProducts() {
 
                   {/* Add to Cart Overlay */}
                   <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => handleAddToCart(product.id, e)}
-                      disabled={addingToCart === product.id || product.stockQuantity === 0}
-                      className="w-full py-2 bg-white text-black rounded-lg font-medium hover:bg-safety-green-600 hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {addingToCart === product.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <ShoppingCart className="w-4 h-4" />
-                      )}
-                      {product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-                    </button>
+                    {product.hasVariants || (product._count?.variants && product._count.variants > 0) ? (
+                      // Product has variants - show "Select Options" (clicking goes to product page via parent Link)
+                      <span className="w-full py-2 bg-white text-black rounded-lg font-medium flex items-center justify-center gap-2">
+                        <Eye className="w-4 h-4" />
+                        Select Options
+                      </span>
+                    ) : (
+                      <button
+                        onClick={(e) => handleAddToCart(product.id, e)}
+                        disabled={addingToCart === product.id || product.stockQuantity === 0}
+                        className="w-full py-2 bg-white text-black rounded-lg font-medium hover:bg-safety-green-600 hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {addingToCart === product.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <ShoppingCart className="w-4 h-4" />
+                        )}
+                        {product.stockQuantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                      </button>
+                    )}
                   </div>
                 </div>
 

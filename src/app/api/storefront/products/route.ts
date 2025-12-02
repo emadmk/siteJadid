@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
               reviews: {
                 where: { status: 'APPROVED' },
               },
+              variants: true,
             },
           },
         },
@@ -143,6 +144,10 @@ export async function GET(request: NextRequest) {
       category: product.category,
       averageRating: ratingMap.get(product.id) || 0,
       reviewCount: product._count.reviews,
+      hasVariants: product._count.variants > 0,
+      _count: {
+        variants: product._count.variants,
+      },
     }));
 
     return NextResponse.json({

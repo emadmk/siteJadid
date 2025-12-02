@@ -99,6 +99,7 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
             reviews: {
               where: { status: 'APPROVED' },
             },
+            variants: true,
           },
         },
       },
@@ -163,6 +164,10 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
     category: product.category || undefined,
     averageRating: ratingMap.get(product.id) || 0,
     reviewCount: product._count.reviews,
+    hasVariants: product._count.variants > 0,
+    _count: {
+      variants: product._count.variants,
+    },
   }));
 
   return {

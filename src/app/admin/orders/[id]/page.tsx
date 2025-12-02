@@ -176,7 +176,10 @@ export default async function OrderDetailPage({
                       <Link href={`/products/${item.product.slug}`} className="font-medium text-black hover:text-safety-green-600 line-clamp-1">
                         {item.name}
                       </Link>
-                      <div className="text-sm text-gray-600 mt-1">SKU: {item.sku}</div>
+                      {item.variantName && (
+                        <div className="text-sm text-safety-green-600 font-medium mt-0.5">{item.variantName}</div>
+                      )}
+                      <div className="text-sm text-gray-600 mt-1">SKU: {item.variantSku || item.sku}</div>
                       <div className="text-sm text-gray-600 mt-1">
                         Quantity: {item.quantity} × ${Number(item.price).toFixed(2)}
                       </div>

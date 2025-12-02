@@ -154,8 +154,12 @@ export function CartDrawer() {
           ) : (
             <div className="divide-y divide-gray-100">
               {cart.items.map((item) => {
-                const images = item.product.images || [];
-                const price = item.product.salePrice || item.product.basePrice;
+                // Use variant data if available
+                const images = (item.variant?.images?.length ? item.variant.images : item.product.images) || [];
+                const price = item.variant
+                  ? (item.variant.salePrice || item.variant.basePrice)
+                  : (item.product.salePrice || item.product.basePrice);
+                const stockQuantity = item.variant?.stockQuantity ?? item.product.stockQuantity;
                 const isUpdating = updatingItems.has(item.id);
 
                 return (
@@ -191,7 +195,14 @@ export function CartDrawer() {
                         >
                           {item.product.name}
                         </Link>
-                        <p className="text-xs text-gray-500 mt-0.5">SKU: {item.product.sku}</p>
+                        {item.variant && (
+                          <p className="text-xs text-safety-green-600 font-medium mt-0.5">
+                            {item.variant.name}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          SKU: {item.variant?.sku || item.product.sku}
+                        </p>
 
                         <div className="flex items-center justify-between mt-2">
                           {/* Quantity Controls */}
@@ -208,7 +219,7 @@ export function CartDrawer() {
                             </span>
                             <button
                               onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                              disabled={item.quantity >= item.product.stockQuantity || isUpdating}
+                              disabled={item.quantity >= stockQuantity || isUpdating}
                               className="p-1.5 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                               <Plus className="w-3 h-3" />
@@ -235,9 +246,9 @@ export function CartDrawer() {
                         </div>
 
                         {/* Stock Warning */}
-                        {item.product.stockQuantity < 10 && (
+                        {stockQuantity < 10 && (
                           <p className="text-xs text-orange-600 mt-1">
-                            Only {item.product.stockQuantity} left in stock
+                            Only {stockQuantity} left in stock
                           </p>
                         )}
                       </div>

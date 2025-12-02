@@ -15,6 +15,7 @@ import {
   Loader2,
   Search,
   ChevronRight,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
@@ -43,6 +44,10 @@ interface Product {
   stockQuantity: number;
   averageRating: number;
   reviewCount: number;
+  hasVariants?: boolean;
+  _count?: {
+    variants: number;
+  };
   category?: {
     name: string;
     slug: string;
@@ -714,17 +719,24 @@ function ProductGridCard({
             >
               <Heart className={`w-4 h-4 ${isInWishlist ? 'fill-current' : ''}`} />
             </button>
-            <button
-              onClick={onAddToCart}
-              disabled={addingToCart || product.stockQuantity === 0}
-              className="p-2 bg-safety-green-600 text-white rounded-full shadow-lg hover:bg-safety-green-700 transition-colors disabled:opacity-50"
-            >
-              {addingToCart ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <ShoppingCart className="w-4 h-4" />
-              )}
-            </button>
+            {product.hasVariants || (product._count?.variants && product._count.variants > 0) ? (
+              // Product has variants - show "Select Options" indicator
+              <span className="p-2 bg-safety-green-600 text-white rounded-full shadow-lg flex items-center justify-center">
+                <Eye className="w-4 h-4" />
+              </span>
+            ) : (
+              <button
+                onClick={onAddToCart}
+                disabled={addingToCart || product.stockQuantity === 0}
+                className="p-2 bg-safety-green-600 text-white rounded-full shadow-lg hover:bg-safety-green-700 transition-colors disabled:opacity-50"
+              >
+                {addingToCart ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ShoppingCart className="w-4 h-4" />
+                )}
+              </button>
+            )}
           </div>
 
           {/* Low Stock Warning */}
@@ -900,18 +912,26 @@ function ProductListCard({
               >
                 <Heart className={`w-5 h-5 ${isInWishlist ? 'fill-current' : ''}`} />
               </button>
-              <Button
-                onClick={onAddToCart}
-                disabled={addingToCart || product.stockQuantity === 0}
-                className="bg-safety-green-600 hover:bg-safety-green-700"
-              >
-                {addingToCart ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                )}
-                Add to Cart
-              </Button>
+              {product.hasVariants || (product._count?.variants && product._count.variants > 0) ? (
+                // Product has variants - show "Select Options" button
+                <span className="inline-flex items-center px-4 py-2 bg-safety-green-600 text-white rounded-lg font-medium">
+                  <Eye className="w-4 h-4 mr-2" />
+                  Select Options
+                </span>
+              ) : (
+                <Button
+                  onClick={onAddToCart}
+                  disabled={addingToCart || product.stockQuantity === 0}
+                  className="bg-safety-green-600 hover:bg-safety-green-700"
+                >
+                  {addingToCart ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                  )}
+                  Add to Cart
+                </Button>
+              )}
             </div>
           </div>
         </div>

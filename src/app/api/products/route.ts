@@ -49,14 +49,20 @@ export async function GET(request: NextRequest) {
           category: true,
           brand: true,
           _count: {
-            select: { reviews: true },
+            select: { reviews: true, variants: true },
           },
         },
         take: limit,
       });
 
+      // Add hasVariants flag to each product
+      const productsWithVariantFlag = products.map(p => ({
+        ...p,
+        hasVariants: p._count.variants > 0,
+      }));
+
       return NextResponse.json({
-        products,
+        products: productsWithVariantFlag,
         total: products.length,
         page: 1,
         limit,
@@ -121,7 +127,7 @@ export async function GET(request: NextRequest) {
           category: true,
           brand: true,
           _count: {
-            select: { reviews: true },
+            select: { reviews: true, variants: true },
           },
         },
         orderBy,
@@ -131,8 +137,14 @@ export async function GET(request: NextRequest) {
       db.product.count({ where }),
     ]);
 
+    // Add hasVariants flag to each product
+    const productsWithVariantFlag = products.map(p => ({
+      ...p,
+      hasVariants: p._count.variants > 0,
+    }));
+
     const result = {
-      products,
+      products: productsWithVariantFlag,
       total,
       page,
       limit,
