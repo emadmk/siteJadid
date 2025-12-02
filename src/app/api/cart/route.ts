@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If variantId is provided, validate it
-    let variant = null;
+    let variant: Awaited<ReturnType<typeof db.productVariant.findUnique>> = null;
     if (variantId) {
       variant = await db.productVariant.findUnique({
         where: { id: variantId },
