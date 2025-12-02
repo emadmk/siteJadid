@@ -29,8 +29,13 @@ export const DEFAULT_FIELD_MAPPING: Record<string, string> = {
   // === Description ===
   'Item_description': 'description',
   'item_description': 'description',
+  'Item Description': 'description',
   'Description': 'description',
   'description': 'description',
+  'Full Description': 'description',
+  'full_description': 'description',
+  'Product Description': 'description',
+  'Long Description': 'description',
 
   // === Brand / Manufacturer ===
   'Manufacturer Information': 'brandName',
@@ -109,13 +114,29 @@ export const DEFAULT_FIELD_MAPPING: Record<string, string> = {
   'unit_uc': 'unitOfMeasure',
 
   // === Dimensions ===
+  // === Physical Attributes ===
   'Weight': 'weight',
   'weight': 'weight',
   'weight_lbs': 'weight',
   'weight_lb_s': 'weight',
+  'Weight (lbs)': 'weight',
+  'Weight (lb)': 'weight',
+  'Product Weight': 'weight',
+
+  'Length': 'length',
   'length': 'length',
+  'Length (in)': 'length',
+  'Product Length': 'length',
+
+  'Width': 'width',
   'width': 'width',
+  'Width (in)': 'width',
+  'Product Width': 'width',
+
+  'Height': 'height',
   'height': 'height',
+  'Height (in)': 'height',
+  'Product Height': 'height',
   'physical_uom': 'dimensionUnit',
   'physical_uom_s': 'dimensionUnit',
 
@@ -450,6 +471,20 @@ export class BulkImportService {
   }
 
   /**
+   * Extract base part number from SKU for image matching
+   * Examples: K-1006980-7 → 1006980, 1006980-8.5 → 1006980
+   */
+  private extractBasePartNumber(sku: string): string {
+    // Try to extract the main numeric part (usually 7 digits)
+    const matches = sku.match(/(\d{6,8})/);
+    if (matches) {
+      return matches[1];
+    }
+    // If no match, return original SKU cleaned up
+    return sku.replace(/[^\w]/g, '');
+  }
+
+  /**
    * Find images for a product based on part number pattern
    */
   private async findProductImages(
@@ -459,44 +494,60 @@ export class BulkImportService {
     const images: Array<{ buffer: Buffer; filename: string }> = [];
     const extensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
 
-    // Pattern 1: partNumber.ext (main image)
-    // Pattern 2: partNumber_2.ext, partNumber_3.ext, etc.
-    // Pattern 3: partNumber-1.ext, partNumber-2.ext, etc.
+    // Extract base part number for image matching
+    const basePartNumber = this.extractBasePartNumber(partNumber);
+    console.log(`Looking for images: SKU=${partNumber}, BasePartNumber=${basePartNumber}`);
 
-    for (let i = 0; i <= 10; i++) {
-      for (const ext of extensions) {
-        let filename: string;
-        if (i === 0) {
-          filename = `${partNumber}${ext}`;
-        } else if (i === 1) {
-          // Try both formats for second image
-          filename = `${partNumber}_2${ext}`;
-        } else {
-          filename = `${partNumber}_${i + 1}${ext}`;
-        }
+    // Try both the original SKU and the extracted base part number
+    const patternsToTry = [partNumber, basePartNumber];
+    if (partNumber !== basePartNumber) {
+      console.log(`Will try both: ${partNumber} and ${basePartNumber}`);
+    }
 
-        const filePath = path.join(imageBasePath, filename);
-        if (existsSync(filePath)) {
-          try {
-            const buffer = await fs.readFile(filePath);
-            images.push({ buffer, filename });
-            break; // Found this index, move to next
-          } catch (error) {
-            console.error(`Error reading image ${filePath}:`, error);
+    for (const pattern of patternsToTry) {
+      if (images.length > 0) break; // Already found images
+
+      // Pattern 1: partNumber.ext (main image)
+      // Pattern 2: partNumber_2.ext, partNumber_3.ext, etc.
+      // Pattern 3: partNumber-1.ext, partNumber-2.ext, etc.
+
+      for (let i = 0; i <= 10; i++) {
+        for (const ext of extensions) {
+          let filename: string;
+          if (i === 0) {
+            filename = `${pattern}${ext}`;
+          } else if (i === 1) {
+            // Try both formats for second image
+            filename = `${pattern}_2${ext}`;
+          } else {
+            filename = `${pattern}_${i + 1}${ext}`;
           }
-        }
 
-        // Also try dash format
-        if (i > 0) {
-          const dashFilename = `${partNumber}-${i}${ext}`;
-          const dashFilePath = path.join(imageBasePath, dashFilename);
-          if (existsSync(dashFilePath)) {
+          const filePath = path.join(imageBasePath, filename);
+          if (existsSync(filePath)) {
             try {
-              const buffer = await fs.readFile(dashFilePath);
-              images.push({ buffer, filename: dashFilename });
-              break;
+              const buffer = await fs.readFile(filePath);
+              images.push({ buffer, filename });
+              console.log(`Found image: ${filename}`);
+              break; // Found this index, move to next
             } catch (error) {
-              console.error(`Error reading image ${dashFilePath}:`, error);
+              console.error(`Error reading image ${filePath}:`, error);
+            }
+          }
+
+          // Also try dash format
+          if (i > 0) {
+            const dashFilename = `${pattern}-${i}${ext}`;
+            const dashFilePath = path.join(imageBasePath, dashFilename);
+            if (existsSync(dashFilePath)) {
+              try {
+                const buffer = await fs.readFile(dashFilePath);
+                images.push({ buffer, filename: dashFilename });
+                console.log(`Found image: ${dashFilename}`);
+                break;
+              } catch (error) {
+                console.error(`Error reading image ${dashFilePath}:`, error);
+              }
             }
           }
         }
