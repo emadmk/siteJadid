@@ -126,11 +126,6 @@ export async function POST(request: NextRequest) {
           where: { productId },
         });
 
-        // Delete price history
-        await prisma.priceHistory.deleteMany({
-          where: { productId },
-        });
-
         // Delete recently viewed
         await prisma.recentlyViewed.deleteMany({
           where: { productId },
