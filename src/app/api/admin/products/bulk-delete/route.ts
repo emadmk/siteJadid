@@ -126,11 +126,6 @@ export async function POST(request: NextRequest) {
           where: { productId },
         });
 
-        // Delete recently viewed
-        await prisma.recentlyViewed.deleteMany({
-          where: { productId },
-        });
-
         // Delete bundle items where this product is included
         await prisma.bundleItem.deleteMany({
           where: { productId },
