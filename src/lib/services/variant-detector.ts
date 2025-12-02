@@ -45,8 +45,10 @@ export interface DetectionResult {
  * Patterns supported:
  *   1006980-7      → 1006980 (numeric base with size suffix)
  *   1006980-8.5    → 1006980 (numeric base with decimal size)
+ *   K-1006980-7    → 1006980 (prefix + numeric base with size)
+ *   K-1007969-9EE  → 1007969 (prefix + numeric base with size+width code)
+ *   K-1007969-11.5D → 1007969 (prefix + numeric base with decimal size+width)
  *   HV-VEST-S-OR   → HV-VEST (prefix base with size-color suffix)
- *   MTR-1-115-1    → MTR (short prefix followed by specs)
  *   ABC123-RED-L   → ABC123 (alphanumeric base with attribute suffixes)
  */
 export function extractBasePartNumber(sku: string): string {
@@ -55,16 +57,23 @@ export function extractBasePartNumber(sku: string): string {
   const cleanSku = sku.trim().toUpperCase();
 
   // Pattern 1: Numbers followed by dash and size (1006980-7, 1006980-8.5)
-  const numericPattern = /^(\d{5,8})-[\d.]+$/;
+  const numericPattern = /^(\d{5,8})-[\d.]+[A-Z]*$/;
   const numericMatch = cleanSku.match(numericPattern);
   if (numericMatch) return numericMatch[1];
 
-  // Pattern 2: Prefix-Number pattern (K-1006980-7 → 1006980)
-  const prefixNumericPattern = /^[A-Z]+-?(\d{5,8})-[\d.]+$/;
+  // Pattern 2: Prefix-Number pattern with size suffix
+  // K-1006980-7, K-1007969-9EE, K-1007969-11.5D
+  const prefixNumericPattern = /^[A-Z]+-(\d{5,8})-[\d.]+[A-Z]*$/;
   const prefixNumericMatch = cleanSku.match(prefixNumericPattern);
   if (prefixNumericMatch) return prefixNumericMatch[1];
 
-  // Pattern 3: Standard SKU with size/color suffix (ABC123-RED-L)
+  // Pattern 3: Vendor part number format (K-1006999-7 from vendor_part_number)
+  // Also handles K-1007969-10.5EE type patterns
+  const vendorPattern = /^[A-Z]+-(\d{6,8})-\d+\.?\d*[A-Z]*$/;
+  const vendorMatch = cleanSku.match(vendorPattern);
+  if (vendorMatch) return vendorMatch[1];
+
+  // Pattern 4: Standard SKU with size/color suffix (ABC123-RED-L)
   // Take everything before the last 2 segments if they look like attributes
   const parts = cleanSku.split('-');
   if (parts.length >= 3) {
@@ -72,8 +81,13 @@ export function extractBasePartNumber(sku: string): string {
     const secondLastPart = parts[parts.length - 2];
 
     // Check if last parts are size codes or colors
-    const sizePatterns = /^(XXS|XS|S|M|L|XL|XXL|XXXL|\d+\.?\d*|W\d+)$/;
+    const sizePatterns = /^(XXS|XS|S|M|L|XL|XXL|XXXL|\d+\.?\d*[A-Z]*|W\d+)$/;
     const colorPatterns = /^(RED|BLUE|GREEN|BLACK|WHITE|ORANGE|YELLOW|NAVY|GREY|GRAY|OR|BL|GR|WH|BK|YL)$/;
+
+    // Special case: if second part is a long number (product code), use it as base
+    if (/^\d{6,8}$/.test(secondLastPart)) {
+      return secondLastPart;
+    }
 
     if (sizePatterns.test(lastPart) || colorPatterns.test(lastPart)) {
       // Remove the last part
@@ -87,14 +101,23 @@ export function extractBasePartNumber(sku: string): string {
     }
 
     // For patterns like MTR-1-115-1 (motor specs), take first 1-2 parts
-    if (parts[0].length <= 4) {
+    // But NOT for single letter prefixes like K-
+    if (parts[0].length > 1 && parts[0].length <= 4) {
       return parts.slice(0, Math.min(2, parts.length - 2)).join('-');
+    }
+
+    // If first part is single letter (K, etc), second part might be the real base
+    if (parts[0].length === 1 && parts.length >= 2) {
+      // Check if second part is the product code
+      if (/^\d{5,8}$/.test(parts[1])) {
+        return parts[1];
+      }
     }
 
     return parts[0];
   }
 
-  // Pattern 4: Just numeric suffix (ABC123XL → ABC123)
+  // Pattern 5: Just numeric suffix (ABC123XL → ABC123)
   const trailingSizePattern = /^(.+?)(XXS|XS|S|M|L|XL|XXL|XXXL)$/;
   const trailingSizeMatch = cleanSku.match(trailingSizePattern);
   if (trailingSizeMatch) return trailingSizeMatch[1];
@@ -337,25 +360,48 @@ export function buildVariantName(attributeValues: Record<string, string>): strin
 /**
  * Parse variant suffix into attribute values
  * Example: "L-OR" → { size: "L", color: "OR" }
+ * Example: "9EE" → { size: "9", width: "EE" }
+ * Example: "11.5D" → { size: "11.5", width: "D" }
  */
 export function parseVariantSuffix(
   suffix: string,
-  attributeNames: string[] = ['size', 'color']
+  attributeNames: string[] = ['size', 'width', 'color']
 ): Record<string, string> {
   const result: Record<string, string> = {};
 
   if (!suffix) return result;
 
+  // Check for combined size+width pattern (9EE, 11.5D, 10.5EE, 7D, etc.)
+  const sizeWidthPattern = /^(\d+\.?\d*)(D|E|EE|EEE|EEEE|4E|6E|W|N|M|B|C|AA|AAA)$/i;
+  const sizeWidthMatch = suffix.match(sizeWidthPattern);
+  if (sizeWidthMatch) {
+    result.size = sizeWidthMatch[1];
+    result.width = sizeWidthMatch[2].toUpperCase();
+    return result;
+  }
+
   const parts = suffix.split('-').filter(p => p);
 
-  // Size patterns
+  // Size patterns (numeric or standard size codes)
   const sizePattern = /^(XXS|XS|S|M|L|XL|XXL|XXXL|\d+\.?\d*|W\d+)$/i;
+  // Width patterns (shoe widths)
+  const widthPattern = /^(D|E|EE|EEE|EEEE|4E|6E|W|N|M|B|C|AA|AAA)$/i;
   // Color patterns
   const colorPattern = /^(RED|BLUE|GREEN|BLACK|WHITE|ORANGE|YELLOW|NAVY|GREY|GRAY|OR|BL|GR|WH|BK|YL|NV)$/i;
 
   for (const part of parts) {
+    // Check for combined size+width in a single part
+    const combinedMatch = part.match(sizeWidthPattern);
+    if (combinedMatch) {
+      result.size = combinedMatch[1];
+      result.width = combinedMatch[2].toUpperCase();
+      continue;
+    }
+
     if (sizePattern.test(part) && !result.size) {
       result.size = part.toUpperCase();
+    } else if (widthPattern.test(part) && !result.width) {
+      result.width = part.toUpperCase();
     } else if (colorPattern.test(part) && !result.color) {
       result.color = part.toUpperCase();
     } else if (!result[attributeNames[Object.keys(result).length] || 'other']) {
