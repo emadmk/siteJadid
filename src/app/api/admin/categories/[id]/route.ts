@@ -3,6 +3,51 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 
+// GET - Get single category
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const category = await db.category.findUnique({
+      where: { id: params.id },
+      include: {
+        parent: {
+          select: { id: true, name: true },
+        },
+        _count: {
+          select: {
+            products: true,
+            children: true,
+          },
+        },
+      },
+    });
+
+    if (!category) {
+      return NextResponse.json({ error: 'Category not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(category);
+  } catch (error: any) {
+    console.error('Get category error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to get category' },
+      { status: 500 }
+    );
+  }
+}
+
 // PUT - Update category
 export async function PUT(
   request: NextRequest,
