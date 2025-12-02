@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { Edit2, Trash2, Save, X, Package } from 'lucide-react';
 
 interface AttributeValue {
+  attributeId: string;
+  value: string;
   attribute: {
     id: string;
     name: string;
     code: string;
   };
-  value: string;
 }
 
 interface Variant {
@@ -23,6 +24,7 @@ interface Variant {
   costPrice?: number | null;
   stockQuantity: number;
   isActive: boolean;
+  images: string[];
   attributeValues: AttributeValue[];
 }
 
