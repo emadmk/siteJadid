@@ -5,6 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
+import { CategoryVariantConfig } from './CategoryVariantConfig';
+
+interface PriceRule {
+  attribute: string;
+  condition: '>=' | '<=' | '==' | 'in';
+  value: string;
+  modifier: string;
+}
 
 interface Category {
   id: string;
@@ -17,6 +25,8 @@ interface Category {
   metaTitle?: string | null;
   metaDescription?: string | null;
   metaKeywords?: string | null;
+  variantAttributeIds?: string[];
+  priceRules?: PriceRule[] | null;
 }
 
 interface CategoryFormProps {
@@ -40,6 +50,8 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
     metaTitle: category?.metaTitle || '',
     metaDescription: category?.metaDescription || '',
     metaKeywords: category?.metaKeywords || '',
+    variantAttributeIds: category?.variantAttributeIds || [],
+    priceRules: (category?.priceRules as PriceRule[]) || [],
   });
 
   // Auto-generate slug from name
@@ -75,6 +87,8 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
           ...formData,
           parentId: formData.parentId || null,
           displayOrder: parseInt(formData.displayOrder) || 0,
+          variantAttributeIds: formData.variantAttributeIds,
+          priceRules: formData.priceRules.length > 0 ? formData.priceRules : null,
         }),
       });
 
@@ -276,6 +290,20 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Variant Configuration */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+        <h2 className="text-xl font-bold text-black mb-6">Variant Configuration</h2>
+        <CategoryVariantConfig
+          selectedAttributeIds={formData.variantAttributeIds}
+          priceRules={formData.priceRules}
+          onChange={(config) => setFormData(prev => ({
+            ...prev,
+            variantAttributeIds: config.variantAttributeIds,
+            priceRules: config.priceRules,
+          }))}
+        />
       </div>
 
       {/* Form Actions */}

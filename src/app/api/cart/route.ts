@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
                 category: true,
               },
             },
+            variant: true,
           },
         },
       },
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
                   category: true,
                 },
               },
+              variant: true,
             },
           },
         },
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { productId, quantity = 1 } = await request.json();
+    const { productId, quantity = 1, variantId } = await request.json();
 
     if (!productId) {
       return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
@@ -92,8 +94,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Product is not available' }, { status: 400 });
     }
 
-    if (product.trackInventory && product.stockQuantity < quantity) {
-      return NextResponse.json({ error: 'Insufficient stock' }, { status: 400 });
+    // If variantId is provided, validate it
+    let variant = null;
+    if (variantId) {
+      variant = await db.productVariant.findUnique({
+        where: { id: variantId },
+      });
+
+      if (!variant) {
+        return NextResponse.json({ error: 'Variant not found' }, { status: 404 });
+      }
+
+      if (!variant.isActive) {
+        return NextResponse.json({ error: 'Variant is not available' }, { status: 400 });
+      }
+
+      if (variant.stockQuantity < quantity) {
+        return NextResponse.json({ error: 'Insufficient stock for this variant' }, { status: 400 });
+      }
+    } else {
+      // Check product stock if no variant
+      if (product.trackInventory && product.stockQuantity < quantity) {
+        return NextResponse.json({ error: 'Insufficient stock' }, { status: 400 });
+      }
     }
 
     // Determine price based on user account type
@@ -102,12 +125,26 @@ export async function POST(request: NextRequest) {
       include: { b2bProfile: true, gsaProfile: true },
     });
 
-    let price = parseFloat(product.salePrice?.toString() || product.basePrice.toString());
-
-    if (user?.accountType === 'B2B' && product.wholesalePrice) {
-      price = parseFloat(product.wholesalePrice.toString());
-    } else if (user?.accountType === 'GSA' && product.gsaPrice) {
-      price = parseFloat(product.gsaPrice.toString());
+    // Use variant prices if variant is selected, otherwise use product prices
+    let price: number;
+    if (variant) {
+      // Use variant prices
+      if (user?.accountType === 'B2B' && variant.wholesalePrice) {
+        price = parseFloat(variant.wholesalePrice.toString());
+      } else if (user?.accountType === 'GSA' && variant.gsaPrice) {
+        price = parseFloat(variant.gsaPrice.toString());
+      } else {
+        price = parseFloat(variant.salePrice?.toString() || variant.basePrice.toString());
+      }
+    } else {
+      // Use product prices
+      if (user?.accountType === 'B2B' && product.wholesalePrice) {
+        price = parseFloat(product.wholesalePrice.toString());
+      } else if (user?.accountType === 'GSA' && product.gsaPrice) {
+        price = parseFloat(product.gsaPrice.toString());
+      } else {
+        price = parseFloat(product.salePrice?.toString() || product.basePrice.toString());
+      }
     }
 
     // Get or create cart
@@ -123,11 +160,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check if item already in cart
+    // Check if item already in cart (same product + same variant)
     const existingItem = await db.cartItem.findFirst({
       where: {
         cartId: cart.id,
         productId,
+        variantId: variantId || null,
       },
     });
 
@@ -146,6 +184,7 @@ export async function POST(request: NextRequest) {
         data: {
           cartId: cart.id,
           productId,
+          variantId: variantId || null,
           quantity,
           price,
         },
@@ -163,6 +202,7 @@ export async function POST(request: NextRequest) {
                 category: true,
               },
             },
+            variant: true,
           },
         },
       },

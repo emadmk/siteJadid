@@ -50,6 +50,9 @@ export async function POST(request: NextRequest) {
         metaTitle: data.metaTitle || null,
         metaDescription: data.metaDescription || null,
         metaKeywords: data.metaKeywords || null,
+        // Variant system fields
+        variantAttributeIds: data.variantAttributeIds || [],
+        priceRules: data.priceRules || null,
       },
     });
 

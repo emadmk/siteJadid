@@ -36,6 +36,22 @@ async function getProduct(slug: string) {
           minQuantity: 'asc',
         },
       },
+      // Include product variants
+      variants: {
+        where: {
+          isActive: true,
+        },
+        include: {
+          attributeValues: {
+            include: {
+              attribute: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
     },
   });
 
@@ -89,6 +105,28 @@ async function getProduct(slug: string) {
       minQuantity: t.minQuantity,
       maxQuantity: t.maxQuantity,
       price: Number(t.price),
+    })),
+    // Map variants
+    variants: product.variants.map((v) => ({
+      id: v.id,
+      sku: v.sku,
+      name: v.name,
+      basePrice: Number(v.basePrice),
+      salePrice: v.salePrice ? Number(v.salePrice) : null,
+      wholesalePrice: v.wholesalePrice ? Number(v.wholesalePrice) : null,
+      gsaPrice: v.gsaPrice ? Number(v.gsaPrice) : null,
+      stockQuantity: v.stockQuantity,
+      isActive: v.isActive,
+      images: v.images as string[],
+      attributeValues: v.attributeValues.map((av) => ({
+        attributeId: av.attributeId,
+        value: av.value,
+        attribute: {
+          id: av.attribute.id,
+          name: av.attribute.name,
+          code: av.attribute.code,
+        },
+      })),
     })),
   };
 }

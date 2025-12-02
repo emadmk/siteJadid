@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 interface CartItem {
   id: string;
   productId: string;
+  variantId?: string | null;
   quantity: number;
   price: number;
   product: {
@@ -23,6 +24,15 @@ interface CartItem {
       name: string;
     };
   };
+  variant?: {
+    id: string;
+    sku: string;
+    name: string;
+    basePrice: number;
+    salePrice: number | null;
+    stockQuantity: number;
+    images: string[];
+  } | null;
 }
 
 interface Cart {
@@ -39,7 +49,7 @@ interface CartContextType {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
-  addToCart: (productId: string, quantity?: number) => Promise<boolean>;
+  addToCart: (productId: string, quantity?: number, variantId?: string) => Promise<boolean>;
   updateQuantity: (itemId: string, quantity: number) => Promise<boolean>;
   removeFromCart: (itemId: string) => Promise<boolean>;
   clearCart: () => Promise<boolean>;
@@ -79,7 +89,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     refreshCart();
   }, [refreshCart]);
 
-  const addToCart = useCallback(async (productId: string, quantity: number = 1): Promise<boolean> => {
+  const addToCart = useCallback(async (productId: string, quantity: number = 1, variantId?: string): Promise<boolean> => {
     if (status !== 'authenticated') {
       // Trigger auth modal
       window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { reason: 'cart' } }));
@@ -91,7 +101,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const res = await fetch('/api/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId, quantity }),
+        body: JSON.stringify({ productId, quantity, variantId }),
       });
 
       if (res.ok) {

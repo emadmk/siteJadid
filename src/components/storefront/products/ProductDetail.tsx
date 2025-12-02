@@ -28,6 +28,7 @@ import { useWishlist } from '@/hooks/useWishlist';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { toast } from '@/lib/toast';
 import { getImageSize, getOptimizedImageUrl } from '@/lib/image-utils';
+import { VariantSelector } from './VariantSelector';
 
 interface Review {
   id: string;
@@ -53,6 +54,30 @@ interface TieredPrice {
   minQuantity: number;
   maxQuantity: number | null;
   price: number;
+}
+
+interface AttributeValue {
+  attributeId: string;
+  value: string;
+  attribute: {
+    id: string;
+    name: string;
+    code: string;
+  };
+}
+
+interface Variant {
+  id: string;
+  sku: string;
+  name: string;
+  basePrice: number;
+  salePrice?: number | null;
+  wholesalePrice?: number | null;
+  gsaPrice?: number | null;
+  stockQuantity: number;
+  isActive: boolean;
+  images: string[];
+  attributeValues: AttributeValue[];
 }
 
 interface ProductDetailProps {
@@ -87,6 +112,7 @@ interface ProductDetailProps {
     } | null;
     reviews: Review[];
     tieredPrices: TieredPrice[];
+    variants?: Variant[];
   };
   relatedProducts: RelatedProduct[];
 }
@@ -105,6 +131,20 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
   const [reviewTitle, setReviewTitle] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+
+  // Determine if product has variants
+  const hasVariants = product.variants && product.variants.length > 0;
+
+  // Get current price and stock based on variant selection
+  const currentPrice = selectedVariant
+    ? (selectedVariant.salePrice || selectedVariant.basePrice)
+    : (product.salePrice || product.basePrice);
+  const currentBasePrice = selectedVariant ? selectedVariant.basePrice : product.basePrice;
+  const currentStock = selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity;
+  const currentSku = selectedVariant ? selectedVariant.sku : product.sku;
+  const currentWholesalePrice = selectedVariant?.wholesalePrice || product.wholesalePrice;
+  const currentGsaPrice = selectedVariant?.gsaPrice || product.gsaPrice;
 
   // Track product view
   useEffect(() => {
@@ -124,9 +164,9 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
     : 0;
 
   const hasDimensions = product.length && product.width && product.height;
-  const hasDiscount = product.salePrice && product.salePrice < product.basePrice;
+  const hasDiscount = currentPrice < currentBasePrice;
   const discountPercent = hasDiscount
-    ? Math.round((1 - product.salePrice! / product.basePrice) * 100)
+    ? Math.round((1 - currentPrice / currentBasePrice) * 100)
     : 0;
 
   const handleShare = async () => {
@@ -338,7 +378,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                   {product.brand.name}
                 </Link>
               )}
-              <span className="text-gray-500">SKU: {product.sku}</span>
+              <span className="text-gray-500">SKU: {currentSku}</span>
             </div>
 
             {/* Title */}
@@ -374,37 +414,48 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
               </div>
             )}
 
+            {/* Variant Selector */}
+            {hasVariants && (
+              <div className="space-y-4 pt-2 pb-2 border-t border-b border-gray-200">
+                <VariantSelector
+                  variants={product.variants!}
+                  onVariantSelect={setSelectedVariant}
+                  selectedVariantId={selectedVariant?.id}
+                />
+              </div>
+            )}
+
             {/* Price */}
             <div className="space-y-2">
               <div className="flex items-baseline gap-3">
                 <span className="text-3xl md:text-4xl font-bold text-black">
-                  ${Number(product.salePrice || product.basePrice).toFixed(2)}
+                  ${Number(currentPrice).toFixed(2)}
                 </span>
                 {hasDiscount && (
                   <span className="text-xl text-gray-500 line-through">
-                    ${Number(product.basePrice).toFixed(2)}
+                    ${Number(currentBasePrice).toFixed(2)}
                   </span>
                 )}
                 {hasDiscount && (
                   <span className="bg-red-100 text-red-700 text-sm font-semibold px-2 py-1 rounded">
-                    Save ${(product.basePrice - product.salePrice!).toFixed(2)}
+                    Save ${(currentBasePrice - currentPrice).toFixed(2)}
                   </span>
                 )}
               </div>
 
               {/* B2B Pricing */}
-              {(product.wholesalePrice || product.gsaPrice) && (
+              {(currentWholesalePrice || currentGsaPrice) && (
                 <div className="flex flex-wrap gap-4 pt-2">
-                  {product.wholesalePrice && (
+                  {currentWholesalePrice && (
                     <div className="flex items-center gap-2 text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
                       <Building2 className="w-4 h-4" />
-                      B2B: ${Number(product.wholesalePrice).toFixed(2)}
+                      B2B: ${Number(currentWholesalePrice).toFixed(2)}
                     </div>
                   )}
-                  {product.gsaPrice && (
+                  {currentGsaPrice && (
                     <div className="flex items-center gap-2 text-sm bg-purple-50 text-purple-700 px-3 py-1 rounded-full">
                       <FileText className="w-4 h-4" />
-                      GSA: ${Number(product.gsaPrice).toFixed(2)}
+                      GSA: ${Number(currentGsaPrice).toFixed(2)}
                     </div>
                   )}
                 </div>
@@ -432,13 +483,19 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
 
             {/* Stock Status */}
             <div className="flex items-center gap-2">
-              {product.stockQuantity > 0 ? (
+              {/* Show warning if variants exist but none selected */}
+              {hasVariants && !selectedVariant ? (
+                <>
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                  <span className="font-medium text-amber-600">Select options to check availability</span>
+                </>
+              ) : currentStock > 0 ? (
                 <>
                   <CheckCircle2 className="w-5 h-5 text-safety-green-600" />
                   <span className="font-medium text-safety-green-600">
-                    {product.stockQuantity > 20
+                    {currentStock > 20
                       ? 'In Stock - Ready to Ship'
-                      : `Only ${product.stockQuantity} left in stock`}
+                      : `Only ${currentStock} left in stock`}
                   </span>
                 </>
               ) : (
@@ -453,9 +510,16 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
             <div className="pt-4 border-t">
               <AddToCartButton
                 productId={product.id}
-                stockQuantity={product.stockQuantity}
+                variantId={selectedVariant?.id}
+                stockQuantity={currentStock}
                 showQuantitySelector={true}
+                disabled={hasVariants && !selectedVariant}
               />
+              {hasVariants && !selectedVariant && (
+                <p className="text-sm text-amber-600 mt-2">
+                  Please select all options before adding to cart
+                </p>
+              )}
             </div>
 
             {/* Secondary Actions */}

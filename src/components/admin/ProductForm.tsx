@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Plus, X, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { ProductVariantsManager } from './ProductVariantsManager';
 
 interface ProductFormProps {
   product?: any;
@@ -757,6 +758,16 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
           </div>
         </div>
       </div>
+
+      {/* Product Variants - Only show for existing products */}
+      {product?.id && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <ProductVariantsManager
+            productId={product.id}
+            categoryId={formData.categoryId || undefined}
+          />
+        </div>
+      )}
 
       {/* Physical Attributes */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">

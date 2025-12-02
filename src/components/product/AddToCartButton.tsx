@@ -7,6 +7,7 @@ import { useCart } from '@/contexts/CartContext';
 
 interface AddToCartButtonProps {
   productId: string;
+  variantId?: string;
   stockQuantity: number;
   disabled?: boolean;
   showQuantitySelector?: boolean;
@@ -14,6 +15,7 @@ interface AddToCartButtonProps {
 
 export function AddToCartButton({
   productId,
+  variantId,
   stockQuantity,
   disabled = false,
   showQuantitySelector = true,
@@ -27,7 +29,7 @@ export function AddToCartButton({
     setIsAdding(true);
 
     try {
-      await addToCart(productId, quantity);
+      await addToCart(productId, quantity, variantId);
       setJustAdded(true);
       setTimeout(() => {
         setJustAdded(false);
