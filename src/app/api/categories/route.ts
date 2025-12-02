@@ -62,14 +62,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ categories });
     }
 
+    // Check for homepage filter
+    const homepage = searchParams.get('homepage') === 'true';
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
+
+    // Build where clause
+    const where: any = { isActive: true };
+    if (homepage) {
+      where.showOnHomepage = true;
+    }
+
     // Simple list of categories
     const categories = await db.category.findMany({
-      where: { isActive: true },
+      where,
       select: {
         id: true,
         name: true,
         slug: true,
+        description: true,
+        image: true,
         parentId: true,
+        showOnHomepage: true,
         _count: {
           select: {
             products: {
@@ -79,6 +92,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { displayOrder: 'asc' },
+      ...(limit ? { take: limit } : {}),
     });
 
     return NextResponse.json({ categories });

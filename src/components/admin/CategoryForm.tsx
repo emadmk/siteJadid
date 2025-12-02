@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Upload, X, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { CategoryVariantConfig } from './CategoryVariantConfig';
 
@@ -19,9 +19,11 @@ interface Category {
   name: string;
   slug: string;
   description?: string | null;
+  image?: string | null;
   parentId?: string | null;
   displayOrder?: number | null;
   isActive?: boolean;
+  showOnHomepage?: boolean;
   metaTitle?: string | null;
   metaDescription?: string | null;
   metaKeywords?: string | null;
@@ -38,21 +40,75 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [formData, setFormData] = useState({
     name: category?.name || '',
     slug: category?.slug || '',
     description: category?.description || '',
+    image: category?.image || '',
     parentId: category?.parentId || '',
     displayOrder: category?.displayOrder?.toString() || '0',
     isActive: category?.isActive ?? true,
+    showOnHomepage: category?.showOnHomepage ?? false,
     metaTitle: category?.metaTitle || '',
     metaDescription: category?.metaDescription || '',
     metaKeywords: category?.metaKeywords || '',
     variantAttributeIds: category?.variantAttributeIds || [],
     priceRules: (category?.priceRules as PriceRule[]) || [],
   });
+
+  // Handle image upload
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size should be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    setError('');
+
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+      uploadFormData.append('type', 'category');
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const data = await response.json();
+      setFormData(prev => ({ ...prev, image: data.url }));
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setFormData(prev => ({ ...prev, image: '' }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // Auto-generate slug from name
   const handleNameChange = (name: string) => {
@@ -85,6 +141,7 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
         },
         body: JSON.stringify({
           ...formData,
+          image: formData.image || null,
           parentId: formData.parentId || null,
           displayOrder: parseInt(formData.displayOrder) || 0,
           variantAttributeIds: formData.variantAttributeIds,
@@ -218,8 +275,57 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
             />
           </div>
 
-          {/* Active Status */}
+          {/* Category Image */}
           <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category Image
+            </label>
+            <div className="flex items-start gap-4">
+              {formData.image ? (
+                <div className="relative">
+                  <img
+                    src={formData.image}
+                    alt="Category"
+                    className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                  <ImageIcon className="w-8 h-8 text-gray-400" />
+                </div>
+              )}
+              <div className="flex-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="category-image"
+                />
+                <label
+                  htmlFor="category-image"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {uploading ? 'Uploading...' : 'Upload Image'}
+                </label>
+                <p className="text-xs text-gray-500 mt-2">
+                  Recommended: 400x400px, Max 5MB
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Status */}
+          <div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -231,6 +337,24 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
                 Active (visible to customers)
               </span>
             </label>
+          </div>
+
+          {/* Show on Homepage */}
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.showOnHomepage}
+                onChange={(e) => setFormData(prev => ({ ...prev, showOnHomepage: e.target.checked }))}
+                className="w-4 h-4 text-safety-green-600 border-gray-300 rounded focus:ring-safety-green-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Show on Homepage
+              </span>
+            </label>
+            <p className="text-xs text-gray-500 mt-1 ml-6">
+              Display this category in the homepage "Shop by Category" section
+            </p>
           </div>
         </div>
       </div>

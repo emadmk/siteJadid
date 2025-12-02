@@ -324,6 +324,7 @@ model Category {
   parentId         String?
   displayOrder     Int       @default(0)
   isActive         Boolean   @default(true)
+  showOnHomepage   Boolean   @default(false)  // Show this category on homepage
 
   // SEO Fields
   metaTitle        String?

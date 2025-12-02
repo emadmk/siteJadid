@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Package, HardHat, Glasses, Hand, Footprints, Shirt, Ear, Wind } from 'lucide-react';
+import { ArrowRight, Package } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -15,16 +15,6 @@ interface Category {
   };
 }
 
-const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  'head-protection': HardHat,
-  'eye-protection': Glasses,
-  'hand-protection': Hand,
-  'foot-protection': Footprints,
-  'body-protection': Shirt,
-  'hearing-protection': Ear,
-  'respiratory-protection': Wind,
-};
-
 export function CategoriesSection() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,7 +22,8 @@ export function CategoriesSection() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('/api/categories?limit=8&featured=true');
+        // Fetch categories marked for homepage display
+        const res = await fetch('/api/categories?homepage=true&limit=8');
         if (res.ok) {
           const data = await res.json();
           setCategories(data.categories || []);
@@ -83,38 +74,34 @@ export function CategoriesSection() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {categories.map((category) => {
-            const IconComponent = categoryIcons[category.slug] || Package;
-
-            return (
-              <Link
-                key={category.id}
-                href={`/categories/${category.slug}`}
-                className="group bg-white rounded-2xl p-6 hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-safety-green-200"
-              >
-                <div className="w-14 h-14 bg-safety-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-safety-green-600 transition-colors">
-                  <IconComponent className="w-7 h-7 text-safety-green-600 group-hover:text-white transition-colors" />
-                </div>
-                <h3 className="font-semibold text-black group-hover:text-safety-green-600 transition-colors mb-1">
-                  {category.name}
-                </h3>
-                {category._count && (
-                  <p className="text-sm text-gray-500">
-                    {category._count.products} products
-                  </p>
+          {categories.map((category) => (
+            <Link
+              key={category.id}
+              href={`/categories/${category.slug}`}
+              className="group bg-white rounded-2xl p-6 hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-safety-green-200"
+            >
+              {/* Category Image or Icon */}
+              <div className="w-14 h-14 bg-safety-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-safety-green-600 transition-colors overflow-hidden">
+                {category.image ? (
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Package className="w-7 h-7 text-safety-green-600 group-hover:text-white transition-colors" />
                 )}
-                {category.image && (
-                  <div className="mt-4 h-24 rounded-lg overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-              </Link>
-            );
-          })}
+              </div>
+              <h3 className="font-semibold text-black group-hover:text-safety-green-600 transition-colors mb-1">
+                {category.name}
+              </h3>
+              {category._count && (
+                <p className="text-sm text-gray-500">
+                  {category._count.products} products
+                </p>
+              )}
+            </Link>
+          ))}
         </div>
 
         <div className="mt-8 text-center md:hidden">
