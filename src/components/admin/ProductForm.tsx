@@ -760,12 +760,19 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
       </div>
 
       {/* Product Variants - Only show for existing products */}
-      {product?.id && (
+      {product?.id ? (
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
           <ProductVariantsManager
             productId={product.id}
             categoryId={formData.categoryId || undefined}
           />
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <h2 className="text-xl font-bold text-black mb-4">Product Variants</h2>
+          <p className="text-gray-500 text-sm">
+            ابتدا محصول را ذخیره کنید، سپس می‌توانید واریانت‌ها را اضافه کنید.
+          </p>
         </div>
       )}
 
