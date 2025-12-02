@@ -5,6 +5,13 @@ import { existsSync } from 'fs';
 import { prisma } from '@/lib/prisma';
 import { imageProcessor } from './image-processor';
 import { Decimal } from '@prisma/client/runtime/library';
+import {
+  groupByBasePartNumber,
+  extractVariantValue,
+  parseVariantSuffix,
+  type ExcelRow,
+  type VariantGroup,
+} from './variant-detector';
 
 // Default field mapping - can be customized
 // Supports GSA format and standard formats
@@ -562,7 +569,7 @@ export class BulkImportService {
   }
 
   /**
-   * Import products from parsed data
+   * Import products from parsed data with smart variant grouping
    */
   async importProducts(
     products: ParsedProduct[],
@@ -589,212 +596,75 @@ export class BulkImportService {
 
     let processedCount = 0;
 
-    for (const product of products) {
+    // Convert ParsedProduct to ExcelRow for variant detection
+    const excelRows: ExcelRow[] = products.map(p => ({
+      sku: p.sku,
+      name: p.name,
+      basePrice: p.basePrice,
+      salePrice: undefined,
+      wholesalePrice: p.wholesalePrice,
+      gsaPrice: p.gsaPrice,
+      costPrice: p.costPrice,
+      stockQuantity: p.stockQuantity,
+      // Include all other fields for variant attribute detection
+      ...p.rawData,
+    }));
+
+    // Group products by base SKU using variant detector
+    const detectionResult = groupByBasePartNumber(excelRows);
+
+    console.log(`Variant Detection Results:`);
+    console.log(`  - Total rows: ${detectionResult.stats.totalRows}`);
+    console.log(`  - Variant groups: ${detectionResult.stats.groupCount}`);
+    console.log(`  - Total variants: ${detectionResult.stats.totalVariants}`);
+    console.log(`  - Standalone products: ${detectionResult.stats.standaloneCount}`);
+
+    // Process variant groups (products with multiple variants)
+    for (const group of detectionResult.groups) {
       try {
-        // Check if product exists
-        const existingProduct = await prisma.product.findUnique({
-          where: { sku: product.sku },
+        await this.importVariantGroup(group, products, {
+          updateExisting,
+          importImages,
+          imageBasePath,
+          dryRun,
+          defaultBrandId,
+          defaultCategoryId,
+          defaultWarehouseId,
+          defaultSupplierId,
+          defaultStockQuantity,
+          defaultStatus,
         });
+        processedCount += group.variants.length;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        this.errors.push({
+          row: group.baseRow.sku ? 0 : 0,
+          field: 'general',
+          value: group.basePartNumber,
+          message: `Failed to import variant group ${group.basePartNumber}: ${errorMessage}`,
+        });
+        if (!skipErrors) throw error;
+      }
+    }
 
-        if (existingProduct && !updateExisting) {
-          this.warnings.push({
-            row: product.rowNumber,
-            field: 'sku',
-            message: `Product ${product.sku} already exists, skipping`,
-          });
-          continue;
-        }
+    // Process standalone products (no variants)
+    for (const row of detectionResult.standaloneProducts) {
+      const product = products.find(p => p.sku === row.sku);
+      if (!product) continue;
 
-        // Use default brand/category if provided, otherwise find or create from product data
-        const brandId = defaultBrandId
-          ? defaultBrandId
-          : (product.brandName ? await this.findOrCreateBrand(product.brandName) : null);
-        const categoryId = defaultCategoryId
-          ? defaultCategoryId
-          : (product.categoryName ? await this.findOrCreateCategory(product.categoryName) : null);
-
-        // Store supplier ID for later use
-        const supplierId = defaultSupplierId || null;
-
-        // Get brand slug for image storage path
-        let brandSlug: string | undefined;
-        if (brandId) {
-          const brand = await prisma.brand.findUnique({ where: { id: brandId } });
-          brandSlug = brand?.slug;
-        }
-
-        // Auto-generate meta fields
-        const metaTitle = `${product.name} | ${product.brandName || 'Quality Product'}`;
-        const metaDescription = product.shortDescription || product.description?.substring(0, 160) || `Shop ${product.name} - High quality product at competitive prices.`;
-        const metaKeywords = [product.name, product.brandName, product.sku, product.categoryName]
-          .filter(Boolean)
-          .join(', ');
-
-        // Prepare product data
-        const productData = {
-          name: product.name,
-          slug: product.sku.toLowerCase().replace(/[^\w]+/g, '-'),
-          description: product.description,
-          shortDescription: product.shortDescription,
-          basePrice: new Decimal(product.basePrice),
-          costPrice: product.costPrice ? new Decimal(product.costPrice) : undefined,
-          gsaPrice: product.gsaPrice ? new Decimal(product.gsaPrice) : undefined,
-          wholesalePrice: product.wholesalePrice
-            ? new Decimal(product.wholesalePrice)
-            : undefined,
-          // Use product stock or default stock quantity
-          stockQuantity: product.stockQuantity ?? defaultStockQuantity,
-          // Set product status
-          status: defaultStatus,
-          minimumOrderQty: product.quantityPerPack || 1,
-          // Dimensions
-          weight: product.weight ? new Decimal(product.weight) : undefined,
-          length: product.length ? new Decimal(product.length) : undefined,
-          width: product.width ? new Decimal(product.width) : undefined,
-          height: product.height ? new Decimal(product.height) : undefined,
-          // SEO Meta Fields (auto-generated)
-          metaTitle,
-          metaDescription,
-          metaKeywords,
-          // GSA fields
-          gsaSin: product.gsaSin,
-          // Store extra metadata as JSON (convert to plain JSON for Prisma)
-          ...(product.metadata && { complianceCertifications: JSON.parse(JSON.stringify(product.metadata)) }),
-          ...(brandId && { brand: { connect: { id: brandId } } }),
-          ...(categoryId && { category: { connect: { id: categoryId } } }),
-          ...(supplierId && { defaultSupplier: { connect: { id: supplierId } } }),
-          ...(defaultWarehouseId && { defaultWarehouse: { connect: { id: defaultWarehouseId } } }),
-        };
-
-        if (dryRun) {
-          processedCount++;
-          if (existingProduct) {
-            this.updatedProducts.push(product.sku);
-          } else {
-            this.createdProducts.push(product.sku);
-          }
-          continue;
-        }
-
-        let savedProduct;
-        if (existingProduct) {
-          // Update existing product
-          savedProduct = await prisma.product.update({
-            where: { sku: product.sku },
-            data: productData,
-          });
-          this.updatedProducts.push(product.sku);
-        } else {
-          // Create new product
-          savedProduct = await prisma.product.create({
-            data: {
-              sku: product.sku,
-              ...productData,
-            },
-          });
-          this.createdProducts.push(product.sku);
-        }
-
-        // Import images if enabled
-        if (importImages && savedProduct) {
-          const imageFiles = await this.findProductImages(product.sku, imageBasePath);
-
-          if (imageFiles.length > 0) {
-            // Delete existing images if updating
-            if (existingProduct) {
-              await prisma.productImage.deleteMany({
-                where: { productId: savedProduct.id },
-              });
-            }
-
-            // Process and save new images
-            const processedImages = await imageProcessor.processImages(imageFiles, {
-              brandSlug,
-              productSku: product.sku,
-              convertToWebp: true,
-            });
-
-            // Save to database
-            for (let i = 0; i < processedImages.length; i++) {
-              const img = processedImages[i];
-              await prisma.productImage.create({
-                data: {
-                  productId: savedProduct.id,
-                  originalUrl: img.originalUrl,
-                  largeUrl: img.largeUrl,
-                  mediumUrl: img.mediumUrl,
-                  thumbUrl: img.thumbUrl,
-                  originalName: imageFiles[i].filename,
-                  fileSize: img.fileSize,
-                  width: img.width,
-                  height: img.height,
-                  hash: img.hash,
-                  storagePath: img.storagePath,
-                  position: i,
-                  isPrimary: i === 0,
-                },
-              });
-            }
-
-            // Also update the legacy images array on product
-            await prisma.product.update({
-              where: { id: savedProduct.id },
-              data: {
-                images: processedImages.map((img) => img.thumbUrl).filter(Boolean) as string[],
-              },
-            });
-          } else {
-            this.warnings.push({
-              row: product.rowNumber,
-              field: 'images',
-              message: `No images found for ${product.sku} in ${imageBasePath}`,
-            });
-          }
-        }
-
-        // Create/Update warehouse stock if warehouse is selected
-        if (defaultWarehouseId && savedProduct) {
-          const stockQty = product.stockQuantity ?? defaultStockQuantity;
-
-          const existingStock = await prisma.warehouseStock.findUnique({
-            where: {
-              warehouseId_productId: {
-                warehouseId: defaultWarehouseId,
-                productId: savedProduct.id,
-              },
-            },
-          });
-
-          if (existingStock) {
-            // Update existing stock
-            await prisma.warehouseStock.update({
-              where: {
-                warehouseId_productId: {
-                  warehouseId: defaultWarehouseId,
-                  productId: savedProduct.id,
-                },
-              },
-              data: {
-                quantity: stockQty,
-                available: stockQty,
-              },
-            });
-          } else {
-            // Create new stock entry
-            await prisma.warehouseStock.create({
-              data: {
-                warehouseId: defaultWarehouseId,
-                productId: savedProduct.id,
-                quantity: stockQty,
-                available: stockQty,
-                reserved: 0,
-                reorderPoint: 10,
-                reorderQuantity: 50,
-              },
-            });
-          }
-        }
-
+      try {
+        await this.importSingleProduct(product, {
+          updateExisting,
+          importImages,
+          imageBasePath,
+          dryRun,
+          defaultBrandId,
+          defaultCategoryId,
+          defaultWarehouseId,
+          defaultSupplierId,
+          defaultStockQuantity,
+          defaultStatus,
+        });
         processedCount++;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -804,10 +674,7 @@ export class BulkImportService {
           value: product.sku,
           message: errorMessage,
         });
-
-        if (!skipErrors) {
-          throw error;
-        }
+        if (!skipErrors) throw error;
       }
     }
 
@@ -822,6 +689,422 @@ export class BulkImportService {
       createdProducts: this.createdProducts,
       updatedProducts: this.updatedProducts,
     };
+  }
+
+  /**
+   * Import a variant group - creates one product with multiple variants
+   */
+  private async importVariantGroup(
+    group: VariantGroup,
+    allProducts: ParsedProduct[],
+    options: ImportOptions
+  ): Promise<void> {
+    const {
+      updateExisting = true,
+      importImages = true,
+      imageBasePath = '',
+      dryRun = false,
+      defaultBrandId,
+      defaultCategoryId,
+      defaultWarehouseId,
+      defaultSupplierId,
+      defaultStockQuantity = 0,
+      defaultStatus = 'ACTIVE',
+    } = options;
+
+    // Get the first product as base product data
+    const baseProduct = allProducts.find(p => p.sku === group.baseRow.sku);
+    if (!baseProduct) return;
+
+    // Check if main product exists by base SKU
+    let existingProduct = await prisma.product.findFirst({
+      where: {
+        OR: [
+          { sku: group.basePartNumber },
+          { slug: group.basePartNumber.toLowerCase().replace(/[^\w]+/g, '-') },
+        ],
+      },
+    });
+
+    // Get brand and category
+    const brandId = defaultBrandId
+      ? defaultBrandId
+      : (baseProduct.brandName ? await this.findOrCreateBrand(baseProduct.brandName) : null);
+    const categoryId = defaultCategoryId
+      ? defaultCategoryId
+      : (baseProduct.categoryName ? await this.findOrCreateCategory(baseProduct.categoryName) : null);
+    const supplierId = defaultSupplierId || null;
+
+    let brandSlug: string | undefined;
+    if (brandId) {
+      const brand = await prisma.brand.findUnique({ where: { id: brandId } });
+      brandSlug = brand?.slug;
+    }
+
+    // Calculate base price from variants (use lowest or average)
+    const variantPrices = group.variants
+      .map(v => v.basePrice || 0)
+      .filter(p => p > 0);
+    const lowestPrice = variantPrices.length > 0 ? Math.min(...variantPrices) : baseProduct.basePrice;
+
+    // Clean product name (remove variant-specific parts like size)
+    const cleanName = group.baseName || baseProduct.name;
+
+    const productData = {
+      name: cleanName,
+      slug: group.basePartNumber.toLowerCase().replace(/[^\w]+/g, '-'),
+      description: baseProduct.description,
+      shortDescription: baseProduct.shortDescription,
+      basePrice: new Decimal(lowestPrice),
+      costPrice: baseProduct.costPrice ? new Decimal(baseProduct.costPrice) : undefined,
+      gsaPrice: baseProduct.gsaPrice ? new Decimal(baseProduct.gsaPrice) : undefined,
+      wholesalePrice: baseProduct.wholesalePrice ? new Decimal(baseProduct.wholesalePrice) : undefined,
+      stockQuantity: 0, // Stock is tracked per variant
+      status: defaultStatus,
+      hasVariants: true, // Mark product as having variants
+      metaTitle: `${cleanName} | ${baseProduct.brandName || 'Quality Product'}`,
+      metaDescription: baseProduct.shortDescription || baseProduct.description?.substring(0, 160) || '',
+      metaKeywords: [cleanName, baseProduct.brandName, group.basePartNumber].filter(Boolean).join(', '),
+      gsaSin: baseProduct.gsaSin,
+      ...(brandId && { brand: { connect: { id: brandId } } }),
+      ...(categoryId && { category: { connect: { id: categoryId } } }),
+      ...(supplierId && { defaultSupplier: { connect: { id: supplierId } } }),
+      ...(defaultWarehouseId && { defaultWarehouse: { connect: { id: defaultWarehouseId } } }),
+    };
+
+    if (dryRun) {
+      if (existingProduct) {
+        this.updatedProducts.push(group.basePartNumber);
+      } else {
+        this.createdProducts.push(group.basePartNumber);
+      }
+      return;
+    }
+
+    let savedProduct;
+    if (existingProduct && updateExisting) {
+      savedProduct = await prisma.product.update({
+        where: { id: existingProduct.id },
+        data: productData,
+      });
+      this.updatedProducts.push(group.basePartNumber);
+    } else if (!existingProduct) {
+      savedProduct = await prisma.product.create({
+        data: {
+          sku: group.basePartNumber,
+          ...productData,
+        },
+      });
+      this.createdProducts.push(group.basePartNumber);
+    } else {
+      savedProduct = existingProduct;
+    }
+
+    // Delete existing variants if updating
+    if (existingProduct && updateExisting) {
+      await prisma.productVariant.deleteMany({
+        where: { productId: savedProduct.id },
+      });
+    }
+
+    // Create variants for each row in the group
+    let totalStock = 0;
+    for (const variantRow of group.variants) {
+      const variantProduct = allProducts.find(p => p.sku === variantRow.sku);
+      if (!variantProduct) continue;
+
+      // Extract variant suffix and parse attributes
+      const suffix = extractVariantValue(variantRow.sku, group.basePartNumber);
+      const parsedAttrs = parseVariantSuffix(suffix);
+
+      // Build variant name from attributes
+      const variantName = Object.entries(parsedAttrs)
+        .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+        .join(', ') || suffix || variantRow.sku;
+
+      const stockQty = variantProduct.stockQuantity ?? defaultStockQuantity;
+      totalStock += stockQty;
+
+      await prisma.productVariant.create({
+        data: {
+          productId: savedProduct.id,
+          sku: variantRow.sku,
+          name: variantName,
+          basePrice: new Decimal(variantProduct.basePrice || lowestPrice),
+          salePrice: undefined,
+          wholesalePrice: variantProduct.wholesalePrice ? new Decimal(variantProduct.wholesalePrice) : undefined,
+          gsaPrice: variantProduct.gsaPrice ? new Decimal(variantProduct.gsaPrice) : undefined,
+          costPrice: variantProduct.costPrice ? new Decimal(variantProduct.costPrice) : undefined,
+          stockQuantity: stockQty,
+          isActive: true,
+          images: [],
+        },
+      });
+
+      // Import variant images if enabled
+      if (importImages) {
+        const imageFiles = await this.findProductImages(variantRow.sku, imageBasePath);
+        if (imageFiles.length === 0) {
+          // Try base part number
+          const baseImages = await this.findProductImages(group.basePartNumber, imageBasePath);
+          if (baseImages.length > 0) {
+            // Use base images for the main product if not set
+          }
+        }
+      }
+    }
+
+    // Update total stock on main product
+    await prisma.product.update({
+      where: { id: savedProduct.id },
+      data: { stockQuantity: totalStock },
+    });
+
+    // Import images for main product
+    if (importImages && savedProduct) {
+      const imageFiles = await this.findProductImages(group.basePartNumber, imageBasePath);
+
+      if (imageFiles.length > 0) {
+        if (existingProduct) {
+          await prisma.productImage.deleteMany({
+            where: { productId: savedProduct.id },
+          });
+        }
+
+        const processedImages = await imageProcessor.processImages(imageFiles, {
+          brandSlug,
+          productSku: group.basePartNumber,
+          convertToWebp: true,
+        });
+
+        for (let i = 0; i < processedImages.length; i++) {
+          const img = processedImages[i];
+          await prisma.productImage.create({
+            data: {
+              productId: savedProduct.id,
+              originalUrl: img.originalUrl,
+              largeUrl: img.largeUrl,
+              mediumUrl: img.mediumUrl,
+              thumbUrl: img.thumbUrl,
+              originalName: imageFiles[i].filename,
+              fileSize: img.fileSize,
+              width: img.width,
+              height: img.height,
+              hash: img.hash,
+              storagePath: img.storagePath,
+              position: i,
+              isPrimary: i === 0,
+            },
+          });
+        }
+
+        await prisma.product.update({
+          where: { id: savedProduct.id },
+          data: {
+            images: processedImages.map((img) => img.thumbUrl).filter(Boolean) as string[],
+          },
+        });
+      }
+    }
+  }
+
+  /**
+   * Import a single product (no variants)
+   */
+  private async importSingleProduct(
+    product: ParsedProduct,
+    options: ImportOptions
+  ): Promise<void> {
+    const {
+      updateExisting = true,
+      importImages = true,
+      imageBasePath = '',
+      dryRun = false,
+      defaultBrandId,
+      defaultCategoryId,
+      defaultWarehouseId,
+      defaultSupplierId,
+      defaultStockQuantity = 0,
+      defaultStatus = 'ACTIVE',
+    } = options;
+
+    const existingProduct = await prisma.product.findUnique({
+      where: { sku: product.sku },
+    });
+
+    if (existingProduct && !updateExisting) {
+      this.warnings.push({
+        row: product.rowNumber,
+        field: 'sku',
+        message: `Product ${product.sku} already exists, skipping`,
+      });
+      return;
+    }
+
+    const brandId = defaultBrandId
+      ? defaultBrandId
+      : (product.brandName ? await this.findOrCreateBrand(product.brandName) : null);
+    const categoryId = defaultCategoryId
+      ? defaultCategoryId
+      : (product.categoryName ? await this.findOrCreateCategory(product.categoryName) : null);
+    const supplierId = defaultSupplierId || null;
+
+    let brandSlug: string | undefined;
+    if (brandId) {
+      const brand = await prisma.brand.findUnique({ where: { id: brandId } });
+      brandSlug = brand?.slug;
+    }
+
+    const metaTitle = `${product.name} | ${product.brandName || 'Quality Product'}`;
+    const metaDescription = product.shortDescription || product.description?.substring(0, 160) || '';
+    const metaKeywords = [product.name, product.brandName, product.sku, product.categoryName]
+      .filter(Boolean)
+      .join(', ');
+
+    const productData = {
+      name: product.name,
+      slug: product.sku.toLowerCase().replace(/[^\w]+/g, '-'),
+      description: product.description,
+      shortDescription: product.shortDescription,
+      basePrice: new Decimal(product.basePrice),
+      costPrice: product.costPrice ? new Decimal(product.costPrice) : undefined,
+      gsaPrice: product.gsaPrice ? new Decimal(product.gsaPrice) : undefined,
+      wholesalePrice: product.wholesalePrice ? new Decimal(product.wholesalePrice) : undefined,
+      stockQuantity: product.stockQuantity ?? defaultStockQuantity,
+      status: defaultStatus,
+      minimumOrderQty: product.quantityPerPack || 1,
+      weight: product.weight ? new Decimal(product.weight) : undefined,
+      length: product.length ? new Decimal(product.length) : undefined,
+      width: product.width ? new Decimal(product.width) : undefined,
+      height: product.height ? new Decimal(product.height) : undefined,
+      metaTitle,
+      metaDescription,
+      metaKeywords,
+      gsaSin: product.gsaSin,
+      ...(product.metadata && { complianceCertifications: JSON.parse(JSON.stringify(product.metadata)) }),
+      ...(brandId && { brand: { connect: { id: brandId } } }),
+      ...(categoryId && { category: { connect: { id: categoryId } } }),
+      ...(supplierId && { defaultSupplier: { connect: { id: supplierId } } }),
+      ...(defaultWarehouseId && { defaultWarehouse: { connect: { id: defaultWarehouseId } } }),
+    };
+
+    if (dryRun) {
+      if (existingProduct) {
+        this.updatedProducts.push(product.sku);
+      } else {
+        this.createdProducts.push(product.sku);
+      }
+      return;
+    }
+
+    let savedProduct;
+    if (existingProduct) {
+      savedProduct = await prisma.product.update({
+        where: { sku: product.sku },
+        data: productData,
+      });
+      this.updatedProducts.push(product.sku);
+    } else {
+      savedProduct = await prisma.product.create({
+        data: {
+          sku: product.sku,
+          ...productData,
+        },
+      });
+      this.createdProducts.push(product.sku);
+    }
+
+    if (importImages && savedProduct) {
+      const imageFiles = await this.findProductImages(product.sku, imageBasePath);
+
+      if (imageFiles.length > 0) {
+        if (existingProduct) {
+          await prisma.productImage.deleteMany({
+            where: { productId: savedProduct.id },
+          });
+        }
+
+        const processedImages = await imageProcessor.processImages(imageFiles, {
+          brandSlug,
+          productSku: product.sku,
+          convertToWebp: true,
+        });
+
+        for (let i = 0; i < processedImages.length; i++) {
+          const img = processedImages[i];
+          await prisma.productImage.create({
+            data: {
+              productId: savedProduct.id,
+              originalUrl: img.originalUrl,
+              largeUrl: img.largeUrl,
+              mediumUrl: img.mediumUrl,
+              thumbUrl: img.thumbUrl,
+              originalName: imageFiles[i].filename,
+              fileSize: img.fileSize,
+              width: img.width,
+              height: img.height,
+              hash: img.hash,
+              storagePath: img.storagePath,
+              position: i,
+              isPrimary: i === 0,
+            },
+          });
+        }
+
+        await prisma.product.update({
+          where: { id: savedProduct.id },
+          data: {
+            images: processedImages.map((img) => img.thumbUrl).filter(Boolean) as string[],
+          },
+        });
+      } else {
+        this.warnings.push({
+          row: product.rowNumber,
+          field: 'images',
+          message: `No images found for ${product.sku} in ${imageBasePath}`,
+        });
+      }
+    }
+
+    if (defaultWarehouseId && savedProduct) {
+      const stockQty = product.stockQuantity ?? defaultStockQuantity;
+
+      const existingStock = await prisma.warehouseStock.findUnique({
+        where: {
+          warehouseId_productId: {
+            warehouseId: defaultWarehouseId,
+            productId: savedProduct.id,
+          },
+        },
+      });
+
+      if (existingStock) {
+        await prisma.warehouseStock.update({
+          where: {
+            warehouseId_productId: {
+              warehouseId: defaultWarehouseId,
+              productId: savedProduct.id,
+            },
+          },
+          data: {
+            quantity: stockQty,
+            available: stockQty,
+          },
+        });
+      } else {
+        await prisma.warehouseStock.create({
+          data: {
+            warehouseId: defaultWarehouseId,
+            productId: savedProduct.id,
+            quantity: stockQty,
+            available: stockQty,
+            reserved: 0,
+            reorderPoint: 10,
+            reorderQuantity: 50,
+          },
+        });
+      }
+    }
   }
 
   /**

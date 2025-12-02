@@ -418,6 +418,7 @@ model Product {
   isNewArrival    Boolean       @default(false)
   isBestSeller    Boolean       @default(false)
   allowReviews    Boolean       @default(true)
+  hasVariants     Boolean       @default(false)
 
   // Review Stats
   rating          Decimal?      @db.Decimal(3, 2) // Average rating 0.00 - 5.00

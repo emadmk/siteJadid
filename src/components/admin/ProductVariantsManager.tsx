@@ -191,6 +191,7 @@ export function ProductVariantsManager({ productId, categoryId }: ProductVariant
         </div>
         <div className="flex items-center gap-2">
           <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={fetchData}
@@ -200,6 +201,7 @@ export function ProductVariantsManager({ productId, categoryId }: ProductVariant
             Refresh
           </Button>
           <Button
+            type="button"
             onClick={() => {
               setEditingVariant(undefined);
               setShowEditor(true);

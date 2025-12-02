@@ -264,6 +264,7 @@ export function VariantPricingTable({
                 {editingId === variant.id ? (
                   <div className="flex items-center justify-center gap-1">
                     <button
+                      type="button"
                       onClick={() => saveEdit(variant.id)}
                       disabled={saving}
                       className="p-1.5 text-green-600 hover:bg-green-50 rounded"
@@ -272,6 +273,7 @@ export function VariantPricingTable({
                       <Save className="w-4 h-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={cancelEdit}
                       className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
                       title="Cancel"
@@ -282,6 +284,7 @@ export function VariantPricingTable({
                 ) : (
                   <div className="flex items-center justify-center gap-1">
                     <button
+                      type="button"
                       onClick={() => startEdit(variant)}
                       className="p-1.5 text-gray-600 hover:bg-gray-100 rounded"
                       title="Quick Edit Prices"
@@ -289,6 +292,7 @@ export function VariantPricingTable({
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => onEdit(variant)}
                       className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
                       title="Full Edit"
@@ -296,6 +300,7 @@ export function VariantPricingTable({
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         if (confirm('Are you sure you want to delete this variant?')) {
                           onDelete(variant.id);

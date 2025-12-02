@@ -139,6 +139,7 @@ export function VariantEditor({
             {variant ? 'Edit Variant' : 'Add Variant'}
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full"
           >
