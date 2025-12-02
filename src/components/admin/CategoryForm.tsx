@@ -26,7 +26,7 @@ interface Category {
   metaDescription?: string | null;
   metaKeywords?: string | null;
   variantAttributeIds?: string[];
-  priceRules?: PriceRule[] | null;
+  priceRules?: PriceRule[] | unknown | null;  // Accept JsonValue from Prisma
 }
 
 interface CategoryFormProps {
