@@ -4,6 +4,19 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { bulkImportService, DEFAULT_FIELD_MAPPING } from '@/lib/services/bulk-import';
 
+// Configure body size limit for this route (10MB)
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
+
+// For App Router - set maximum duration and body size
+export const maxDuration = 300; // 5 minutes timeout
+export const dynamic = 'force-dynamic';
+
 // POST - Start a bulk import
 export async function POST(request: NextRequest) {
   try {
