@@ -296,13 +296,17 @@ export class BulkImportService {
     }
 
     const products: ParsedProduct[] = [];
-    const headerRow = worksheet.getRow(1);
+
+    // Row 2 contains the actual field names (row 1 is main headers)
+    const headerRow = worksheet.getRow(2);
     const headers: string[] = [];
 
-    // Extract headers
+    // Extract headers from row 2
     headerRow.eachCell((cell, colNumber) => {
       headers[colNumber] = cell.value?.toString().trim() || '';
     });
+
+    console.log('Headers found:', headers.filter(h => h).join(', '));
 
     // Process each data row (skip first 2 header rows)
     worksheet.eachRow((row, rowNumber) => {
