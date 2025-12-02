@@ -82,8 +82,7 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
 
     try {
       const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-      uploadFormData.append('type', 'category');
+      uploadFormData.append('files', file);  // API expects 'files' not 'file'
 
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -95,7 +94,9 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
       }
 
       const data = await response.json();
-      setFormData(prev => ({ ...prev, image: data.url }));
+      // API returns { urls: [...], images: [...] }
+      const imageUrl = data.images?.[0]?.medium || data.urls?.[0] || '';
+      setFormData(prev => ({ ...prev, image: imageUrl }));
     } catch (err: any) {
       setError(err.message || 'Failed to upload image');
     } finally {
