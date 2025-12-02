@@ -68,11 +68,7 @@ export const DEFAULT_FIELD_MAPPING: Record<string, string> = {
   'govt_price_no_fee': 'gsaPriceNoFee',
   'govt_pric_e_no_fe': 'gsaPriceNoFee',
 
-  // Wholesale / Dealer Cost
-  'Sup Cost': 'wholesalePrice',
-  'sup_cost': 'wholesalePrice',
-  'dealer_cost': 'wholesalePrice',
-  'dealer_co_st': 'wholesalePrice',
+  // Wholesale Price
   'Wholesale Price': 'wholesalePrice',
   'wholesale_price': 'wholesalePrice',
 
