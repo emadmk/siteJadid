@@ -90,13 +90,16 @@ export default function ProductImportPage() {
   const [options, setOptions] = useState({
     updateExisting: true,
     importImages: true,
-    imageBasePath: '/home/user/siteJadid/import-images',
+    imageBasePath: '/root/ada/siteJadid/import-images',
     dryRun: false,
     // Default assignments for all imported products
     defaultBrandId: '',
     defaultCategoryId: '',
     defaultWarehouseId: '',
     defaultSupplierId: '',
+    // Stock and Status defaults
+    defaultStockQuantity: 0,
+    defaultStatus: 'ACTIVE' as 'DRAFT' | 'ACTIVE' | 'INACTIVE',
   });
 
   // Fetch dropdown data on mount
@@ -435,6 +438,43 @@ export default function ProductImportPage() {
                             {supplier.name} ({supplier.code})
                           </option>
                         ))}
+                      </select>
+                    </div>
+
+                    {/* Stock Quantity */}
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Default Stock Quantity
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={options.defaultStockQuantity}
+                        onChange={(e) =>
+                          setOptions({ ...options, defaultStockQuantity: parseInt(e.target.value) || 0 })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
+                        placeholder="0"
+                      />
+                    </div>
+
+                    {/* Status Select */}
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Product Status
+                      </label>
+                      <select
+                        value={options.defaultStatus}
+                        onChange={(e) =>
+                          setOptions({ ...options, defaultStatus: e.target.value as 'DRAFT' | 'ACTIVE' | 'INACTIVE' })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
+                      >
+                        <option value="ACTIVE">Active</option>
+                        <option value="DRAFT">Draft</option>
+                        <option value="INACTIVE">Inactive</option>
                       </select>
                     </div>
                   </div>

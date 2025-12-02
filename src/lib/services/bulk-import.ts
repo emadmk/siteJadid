@@ -51,6 +51,14 @@ export const DEFAULT_FIELD_MAPPING: Record<string, string> = {
   'Retail Price': 'basePrice',
   'mfc_price': 'basePrice',
 
+  // Cost Price (Supplier Cost)
+  'Sup Cost': 'costPrice',
+  'sup_cost': 'costPrice',
+  'Cost Price': 'costPrice',
+  'cost_price': 'costPrice',
+  'dealer_cost': 'costPrice',
+  'dealer_co_st': 'costPrice',
+
   // GSA Price
   'Price Proposal': 'gsaPrice',
   'govt_price_with_fee': 'gsaPrice',
@@ -198,15 +206,20 @@ export interface ImportOptions {
   defaultCategoryId?: string;
   defaultWarehouseId?: string;
   defaultSupplierId?: string;
+  // Stock and Status defaults
+  defaultStockQuantity?: number;
+  defaultStatus?: 'DRAFT' | 'ACTIVE' | 'INACTIVE';
 }
 
 interface ParsedProduct {
   sku: string;
   name: string;
   description?: string;
+  shortDescription?: string;
   brandName?: string;
   categoryName?: string;
   basePrice: number;
+  costPrice?: number;
   gsaPrice?: number;
   wholesalePrice?: number;
   stockQuantity?: number;
@@ -274,9 +287,9 @@ export class BulkImportService {
       headers[colNumber] = cell.value?.toString().trim() || '';
     });
 
-    // Process each data row
+    // Process each data row (skip first 2 header rows)
     worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return; // Skip header row
+      if (rowNumber <= 2) return; // Skip header rows (row 1: main headers, row 2: field names)
 
       const rawData: Record<string, unknown> = {};
       const mappedData: Record<string, unknown> = {};
@@ -329,13 +342,24 @@ export class BulkImportService {
         }
       }
 
+      // Generate short description from full description (first 150 chars)
+      const fullDescription = String(mappedData.description || '').trim();
+      const shortDesc = fullDescription.length > 150
+        ? fullDescription.substring(0, 150).trim() + '...'
+        : fullDescription;
+
+      // Parse cost price
+      const costPrice = mappedData.costPrice ? parseFloat(String(mappedData.costPrice)) : undefined;
+
       products.push({
         sku,
         name: name || sku,
-        description: String(mappedData.description || '').trim() || undefined,
+        description: fullDescription || undefined,
+        shortDescription: shortDesc || undefined,
         brandName: String(mappedData.brandName || '').trim() || undefined,
         categoryName: String(mappedData.categoryName || '').trim() || undefined,
         basePrice: isNaN(basePrice) ? 0 : basePrice,
+        costPrice: costPrice && !isNaN(costPrice) ? costPrice : undefined,
         gsaPrice: mappedData.gsaPrice ? parseFloat(String(mappedData.gsaPrice)) : undefined,
         wholesalePrice: mappedData.wholesalePrice
           ? parseFloat(String(mappedData.wholesalePrice))
@@ -503,6 +527,8 @@ export class BulkImportService {
       defaultCategoryId,
       defaultWarehouseId,
       defaultSupplierId,
+      defaultStockQuantity = 0,
+      defaultStatus = 'ACTIVE',
     } = options;
 
     this.errors = [];
@@ -546,23 +572,39 @@ export class BulkImportService {
           brandSlug = brand?.slug;
         }
 
+        // Auto-generate meta fields
+        const metaTitle = `${product.name} | ${product.brandName || 'Quality Product'}`;
+        const metaDescription = product.shortDescription || product.description?.substring(0, 160) || `Shop ${product.name} - High quality product at competitive prices.`;
+        const metaKeywords = [product.name, product.brandName, product.sku, product.categoryName]
+          .filter(Boolean)
+          .join(', ');
+
         // Prepare product data
         const productData = {
           name: product.name,
           slug: product.sku.toLowerCase().replace(/[^\w]+/g, '-'),
           description: product.description,
+          shortDescription: product.shortDescription,
           basePrice: new Decimal(product.basePrice),
+          costPrice: product.costPrice ? new Decimal(product.costPrice) : undefined,
           gsaPrice: product.gsaPrice ? new Decimal(product.gsaPrice) : undefined,
           wholesalePrice: product.wholesalePrice
             ? new Decimal(product.wholesalePrice)
             : undefined,
-          stockQuantity: product.stockQuantity,
+          // Use product stock or default stock quantity
+          stockQuantity: product.stockQuantity ?? defaultStockQuantity,
+          // Set product status
+          status: defaultStatus,
           minimumOrderQty: product.quantityPerPack || 1,
           // Dimensions
           weight: product.weight ? new Decimal(product.weight) : undefined,
           length: product.length ? new Decimal(product.length) : undefined,
           width: product.width ? new Decimal(product.width) : undefined,
           height: product.height ? new Decimal(product.height) : undefined,
+          // SEO Meta Fields (auto-generated)
+          metaTitle,
+          metaDescription,
+          metaKeywords,
           // GSA fields
           gsaSin: product.gsaSin,
           // Store extra metadata as JSON (convert to plain JSON for Prisma)
@@ -661,6 +703,8 @@ export class BulkImportService {
 
         // Create/Update warehouse stock if warehouse is selected
         if (defaultWarehouseId && savedProduct) {
+          const stockQty = product.stockQuantity ?? defaultStockQuantity;
+
           const existingStock = await prisma.warehouseStock.findUnique({
             where: {
               warehouseId_productId: {
@@ -680,8 +724,8 @@ export class BulkImportService {
                 },
               },
               data: {
-                quantity: product.stockQuantity || 0,
-                available: product.stockQuantity || 0,
+                quantity: stockQty,
+                available: stockQty,
               },
             });
           } else {
@@ -690,8 +734,8 @@ export class BulkImportService {
               data: {
                 warehouseId: defaultWarehouseId,
                 productId: savedProduct.id,
-                quantity: product.stockQuantity || 0,
-                available: product.stockQuantity || 0,
+                quantity: stockQty,
+                available: stockQty,
                 reserved: 0,
                 reorderPoint: 10,
                 reorderQuantity: 50,
