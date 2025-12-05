@@ -99,32 +99,27 @@ export function BrandsSection() {
           </Link>
         </div>
 
-        {/* Brands Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {/* Brands Grid - Single row on desktop */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3">
           {brandsToShow.map((brand) => (
             <Link
               key={brand.id}
               href={`/brands/${brand.slug}`}
-              className="group bg-white rounded-xl p-5 border border-gray-100 hover:border-safety-green-300 hover:shadow-lg transition-all duration-200 flex flex-col items-center justify-center min-h-[100px]"
+              className="group bg-white rounded-xl p-4 border border-gray-100 hover:border-safety-green-300 hover:shadow-lg transition-all duration-200 flex flex-col items-center justify-center min-h-[80px]"
             >
               {brand.logo ? (
                 <Image
                   src={brand.logo}
                   alt={brand.name}
-                  width={120}
-                  height={48}
-                  className="max-h-12 w-auto object-contain opacity-70 group-hover:opacity-100 transition-opacity"
+                  width={100}
+                  height={40}
+                  className="max-h-10 w-auto object-contain opacity-60 group-hover:opacity-100 transition-opacity"
                   quality={100}
                   unoptimized
                 />
               ) : (
-                <span className="text-lg font-bold text-gray-400 group-hover:text-safety-green-600 transition-colors">
+                <span className="text-sm font-bold text-gray-400 group-hover:text-safety-green-600 transition-colors text-center">
                   {brand.name}
-                </span>
-              )}
-              {brand._count && brand._count.products > 0 && (
-                <span className="text-xs text-gray-400 mt-2 group-hover:text-gray-600 transition-colors">
-                  {brand._count.products} products
                 </span>
               )}
             </Link>
