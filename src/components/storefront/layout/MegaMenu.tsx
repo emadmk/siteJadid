@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { ChevronRight, Loader2, Package, ArrowRight } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -67,136 +68,193 @@ export function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-xl z-50" ref={menuRef}>
+    <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-2xl z-50" ref={menuRef}>
       <div className="container mx-auto px-4">
-        <div className="flex min-h-[400px]">
-          {/* Categories List */}
-          <div className="w-64 border-r border-gray-200 py-4">
+        <div className="flex min-h-[420px]">
+          {/* Categories List - Left Sidebar */}
+          <div className="w-56 bg-gray-50 border-r border-gray-200 py-3 flex-shrink-0">
             {isLoading ? (
               <div className="flex items-center justify-center h-32">
                 <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
               </div>
             ) : (
-              <nav className="space-y-1">
+              <nav className="space-y-0.5 px-2">
                 {categories.map((category) => (
                   <button
                     key={category.id}
                     onMouseEnter={() => setActiveCategory(category)}
                     onClick={() => {
                       onClose();
+                      window.location.href = `/categories/${category.slug}`;
                     }}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
                       activeCategory?.id === category.id
-                        ? 'bg-safety-green-50 text-safety-green-700 border-l-4 border-safety-green-600'
-                        : 'hover:bg-gray-50 text-gray-700 border-l-4 border-transparent'
+                        ? 'bg-white text-safety-green-700 shadow-sm'
+                        : 'hover:bg-white/60 text-gray-700'
                     }`}
                   >
-                    <span className="font-medium">{category.name}</span>
+                    {/* Category Image */}
+                    <div className={`w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center ${
+                      activeCategory?.id === category.id ? 'bg-safety-green-100' : 'bg-gray-100'
+                    }`}>
+                      {category.image ? (
+                        <Image
+                          src={category.image}
+                          alt={category.name}
+                          width={36}
+                          height={36}
+                          className="w-full h-full object-contain"
+                          quality={100}
+                          unoptimized
+                        />
+                      ) : (
+                        <Package className={`w-5 h-5 ${activeCategory?.id === category.id ? 'text-safety-green-600' : 'text-gray-400'}`} />
+                      )}
+                    </div>
+                    <span className="font-medium text-sm flex-1 truncate">{category.name}</span>
                     {category.children && category.children.length > 0 && (
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className={`w-4 h-4 flex-shrink-0 ${activeCategory?.id === category.id ? 'text-safety-green-600' : 'text-gray-400'}`} />
                     )}
                   </button>
                 ))}
-                <Link
-                  href="/products"
-                  onClick={onClose}
-                  className="flex items-center px-4 py-3 text-safety-green-600 hover:text-safety-green-700 font-medium"
-                >
-                  View All Products
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
               </nav>
             )}
           </div>
 
-          {/* Subcategories Panel */}
+          {/* Subcategories Panel - Right Content */}
           {activeCategory && (
-            <div className="flex-1 p-6">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-black mb-2">{activeCategory.name}</h3>
-                  {activeCategory.description && (
-                    <p className="text-gray-600 text-sm max-w-lg">{activeCategory.description}</p>
+            <div className="flex-1 p-6 overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-100">
+                <div className="flex items-center gap-4">
+                  {activeCategory.image && (
+                    <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center">
+                      <Image
+                        src={activeCategory.image}
+                        alt={activeCategory.name}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-contain"
+                        quality={100}
+                        unoptimized
+                      />
+                    </div>
                   )}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">{activeCategory.name}</h3>
+                    {activeCategory.description && (
+                      <p className="text-sm text-gray-500 line-clamp-1">{activeCategory.description}</p>
+                    )}
+                  </div>
                 </div>
                 <Link
                   href={`/categories/${activeCategory.slug}`}
                   onClick={onClose}
-                  className="text-sm text-safety-green-600 hover:text-safety-green-700 font-medium flex items-center"
+                  className="flex items-center gap-1 px-4 py-2 bg-safety-green-600 text-white text-sm font-medium rounded-lg hover:bg-safety-green-700 transition-colors"
                 >
-                  Shop All {activeCategory.name}
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  Shop All
+                  <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
 
-              {activeCategory.children && activeCategory.children.length > 0 && (
-                <div className="grid grid-cols-3 gap-6">
-                  {activeCategory.children.map((child) => (
-                    <div key={child.id}>
-                      <Link
-                        href={`/categories/${child.slug}`}
-                        onClick={onClose}
-                        className="font-semibold text-black hover:text-safety-green-600 transition-colors"
-                      >
-                        {child.name}
-                      </Link>
-                      {child.children && child.children.length > 0 && (
-                        <ul className="mt-2 space-y-1">
-                          {child.children.slice(0, 6).map((grandchild) => (
-                            <li key={grandchild.id}>
-                              <Link
-                                href={`/categories/${grandchild.slug}`}
-                                onClick={onClose}
-                                className="text-sm text-gray-600 hover:text-safety-green-600 transition-colors"
-                              >
-                                {grandchild.name}
-                              </Link>
-                            </li>
-                          ))}
-                          {child.children.length > 6 && (
-                            <li>
-                              <Link
-                                href={`/categories/${child.slug}`}
-                                onClick={onClose}
-                                className="text-sm text-safety-green-600 hover:text-safety-green-700 font-medium"
-                              >
-                                View All +{child.children.length - 6} more
-                              </Link>
-                            </li>
+              {/* Subcategories Grid with Images */}
+              {activeCategory.children && activeCategory.children.length > 0 ? (
+                <div className="grid grid-cols-4 xl:grid-cols-5 gap-3">
+                  {activeCategory.children.slice(0, 10).map((child) => (
+                    <Link
+                      key={child.id}
+                      href={`/categories/${child.slug}`}
+                      onClick={onClose}
+                      className="group"
+                    >
+                      <div className="bg-gray-50 hover:bg-white hover:shadow-md rounded-xl p-3 transition-all duration-200 border border-transparent hover:border-safety-green-200">
+                        {/* Image */}
+                        <div className="aspect-square bg-white rounded-lg mb-2 overflow-hidden flex items-center justify-center">
+                          {child.image ? (
+                            <Image
+                              src={child.image}
+                              alt={child.name}
+                              width={80}
+                              height={80}
+                              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                              quality={100}
+                              unoptimized
+                            />
+                          ) : (
+                            <Package className="w-10 h-10 text-gray-300" />
                           )}
-                        </ul>
-                      )}
-                    </div>
+                        </div>
+                        {/* Name */}
+                        <h4 className="text-xs font-medium text-gray-800 text-center group-hover:text-safety-green-600 transition-colors line-clamp-2">
+                          {child.name}
+                        </h4>
+                        {child._count && child._count.products > 0 && (
+                          <p className="text-xs text-gray-400 text-center mt-0.5">
+                            {child._count.products} items
+                          </p>
+                        )}
+                      </div>
+                    </Link>
                   ))}
+
+                  {/* View More Card */}
+                  {activeCategory.children.length > 10 && (
+                    <Link
+                      href={`/categories/${activeCategory.slug}`}
+                      onClick={onClose}
+                      className="group"
+                    >
+                      <div className="bg-safety-green-50 hover:bg-safety-green-100 rounded-xl p-3 transition-all duration-200 h-full flex flex-col items-center justify-center">
+                        <div className="w-12 h-12 bg-safety-green-100 rounded-full flex items-center justify-center mb-2 group-hover:bg-safety-green-200 transition-colors">
+                          <ArrowRight className="w-6 h-6 text-safety-green-600" />
+                        </div>
+                        <span className="text-sm font-medium text-safety-green-700 text-center">
+                          +{activeCategory.children.length - 10} More
+                        </span>
+                      </div>
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No subcategories</p>
+                  <Link
+                    href={`/categories/${activeCategory.slug}`}
+                    onClick={onClose}
+                    className="inline-flex items-center gap-1 mt-3 text-safety-green-600 font-medium text-sm hover:text-safety-green-700"
+                  >
+                    Browse Products
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </div>
               )}
 
-              {/* Featured Section */}
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <div className="flex items-center gap-6">
-                  <div className="flex-1 bg-gradient-to-r from-safety-green-50 to-safety-green-100 rounded-lg p-4">
-                    <h4 className="font-semibold text-safety-green-800 mb-1">Featured in {activeCategory.name}</h4>
-                    <p className="text-sm text-safety-green-700 mb-3">Shop our best-selling products</p>
-                    <Link
-                      href={`/categories/${activeCategory.slug}?featured=true`}
-                      onClick={onClose}
-                      className="text-sm font-medium text-safety-green-600 hover:text-safety-green-700"
-                    >
-                      View Featured Products &rarr;
-                    </Link>
-                  </div>
-                  <div className="flex-1 bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-800 mb-1">New Arrivals</h4>
-                    <p className="text-sm text-gray-600 mb-3">Check out the latest safety gear</p>
-                    <Link
-                      href={`/categories/${activeCategory.slug}?sort=newest`}
-                      onClick={onClose}
-                      className="text-sm font-medium text-gray-700 hover:text-black"
-                    >
-                      View New Products &rarr;
-                    </Link>
-                  </div>
-                </div>
+              {/* Quick Links Footer */}
+              <div className="mt-5 pt-4 border-t border-gray-100 flex items-center gap-4">
+                <Link
+                  href="/products"
+                  onClick={onClose}
+                  className="text-sm text-gray-600 hover:text-safety-green-600 font-medium"
+                >
+                  All Products
+                </Link>
+                <span className="text-gray-300">|</span>
+                <Link
+                  href="/categories"
+                  onClick={onClose}
+                  className="text-sm text-gray-600 hover:text-safety-green-600 font-medium"
+                >
+                  All Categories
+                </Link>
+                <span className="text-gray-300">|</span>
+                <Link
+                  href="/brands"
+                  onClick={onClose}
+                  className="text-sm text-gray-600 hover:text-safety-green-600 font-medium"
+                >
+                  Shop by Brand
+                </Link>
               </div>
             </div>
           )}
