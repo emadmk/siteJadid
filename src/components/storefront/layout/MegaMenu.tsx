@@ -22,6 +22,8 @@ interface MegaMenuProps {
   onClose: () => void;
 }
 
+const MAX_VISIBLE_CATEGORIES = 12;
+
 export function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,19 +69,22 @@ export function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
 
   if (!isOpen) return null;
 
+  const visibleCategories = categories.slice(0, MAX_VISIBLE_CATEGORIES);
+  const hasMoreCategories = categories.length > MAX_VISIBLE_CATEGORIES;
+
   return (
     <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-2xl z-50" ref={menuRef}>
       <div className="container mx-auto px-4">
-        <div className="flex min-h-[420px]">
-          {/* Categories List - Left Sidebar */}
-          <div className="w-56 bg-gray-50 border-r border-gray-200 py-3 flex-shrink-0">
+        <div className="flex max-h-[480px]">
+          {/* Categories List - Left Sidebar with Scroll */}
+          <div className="w-56 border-r border-gray-200 py-3 flex-shrink-0 overflow-y-auto">
             {isLoading ? (
               <div className="flex items-center justify-center h-32">
                 <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
               </div>
             ) : (
               <nav className="space-y-0.5 px-2">
-                {categories.map((category) => (
+                {visibleCategories.map((category) => (
                   <button
                     key={category.id}
                     onMouseEnter={() => setActiveCategory(category)}
@@ -89,14 +94,12 @@ export function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
                       activeCategory?.id === category.id
-                        ? 'bg-white text-safety-green-700 shadow-sm'
-                        : 'hover:bg-white/60 text-gray-700'
+                        ? 'bg-safety-green-50 text-safety-green-700'
+                        : 'hover:bg-gray-50 text-gray-700'
                     }`}
                   >
-                    {/* Category Image */}
-                    <div className={`w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center ${
-                      activeCategory?.id === category.id ? 'bg-safety-green-100' : 'bg-gray-100'
-                    }`}>
+                    {/* Category Image - No background */}
+                    <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
                       {category.image ? (
                         <Image
                           src={category.image}
@@ -117,18 +120,30 @@ export function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
                     )}
                   </button>
                 ))}
+
+                {/* View All Categories Link */}
+                {hasMoreCategories && (
+                  <Link
+                    href="/categories"
+                    onClick={onClose}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-safety-green-600 hover:bg-safety-green-50 transition-colors mt-2 border-t border-gray-100 pt-3"
+                  >
+                    <span className="font-medium text-sm">View All {categories.length} Categories</span>
+                    <ChevronRight className="w-4 h-4 ml-auto" />
+                  </Link>
+                )}
               </nav>
             )}
           </div>
 
           {/* Subcategories Panel - Right Content */}
           {activeCategory && (
-            <div className="flex-1 p-6 overflow-hidden">
+            <div className="flex-1 p-6 overflow-y-auto">
               {/* Header */}
               <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-100">
                 <div className="flex items-center gap-4">
                   {activeCategory.image && (
-                    <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center">
                       <Image
                         src={activeCategory.image}
                         alt={activeCategory.name}
@@ -157,7 +172,7 @@ export function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
                 </Link>
               </div>
 
-              {/* Subcategories Grid with Images */}
+              {/* Subcategories Grid - No backgrounds */}
               {activeCategory.children && activeCategory.children.length > 0 ? (
                 <div className="grid grid-cols-4 xl:grid-cols-5 gap-3">
                   {activeCategory.children.slice(0, 10).map((child) => (
@@ -167,9 +182,9 @@ export function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
                       onClick={onClose}
                       className="group"
                     >
-                      <div className="bg-gray-50 hover:bg-white hover:shadow-md rounded-xl p-3 transition-all duration-200 border border-transparent hover:border-safety-green-200">
-                        {/* Image */}
-                        <div className="aspect-square bg-white rounded-lg mb-2 overflow-hidden flex items-center justify-center">
+                      <div className="rounded-xl p-3 transition-all duration-200 border border-gray-100 hover:border-safety-green-300 hover:shadow-md">
+                        {/* Image - No background */}
+                        <div className="aspect-square rounded-lg mb-2 overflow-hidden flex items-center justify-center">
                           {child.image ? (
                             <Image
                               src={child.image}
@@ -204,7 +219,7 @@ export function MegaMenu({ isOpen, onClose }: MegaMenuProps) {
                       onClick={onClose}
                       className="group"
                     >
-                      <div className="bg-safety-green-50 hover:bg-safety-green-100 rounded-xl p-3 transition-all duration-200 h-full flex flex-col items-center justify-center">
+                      <div className="border border-safety-green-200 hover:border-safety-green-400 rounded-xl p-3 transition-all duration-200 h-full flex flex-col items-center justify-center hover:shadow-md">
                         <div className="w-12 h-12 bg-safety-green-100 rounded-full flex items-center justify-center mb-2 group-hover:bg-safety-green-200 transition-colors">
                           <ArrowRight className="w-6 h-6 text-safety-green-600" />
                         </div>
