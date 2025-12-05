@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, ChevronRight } from 'lucide-react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -67,11 +67,11 @@ export function HeroSection() {
     fetchCategories();
   }, []);
 
-  // Auto-rotate banners
+  // Auto-rotate banners for mobile
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentBanner((prev) => (prev + 1) % heroBanners.length);
-    }, 5000);
+    }, 4000);
     return () => clearInterval(timer);
   }, []);
 
@@ -79,15 +79,65 @@ export function HeroSection() {
     <section className="bg-white">
       {/* Hero Banners */}
       <div className="relative overflow-hidden">
-        <div className="container mx-auto px-4 py-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {heroBanners.map((banner, index) => (
+        <div className="container mx-auto px-4 py-3">
+          {/* Mobile: Single Banner Slider */}
+          <div className="lg:hidden relative">
+            <div className="overflow-hidden rounded-lg">
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${currentBanner * 100}%)` }}
+              >
+                {heroBanners.map((banner) => (
+                  <Link
+                    key={banner.id}
+                    href={banner.link}
+                    className="relative overflow-hidden rounded-lg h-36 w-full flex-shrink-0 group"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-r ${banner.bgColor}`} />
+                    {banner.image && (
+                      <Image
+                        src={banner.image}
+                        alt={banner.title}
+                        fill
+                        className="object-cover opacity-40"
+                        quality={100}
+                        unoptimized
+                      />
+                    )}
+                    <div className="absolute inset-0 p-5 flex flex-col justify-end">
+                      <h3 className="text-lg font-bold text-white mb-1">
+                        {banner.title}
+                      </h3>
+                      <p className="text-white/80 text-sm flex items-center gap-1">
+                        {banner.subtitle}
+                        <ChevronRight className="w-4 h-4" />
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+            {/* Dots Indicator */}
+            <div className="flex justify-center gap-2 mt-3">
+              {heroBanners.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentBanner(index)}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    currentBanner === index ? 'bg-safety-green-600' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Desktop: 3 Banners Grid */}
+          <div className="hidden lg:grid lg:grid-cols-3 gap-3">
+            {heroBanners.map((banner) => (
               <Link
                 key={banner.id}
                 href={banner.link}
-                className={`relative overflow-hidden rounded-lg h-48 lg:h-56 group ${
-                  index === 0 ? 'lg:col-span-1' : ''
-                }`}
+                className="relative overflow-hidden rounded-lg h-40 group"
               >
                 <div className={`absolute inset-0 bg-gradient-to-r ${banner.bgColor}`} />
                 {banner.image && (
@@ -100,8 +150,8 @@ export function HeroSection() {
                     unoptimized
                   />
                 )}
-                <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                  <h3 className="text-xl lg:text-2xl font-bold text-white mb-1">
+                <div className="absolute inset-0 p-5 flex flex-col justify-end">
+                  <h3 className="text-xl font-bold text-white mb-1">
                     {banner.title}
                   </h3>
                   <p className="text-white/80 text-sm flex items-center gap-1">
@@ -116,10 +166,10 @@ export function HeroSection() {
       </div>
 
       {/* Shop by Category */}
-      <div className="container mx-auto px-4 py-8 lg:py-12">
+      <div className="container mx-auto px-4 py-6 lg:py-10">
         {/* Section Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl lg:text-2xl font-bold text-gray-900">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg lg:text-xl font-bold text-gray-900">
             The One Item You Need + 1.5 Million More
           </h2>
           <Link
@@ -133,24 +183,24 @@ export function HeroSection() {
 
         {/* Categories Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
             {Array.from({ length: 14 }).map((_, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-lg p-4 animate-pulse">
-                <div className="aspect-square bg-gray-100 rounded-lg mb-3" />
+              <div key={i} className="bg-white border border-gray-200 rounded-lg p-3 animate-pulse">
+                <div className="aspect-square bg-gray-100 rounded-lg mb-2" />
                 <div className="h-4 bg-gray-100 rounded w-3/4 mx-auto" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3 lg:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
             {categories.map((category) => (
               <Link
                 key={category.id}
                 href={`/categories/${category.slug}`}
-                className="group bg-white border border-gray-200 rounded-lg p-3 lg:p-4 hover:border-safety-green-400 hover:shadow-lg transition-all duration-200"
+                className="group bg-white border border-gray-200 rounded-lg p-3 hover:border-safety-green-400 hover:shadow-lg transition-all duration-200"
               >
                 {/* Category Image */}
-                <div className="aspect-square bg-gray-50 rounded-lg mb-3 overflow-hidden flex items-center justify-center">
+                <div className="aspect-square bg-white rounded-lg mb-2 overflow-hidden flex items-center justify-center">
                   {category.image ? (
                     <Image
                       src={category.image}
@@ -162,8 +212,8 @@ export function HeroSection() {
                       unoptimized
                     />
                   ) : (
-                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <span className="text-3xl text-gray-400">📦</span>
+                    <div className="w-16 h-16 flex items-center justify-center">
+                      <span className="text-3xl text-gray-300">📦</span>
                     </div>
                   )}
                 </div>
@@ -172,7 +222,7 @@ export function HeroSection() {
                   {category.name}
                 </h3>
                 {category._count && category._count.products > 0 && (
-                  <p className="text-xs text-gray-500 text-center mt-1">
+                  <p className="text-xs text-gray-500 text-center mt-0.5">
                     {category._count.products.toLocaleString()} items
                   </p>
                 )}
@@ -182,10 +232,10 @@ export function HeroSection() {
         )}
 
         {/* Mobile View All Button */}
-        <div className="mt-6 text-center md:hidden">
+        <div className="mt-5 text-center md:hidden">
           <Link
             href="/categories"
-            className="inline-flex items-center gap-2 text-safety-green-600 font-medium"
+            className="inline-flex items-center gap-2 text-safety-green-600 font-medium text-sm"
           >
             View All Product Categories
             <ChevronRight className="w-4 h-4" />
