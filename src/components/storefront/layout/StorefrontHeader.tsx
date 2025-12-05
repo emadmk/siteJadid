@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import {
   Search,
@@ -17,6 +18,7 @@ import {
   Settings,
   Building2,
   LayoutGrid,
+  Home,
 } from 'lucide-react';
 import { AnnouncementBar } from './AnnouncementBar';
 import { MegaMenu } from './MegaMenu';
@@ -66,7 +68,7 @@ export function StorefrontHeader() {
       <div className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16 lg:h-20">
-            {/* Left - Logo & Menu */}
+            {/* Left - Logo & Tagline */}
             <div className="flex items-center gap-4">
               {/* Mobile Menu Button */}
               <button
@@ -78,51 +80,24 @@ export function StorefrontHeader() {
               </button>
 
               {/* Logo */}
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-safety-green-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">A</span>
-                </div>
-                <div className="hidden sm:block">
-                  <span className="text-xl font-bold text-black">Ada</span>
-                  <span className="text-xl font-bold text-safety-green-600">Supply</span>
+              <Link href="/" className="flex items-center gap-3">
+                <Image
+                  src="/images/imagesite/logo.png"
+                  alt="ADA Supplies"
+                  width={60}
+                  height={60}
+                  className="w-12 h-12 lg:w-14 lg:h-14 object-contain"
+                  quality={100}
+                  unoptimized
+                />
+                {/* Separator & Tagline */}
+                <div className="hidden sm:flex items-center gap-3">
+                  <div className="w-px h-10 bg-gray-300"></div>
+                  <span className="text-lg lg:text-xl font-medium text-safety-green-600 italic">
+                    Safety Done Right
+                  </span>
                 </div>
               </Link>
-
-              {/* Desktop Navigation */}
-              <nav className="hidden lg:flex items-center ml-8">
-                <button
-                  onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
-                  className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors ${
-                    isMegaMenuOpen
-                      ? 'text-safety-green-600'
-                      : 'text-gray-700 hover:text-safety-green-600'
-                  }`}
-                >
-                  <LayoutGrid className="w-5 h-5" />
-                  Categories
-                  <ChevronDown className={`w-4 h-4 transition-transform ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-                <button
-                  onClick={() => setIsQuickOrderOpen(!isQuickOrderOpen)}
-                  className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors ${
-                    isQuickOrderOpen
-                      ? 'text-safety-green-600'
-                      : 'text-gray-700 hover:text-safety-green-600'
-                  }`}
-                >
-                  <ClipboardList className="w-5 h-5" />
-                  Quick Order
-                </button>
-                {(isB2B || isGSA) && (
-                  <Link
-                    href={isB2B ? '/b2b/dashboard' : '/gsa/dashboard'}
-                    className="flex items-center gap-2 px-4 py-2 font-medium text-gray-700 hover:text-safety-green-600 transition-colors"
-                  >
-                    <Building2 className="w-5 h-5" />
-                    {isB2B ? 'B2B Portal' : 'GSA Portal'}
-                  </Link>
-                )}
-              </nav>
             </div>
 
             {/* Center - Search */}
@@ -253,7 +228,7 @@ export function StorefrontHeader() {
                   className="hidden sm:flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-safety-green-600 font-medium transition-colors"
                 >
                   <User className="w-5 h-5" />
-                  <span className="hidden lg:inline">Sign In</span>
+                  <span className="hidden lg:inline">Sign In / Register</span>
                 </button>
               )}
 
@@ -264,7 +239,7 @@ export function StorefrontHeader() {
                 aria-label="Cart"
               >
                 <ShoppingCart className="w-5 h-5" />
-                <span className="hidden lg:inline font-medium">Cart</span>
+                <span className="hidden lg:inline font-medium">Quick Order</span>
                 {cart && cart.itemCount > 0 && (
                   <span className="absolute -top-1 -right-1 lg:relative lg:top-0 lg:right-0 w-5 h-5 lg:w-auto lg:h-auto lg:px-2 lg:py-0.5 bg-black lg:bg-white/20 text-white text-xs font-bold rounded-full lg:rounded flex items-center justify-center">
                     {cart.itemCount > 99 ? '99+' : cart.itemCount}
@@ -273,6 +248,101 @@ export function StorefrontHeader() {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Navigation Bar */}
+      <div className="bg-white border-b border-gray-200 hidden lg:block">
+        <div className="container mx-auto px-4">
+          <nav className="flex items-center justify-center gap-1">
+            {/* Categories Mega Menu */}
+            <button
+              onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
+              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
+                isMegaMenuOpen
+                  ? 'text-safety-green-600 bg-safety-green-50'
+                  : 'text-gray-700 hover:text-safety-green-600 hover:bg-gray-50'
+              }`}
+            >
+              <LayoutGrid className="w-5 h-5" />
+              Categories
+              <ChevronDown className={`w-4 h-4 transition-transform ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Quick Order */}
+            <button
+              onClick={() => setIsQuickOrderOpen(!isQuickOrderOpen)}
+              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
+                isQuickOrderOpen
+                  ? 'text-safety-green-600 bg-safety-green-50'
+                  : 'text-gray-700 hover:text-safety-green-600 hover:bg-gray-50'
+              }`}
+            >
+              <ClipboardList className="w-5 h-5" />
+              Quick Order
+            </button>
+
+            {/* Separator */}
+            <div className="w-px h-6 bg-gray-200 mx-2"></div>
+
+            {/* Navigation Links */}
+            <Link
+              href="/"
+              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
+            >
+              Home
+            </Link>
+            <Link
+              href="/categories/ppe"
+              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
+            >
+              Categories PPE
+            </Link>
+            <Link
+              href="/categories/fall-protection"
+              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
+            >
+              Fall Protection
+            </Link>
+            <Link
+              href="/categories/protective-clothing"
+              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
+            >
+              Protective Clothing
+            </Link>
+            <Link
+              href="/categories/safety-footwear"
+              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
+            >
+              Safety Footwear
+            </Link>
+            <Link
+              href="/about"
+              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
+            >
+              About us
+            </Link>
+            <Link
+              href="/contact"
+              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
+            >
+              Contact us
+            </Link>
+
+            {/* B2B/GSA Portal */}
+            {(isB2B || isGSA) && (
+              <>
+                <div className="w-px h-6 bg-gray-200 mx-2"></div>
+                <Link
+                  href={isB2B ? '/b2b/dashboard' : '/gsa/dashboard'}
+                  className="flex items-center gap-2 px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
+                >
+                  <Building2 className="w-5 h-5" />
+                  {isB2B ? 'B2B Portal' : 'GSA Portal'}
+                </Link>
+              </>
+            )}
+          </nav>
         </div>
 
         {/* Mega Menu */}
@@ -289,10 +359,16 @@ export function StorefrontHeader() {
           <div className="fixed left-0 top-0 bottom-0 w-80 bg-white overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-                <div className="w-8 h-8 bg-safety-green-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">A</span>
-                </div>
-                <span className="text-lg font-bold text-black">AdaSupply</span>
+                <Image
+                  src="/images/imagesite/logo.png"
+                  alt="ADA Supplies"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 object-contain"
+                  quality={100}
+                  unoptimized
+                />
+                <span className="text-lg font-bold text-safety-green-600">ADA Supplies</span>
               </Link>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -317,43 +393,65 @@ export function StorefrontHeader() {
                 </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Link
-                  href="/products"
+                  href="/"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
                 >
-                  <LayoutGrid className="w-5 h-5" />
-                  All Products
+                  <Home className="w-5 h-5" />
+                  Home
                 </Link>
                 <Link
                   href="/categories"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
                 >
-                  <Package className="w-5 h-5" />
+                  <LayoutGrid className="w-5 h-5" />
                   Categories
                 </Link>
-                {status === 'authenticated' && (
-                  <>
-                    <Link
-                      href="/account/orders"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
-                    >
-                      <ClipboardList className="w-5 h-5" />
-                      My Orders
-                    </Link>
-                    <Link
-                      href="/account/wishlist"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
-                    >
-                      <Heart className="w-5 h-5" />
-                      Wishlist
-                    </Link>
-                  </>
-                )}
+                <Link
+                  href="/categories/ppe"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg pl-10"
+                >
+                  Categories PPE
+                </Link>
+                <Link
+                  href="/categories/fall-protection"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg pl-10"
+                >
+                  Fall Protection
+                </Link>
+                <Link
+                  href="/categories/protective-clothing"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg pl-10"
+                >
+                  Protective Clothing
+                </Link>
+                <Link
+                  href="/categories/safety-footwear"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg pl-10"
+                >
+                  Safety Footwear
+                </Link>
+                <Link
+                  href="/about"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  About us
+                </Link>
+                <Link
+                  href="/contact"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  Contact us
+                </Link>
               </div>
 
               {status === 'authenticated' && (
@@ -366,6 +464,22 @@ export function StorefrontHeader() {
                   >
                     <User className="w-5 h-5" />
                     My Account
+                  </Link>
+                  <Link
+                    href="/account/orders"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                  >
+                    <Package className="w-5 h-5" />
+                    My Orders
+                  </Link>
+                  <Link
+                    href="/account/wishlist"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                  >
+                    <Heart className="w-5 h-5" />
+                    Wishlist
                   </Link>
                   {isAdmin && (
                     <Link
