@@ -298,7 +298,7 @@ export function StorefrontHeader() {
               href="/categories/ppe"
               className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
             >
-              Categories PPE
+              PPE
             </Link>
             <Link
               href="/categories/fall-protection"
@@ -417,7 +417,7 @@ export function StorefrontHeader() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg pl-10"
                 >
-                  Categories PPE
+                  PPE
                 </Link>
                 <Link
                   href="/categories/fall-protection"
