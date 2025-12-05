@@ -24,11 +24,11 @@ export function AnnouncementBar() {
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Support Links */}
             <div className="hidden lg:flex items-center gap-3 text-gray-600 text-xs">
-              <span>Support: <a href="tel:1-800-XXX-XXXX" className="hover:text-safety-green-600 transition-colors">1-800-XXX-XXXX</a></span>
+              <span>Support: <a href="tel:478-329-8896" className="hover:text-safety-green-600 transition-colors">478-329-8896</a></span>
               <span className="text-gray-300">|</span>
               <Link href="/contact" className="hover:text-safety-green-600 transition-colors">Live Chat</Link>
               <span className="text-gray-300">|</span>
-              <Link href="/help" className="hover:text-safety-green-600 transition-colors">Help</Link>
+              <Link href="/faq" className="hover:text-safety-green-600 transition-colors">Help</Link>
               <span className="text-gray-300">|</span>
             </div>
 
@@ -41,6 +41,8 @@ export function AnnouncementBar() {
                 width={70}
                 height={24}
                 className="h-5 lg:h-6 w-auto object-contain"
+                quality={100}
+                unoptimized
               />
               {/* GSA */}
               <Image
@@ -49,6 +51,8 @@ export function AnnouncementBar() {
                 width={28}
                 height={28}
                 className="h-6 lg:h-7 w-auto object-contain"
+                quality={100}
+                unoptimized
               />
               {/* AbilityOne & MRO */}
               <Image
@@ -57,6 +61,8 @@ export function AnnouncementBar() {
                 width={120}
                 height={24}
                 className="h-5 lg:h-6 w-auto object-contain hidden sm:block"
+                quality={100}
+                unoptimized
               />
             </div>
           </div>
