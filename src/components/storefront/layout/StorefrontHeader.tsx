@@ -239,7 +239,7 @@ export function StorefrontHeader() {
                 aria-label="Cart"
               >
                 <ShoppingCart className="w-5 h-5" />
-                <span className="hidden lg:inline font-medium">Quick Order</span>
+                <span className="hidden lg:inline font-medium">Cart</span>
                 {cart && cart.itemCount > 0 && (
                   <span className="absolute -top-1 -right-1 lg:relative lg:top-0 lg:right-0 w-5 h-5 lg:w-auto lg:h-auto lg:px-2 lg:py-0.5 bg-black lg:bg-white/20 text-white text-xs font-bold rounded-full lg:rounded flex items-center justify-center">
                     {cart.itemCount > 99 ? '99+' : cart.itemCount}
@@ -255,19 +255,13 @@ export function StorefrontHeader() {
       <div className="bg-white border-b border-gray-200 hidden lg:block">
         <div className="container mx-auto px-4">
           <nav className="flex items-center justify-center gap-1">
-            {/* Categories Mega Menu */}
-            <button
-              onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
-              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
-                isMegaMenuOpen
-                  ? 'text-safety-green-600 bg-safety-green-50'
-                  : 'text-gray-700 hover:text-safety-green-600 hover:bg-gray-50'
-              }`}
+            {/* Home */}
+            <Link
+              href="/"
+              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
             >
-              <LayoutGrid className="w-5 h-5" />
-              Categories
-              <ChevronDown className={`w-4 h-4 transition-transform ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
+              Home
+            </Link>
 
             {/* Quick Order */}
             <button
@@ -282,16 +276,24 @@ export function StorefrontHeader() {
               Quick Order
             </button>
 
+            {/* All Categories Mega Menu */}
+            <button
+              onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
+              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
+                isMegaMenuOpen
+                  ? 'text-safety-green-600 bg-safety-green-50'
+                  : 'text-gray-700 hover:text-safety-green-600 hover:bg-gray-50'
+              }`}
+            >
+              <LayoutGrid className="w-5 h-5" />
+              All Categories
+              <ChevronDown className={`w-4 h-4 transition-transform ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
             {/* Separator */}
             <div className="w-px h-6 bg-gray-200 mx-2"></div>
 
             {/* Navigation Links */}
-            <Link
-              href="/"
-              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
-            >
-              Home
-            </Link>
             <Link
               href="/categories/ppe"
               className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
