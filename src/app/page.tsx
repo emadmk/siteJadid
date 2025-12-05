@@ -1,6 +1,7 @@
 import { HeroSection } from '@/components/storefront/home/HeroSection';
 import { FeaturedProducts } from '@/components/storefront/home/FeaturedProducts';
 import { BenefitsSection } from '@/components/storefront/home/BenefitsSection';
+import { BrandsSection } from '@/components/storefront/home/BrandsSection';
 import { PromoSection } from '@/components/storefront/home/PromoSection';
 import { RecentlyViewedSection } from '@/components/storefront/home/RecentlyViewedSection';
 
@@ -10,6 +11,7 @@ export default function HomePage() {
       <HeroSection />
       <FeaturedProducts />
       <BenefitsSection />
+      <BrandsSection />
       <PromoSection />
       <RecentlyViewedSection />
     </div>
