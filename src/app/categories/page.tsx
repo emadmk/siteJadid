@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ChevronRight, Grid3X3, ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
+import { ChevronRight, Package } from 'lucide-react';
 import { db } from '@/lib/db';
 
 interface CategoryWithChildren {
@@ -27,7 +28,7 @@ async function getCategories(): Promise<CategoryWithChildren[]> {
   const categories = await db.category.findMany({
     where: {
       isActive: true,
-      parentId: null, // Only top-level categories
+      parentId: null,
     },
     select: {
       id: true,
@@ -72,151 +73,199 @@ async function getCategories(): Promise<CategoryWithChildren[]> {
 export default async function CategoriesPage() {
   const categories = await getCategories();
 
-  // Calculate total products including children
   const totalProducts = categories.reduce((acc, cat) => {
     const childProducts = cat.children.reduce((sum, child) => sum + child._count.products, 0);
     return acc + cat._count.products + childProducts;
   }, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center gap-2 text-sm mb-4">
-            <Link href="/" className="text-gray-600 hover:text-safety-green-600">
+    <div className="min-h-screen bg-white">
+      {/* Breadcrumb */}
+      <div className="bg-gray-50 border-b">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Link href="/" className="text-gray-500 hover:text-safety-green-600">
               Home
             </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-            <span className="text-black font-medium">All Categories</span>
+            <span className="text-gray-900 font-medium">All Categories</span>
           </div>
-          <h1 className="text-4xl font-bold text-black mb-2">Browse Categories</h1>
-          <p className="text-gray-600">
-            Explore our complete range of {totalProducts.toLocaleString()} professional safety products
-          </p>
         </div>
       </div>
 
+      {/* Header */}
       <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">
+            Shop by Category
+          </h1>
+          <p className="text-gray-500 max-w-2xl mx-auto">
+            Explore {totalProducts.toLocaleString()}+ professional safety products across {categories.length} categories
+          </p>
+        </div>
+
         {categories.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <Grid3X3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-black mb-2">No Categories Yet</h2>
-            <p className="text-gray-600">
-              Categories will appear here once they are added.
-            </p>
+          <div className="bg-gray-50 rounded-2xl p-12 text-center">
+            <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">No Categories Yet</h2>
+            <p className="text-gray-500">Categories will appear here once they are added.</p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {categories.map((category) => {
-              const totalCategoryProducts =
-                category._count.products +
-                category.children.reduce((sum, child) => sum + child._count.products, 0);
+          <div className="space-y-12">
+            {/* Main Categories Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {categories.map((category) => {
+                const totalCategoryProducts =
+                  category._count.products +
+                  category.children.reduce((sum, child) => sum + child._count.products, 0);
 
-              return (
-                <div
-                  key={category.id}
-                  className="bg-white rounded-lg border border-gray-200 overflow-hidden"
-                >
-                  {/* Main Category Header */}
+                return (
                   <Link
+                    key={category.id}
                     href={`/categories/${category.slug}`}
-                    className="block group"
+                    className="group"
                   >
-                    <div className="flex items-center justify-between p-6 hover:bg-gray-50 transition-colors border-b border-gray-200">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                          {category.image ? (
-                            <img
-                              src={category.image}
-                              alt={category.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ShieldCheck className="w-8 h-8 text-gray-300" />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <h2 className="text-xl font-bold text-black group-hover:text-safety-green-600 transition-colors">
-                            {category.name}
-                          </h2>
-                          {category.description && (
-                            <p className="text-gray-600 text-sm mt-1 line-clamp-1">
-                              {category.description}
-                            </p>
-                          )}
-                          <p className="text-sm text-gray-500 mt-1">
-                            {totalCategoryProducts.toLocaleString()} products
-                          </p>
-                        </div>
+                    <div className="bg-white border border-gray-200 rounded-xl p-4 hover:border-safety-green-400 hover:shadow-lg transition-all duration-200">
+                      {/* Image */}
+                      <div className="aspect-square bg-white rounded-lg mb-3 overflow-hidden flex items-center justify-center">
+                        {category.image ? (
+                          <Image
+                            src={category.image}
+                            alt={category.name}
+                            width={150}
+                            height={150}
+                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                            quality={100}
+                            unoptimized
+                          />
+                        ) : (
+                          <Package className="w-16 h-16 text-gray-200" />
+                        )}
                       </div>
-                      <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-safety-green-600 transition-colors" />
+                      {/* Name */}
+                      <h2 className="text-sm font-semibold text-gray-900 text-center group-hover:text-safety-green-600 transition-colors line-clamp-2">
+                        {category.name}
+                      </h2>
+                      {/* Count */}
+                      <p className="text-xs text-gray-500 text-center mt-1">
+                        {totalCategoryProducts.toLocaleString()} items
+                      </p>
                     </div>
                   </Link>
+                );
+              })}
+            </div>
 
-                  {/* Subcategories Grid */}
-                  {category.children.length > 0 && (
-                    <div className="p-6">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {category.children.map((child) => (
-                          <Link
-                            key={child.id}
-                            href={`/categories/${child.slug}`}
-                            className="group"
-                          >
-                            <div className="bg-gray-50 rounded-lg p-4 hover:bg-safety-green-50 hover:border-safety-green-200 border border-transparent transition-all text-center">
-                              <div className="w-12 h-12 bg-white rounded-lg mx-auto mb-3 overflow-hidden shadow-sm">
-                                {child.image ? (
-                                  <img
-                                    src={child.image}
-                                    alt={child.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <ShieldCheck className="w-6 h-6 text-gray-300" />
-                                  </div>
-                                )}
-                              </div>
-                              <h3 className="text-sm font-medium text-black group-hover:text-safety-green-600 transition-colors line-clamp-2">
-                                {child.name}
-                              </h3>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {child._count.products} items
-                              </p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
+            {/* Categories with Subcategories */}
+            {categories.filter(cat => cat.children.length > 0).map((category) => (
+              <div key={`section-${category.id}`} className="bg-gray-50 rounded-2xl p-6 lg:p-8">
+                {/* Section Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-white rounded-xl overflow-hidden flex items-center justify-center shadow-sm">
+                      {category.image ? (
+                        <Image
+                          src={category.image}
+                          alt={category.name}
+                          width={56}
+                          height={56}
+                          className="w-full h-full object-contain"
+                          quality={100}
+                          unoptimized
+                        />
+                      ) : (
+                        <Package className="w-7 h-7 text-gray-300" />
+                      )}
                     </div>
-                  )}
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">{category.name}</h2>
+                      <p className="text-sm text-gray-500">
+                        {category.children.length} subcategories
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/categories/${category.slug}`}
+                    className="hidden sm:flex items-center gap-1 text-safety-green-600 hover:text-safety-green-700 font-medium text-sm"
+                  >
+                    View All
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
                 </div>
-              );
-            })}
+
+                {/* Subcategories Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {category.children.slice(0, 12).map((child) => (
+                    <Link
+                      key={child.id}
+                      href={`/categories/${child.slug}`}
+                      className="group"
+                    >
+                      <div className="bg-white rounded-xl p-3 hover:shadow-md transition-all duration-200 border border-gray-100 hover:border-safety-green-300">
+                        <div className="aspect-square bg-white rounded-lg mb-2 overflow-hidden flex items-center justify-center">
+                          {child.image ? (
+                            <Image
+                              src={child.image}
+                              alt={child.name}
+                              width={100}
+                              height={100}
+                              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                              quality={100}
+                              unoptimized
+                            />
+                          ) : (
+                            <Package className="w-10 h-10 text-gray-200" />
+                          )}
+                        </div>
+                        <h3 className="text-xs font-medium text-gray-800 text-center group-hover:text-safety-green-600 transition-colors line-clamp-2">
+                          {child.name}
+                        </h3>
+                        <p className="text-xs text-gray-400 text-center mt-0.5">
+                          {child._count.products} items
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* View All on Mobile */}
+                <div className="mt-4 text-center sm:hidden">
+                  <Link
+                    href={`/categories/${category.slug}`}
+                    className="inline-flex items-center gap-1 text-safety-green-600 font-medium text-sm"
+                  >
+                    View All {category.name}
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Shop All Products CTA */}
-        <div className="mt-12 bg-gradient-to-r from-safety-green-600 to-safety-green-700 rounded-lg p-8 text-center text-white">
-          <h2 className="text-2xl font-bold mb-2">Looking for Something Specific?</h2>
-          <p className="text-safety-green-100 mb-6">
-            Browse our complete catalog or use our advanced search
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/products"
-              className="inline-flex items-center justify-center px-6 py-3 bg-white text-safety-green-700 font-semibold rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              View All Products
-            </Link>
-            <Link
-              href="/products/advanced-search"
-              className="inline-flex items-center justify-center px-6 py-3 bg-safety-green-800 text-white font-semibold rounded-lg hover:bg-safety-green-900 transition-colors"
-            >
-              Advanced Search
-            </Link>
+        {/* CTA Section */}
+        <div className="mt-12 bg-gray-900 rounded-2xl p-8 lg:p-12">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-2xl lg:text-3xl font-bold text-white mb-3">
+              Can't Find What You're Looking For?
+            </h2>
+            <p className="text-gray-400 mb-8">
+              Use our advanced search or contact our team for assistance
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/products"
+                className="inline-flex items-center justify-center px-6 py-3 bg-safety-green-600 text-white font-semibold rounded-lg hover:bg-safety-green-700 transition-colors"
+              >
+                Browse All Products
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-flex items-center justify-center px-6 py-3 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors"
+              >
+                Contact Us
+              </Link>
+            </div>
           </div>
         </div>
       </div>
