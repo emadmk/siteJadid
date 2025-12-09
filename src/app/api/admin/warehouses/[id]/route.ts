@@ -44,7 +44,7 @@ export async function GET(
           },
         },
         // Products that have this warehouse as their defaultWarehouseId
-        products: {
+        defaultProducts: {
           select: {
             id: true,
             name: true,
@@ -178,7 +178,7 @@ export async function DELETE(
         _count: {
           select: {
             stock: true,
-            products: true,
+            defaultProducts: true,
           },
         },
       },
@@ -191,7 +191,7 @@ export async function DELETE(
       );
     }
 
-    if (warehouse._count.stock > 0 || warehouse._count.products > 0) {
+    if (warehouse._count.stock > 0 || warehouse._count.defaultProducts > 0) {
       return NextResponse.json(
         { error: 'Cannot delete warehouse with associated products' },
         { status: 400 }
