@@ -75,6 +75,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           accountType: user.accountType,
+          gsaApprovalStatus: user.gsaApprovalStatus,
           image: user.image,
         };
       },
@@ -86,6 +87,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.accountType = user.accountType;
+        token.gsaApprovalStatus = user.gsaApprovalStatus;
       }
       return token;
     },
@@ -94,6 +96,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as UserRole;
         session.user.accountType = token.accountType as AccountType;
+        session.user.gsaApprovalStatus = token.gsaApprovalStatus as any;
       }
       return session;
     },

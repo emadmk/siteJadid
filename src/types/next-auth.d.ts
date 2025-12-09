@@ -1,4 +1,4 @@
-import { UserRole, AccountType } from '@prisma/client';
+import { UserRole, AccountType, GSAApprovalStatus } from '@prisma/client';
 import 'next-auth';
 import 'next-auth/jwt';
 
@@ -7,6 +7,7 @@ declare module 'next-auth' {
     id: string;
     role: UserRole;
     accountType: AccountType;
+    gsaApprovalStatus?: GSAApprovalStatus | null;
   }
 
   interface Session {
@@ -17,6 +18,7 @@ declare module 'next-auth' {
       image?: string | null;
       role: UserRole;
       accountType: AccountType;
+      gsaApprovalStatus?: GSAApprovalStatus | null;
     };
   }
 }
@@ -26,5 +28,6 @@ declare module 'next-auth/jwt' {
     id: string;
     role: UserRole;
     accountType: AccountType;
+    gsaApprovalStatus?: GSAApprovalStatus | null;
   }
 }
