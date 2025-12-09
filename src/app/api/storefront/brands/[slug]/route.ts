@@ -46,7 +46,6 @@ function extractSmartFilters(products: { name: string; description: string | nul
 
       for (const keyword of keywords) {
         if (text.includes(keyword.toLowerCase())) {
-          // Normalize the keyword for display
           const normalizedKeyword = keyword.charAt(0).toUpperCase() + keyword.slice(1);
           filters[filterKey].add(normalizedKeyword);
         }
@@ -54,7 +53,6 @@ function extractSmartFilters(products: { name: string; description: string | nul
     }
   }
 
-  // Convert sets to arrays and filter out empty categories
   const result: Record<string, string[]> = {};
   for (const [key, values] of Object.entries(filters)) {
     if (values.size > 0) {
@@ -77,55 +75,45 @@ export async function GET(
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const search = searchParams.get('search');
-    const smartFilters = searchParams.get('filters'); // JSON string of active smart filters
+    const smartFilters = searchParams.get('filters');
+    const categorySlug = searchParams.get('category');
 
-    // Find the category
-    const category = await db.category.findUnique({
+    // Find the brand
+    const brand = await db.brand.findUnique({
       where: {
         slug: params.slug,
         isActive: true,
+      },
+    });
+
+    if (!brand) {
+      return NextResponse.json(
+        { error: 'Brand not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get categories that have products from this brand
+    const categories = await db.category.findMany({
+      where: {
+        isActive: true,
+        products: {
+          some: {
+            brandId: brand.id,
+            status: 'ACTIVE',
+            stockQuantity: { gt: 0 },
+          },
+        },
       },
       select: {
         id: true,
         name: true,
         slug: true,
-        description: true,
-        image: true,
-        parent: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        children: {
-          where: {
-            isActive: true,
-          },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            image: true,
-            _count: {
-              select: {
-                products: {
-                  where: {
-                    status: 'ACTIVE',
-                    stockQuantity: { gt: 0 },
-                  },
-                },
-              },
-            },
-          },
-          orderBy: {
-            displayOrder: 'asc',
-          },
-        },
         _count: {
           select: {
             products: {
               where: {
+                brandId: brand.id,
                 status: 'ACTIVE',
                 stockQuantity: { gt: 0 },
               },
@@ -133,24 +121,14 @@ export async function GET(
           },
         },
       },
+      orderBy: { name: 'asc' },
     });
-
-    if (!category) {
-      return NextResponse.json(
-        { error: 'Category not found' },
-        { status: 404 }
-      );
-    }
-
-    // Get all child category IDs for product search
-    const childCategoryIds = category.children.map((c) => c.id);
-    const categoryIds = [category.id, ...childCategoryIds];
 
     // Build product filter
     const where: any = {
       status: 'ACTIVE',
       stockQuantity: { gt: 0 },
-      categoryId: { in: categoryIds },
+      brandId: brand.id,
     };
 
     if (minPrice || maxPrice) {
@@ -159,7 +137,6 @@ export async function GET(
       if (maxPrice) where.basePrice.lte = parseFloat(maxPrice);
     }
 
-    // Add search filter
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -168,7 +145,16 @@ export async function GET(
       ];
     }
 
-    // Add smart filters
+    if (categorySlug) {
+      const category = await db.category.findUnique({
+        where: { slug: categorySlug },
+        select: { id: true },
+      });
+      if (category) {
+        where.categoryId = category.id;
+      }
+    }
+
     if (smartFilters) {
       try {
         const parsedFilters = JSON.parse(smartFilters) as Record<string, string[]>;
@@ -191,7 +177,7 @@ export async function GET(
           where.AND = filterConditions;
         }
       } catch (e) {
-        // Invalid JSON, ignore filters
+        // Invalid JSON, ignore
       }
     }
 
@@ -213,14 +199,10 @@ export async function GET(
       case 'rating':
         orderBy = { averageRating: 'desc' };
         break;
-      case 'newest':
-      default:
-        orderBy = { createdAt: 'desc' };
     }
 
     const skip = (page - 1) * limit;
 
-    // Fetch products with reviews aggregation
     const [products, total] = await Promise.all([
       db.product.findMany({
         where,
@@ -235,6 +217,12 @@ export async function GET(
           images: true,
           isFeatured: true,
           stockQuantity: true,
+          category: {
+            select: {
+              name: true,
+              slug: true,
+            },
+          },
           _count: {
             select: {
               reviews: {
@@ -250,7 +238,7 @@ export async function GET(
       db.product.count({ where }),
     ]);
 
-    // Get average ratings for products
+    // Get average ratings
     const productIds = products.map((p) => p.id);
     const reviewAggregates = await db.review.groupBy({
       by: ['productId'],
@@ -267,7 +255,6 @@ export async function GET(
       reviewAggregates.map((r) => [r.productId, r._avg.rating || 0])
     );
 
-    // Format products with ratings
     const formattedProducts = products.map((product) => ({
       id: product.id,
       sku: product.sku,
@@ -279,16 +266,17 @@ export async function GET(
       images: product.images as string[],
       isFeatured: product.isFeatured,
       stockQuantity: product.stockQuantity,
+      category: product.category,
       averageRating: ratingMap.get(product.id) || 0,
       reviewCount: product._count.reviews,
     }));
 
-    // Get all products for smart filter extraction (without pagination)
+    // Get all products for smart filter extraction
     const allProductsForFilters = await db.product.findMany({
       where: {
         status: 'ACTIVE',
         stockQuantity: { gt: 0 },
-        categoryId: { in: categoryIds },
+        brandId: brand.id,
       },
       select: {
         name: true,
@@ -296,10 +284,8 @@ export async function GET(
       },
     });
 
-    // Extract smart filters from all products in this category
     const availableSmartFilters = extractSmartFilters(allProductsForFilters);
 
-    // Get filter labels for the response
     const smartFilterLabels: Record<string, string> = {};
     for (const key of Object.keys(availableSmartFilters)) {
       if (SMART_FILTER_PATTERNS[key]) {
@@ -308,18 +294,19 @@ export async function GET(
     }
 
     return NextResponse.json({
-      category,
+      brand,
       products: formattedProducts,
       total,
       pages: Math.ceil(total / limit),
       currentPage: page,
+      categories,
       smartFilters: availableSmartFilters,
       smartFilterLabels,
     });
   } catch (error: any) {
-    console.error('Category fetch error:', error);
+    console.error('Brand fetch error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch category' },
+      { error: 'Failed to fetch brand' },
       { status: 500 }
     );
   }
