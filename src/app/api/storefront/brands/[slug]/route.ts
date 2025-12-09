@@ -2,33 +2,114 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 // Smart filter keywords - these are extracted from product names/descriptions
-const SMART_FILTER_PATTERNS: Record<string, { keywords: string[]; label: string }> = {
+// Keywords map to their normalized display value
+const SMART_FILTER_PATTERNS: Record<string, { keywords: Record<string, string>; label: string }> = {
   gender: {
-    keywords: ["men's", "mens", "men", "women's", "womens", "women", "unisex", "ladies", "male", "female"],
+    keywords: {
+      "men's": "Men",
+      "mens": "Men",
+      "men": "Men",
+      "male": "Men",
+      "women's": "Women",
+      "womens": "Women",
+      "women": "Women",
+      "ladies": "Women",
+      "female": "Women",
+      "unisex": "Unisex",
+    },
     label: 'Gender',
   },
   toeType: {
-    keywords: ['steel toe', 'soft toe', 'composite toe', 'safety toe', 'alloy toe', 'carbon toe'],
+    keywords: {
+      'steel toe': 'Steel Toe',
+      'soft toe': 'Soft Toe',
+      'composite toe': 'Composite Toe',
+      'safety toe': 'Safety Toe',
+      'alloy toe': 'Alloy Toe',
+      'carbon toe': 'Carbon Toe',
+    },
     label: 'Toe Type',
   },
   material: {
-    keywords: ['leather', 'rubber', 'synthetic', 'nylon', 'polyester', 'cotton', 'kevlar', 'neoprene', 'latex', 'nitrile', 'vinyl', 'fleece'],
+    keywords: {
+      'leather': 'Leather',
+      'rubber': 'Rubber',
+      'synthetic': 'Synthetic',
+      'nylon': 'Nylon',
+      'polyester': 'Polyester',
+      'cotton': 'Cotton',
+      'kevlar': 'Kevlar',
+      'neoprene': 'Neoprene',
+      'latex': 'Latex',
+      'nitrile': 'Nitrile',
+      'vinyl': 'Vinyl',
+      'fleece': 'Fleece',
+    },
     label: 'Material',
   },
   size: {
-    keywords: ['small', 'medium', 'large', 'xl', 'xxl', 'xxxl', 'one size'],
+    keywords: {
+      'small': 'Small',
+      'medium': 'Medium',
+      'large': 'Large',
+      'xl': 'XL',
+      'xxl': 'XXL',
+      'xxxl': 'XXXL',
+      'one size': 'One Size',
+    },
     label: 'Size',
   },
   color: {
-    keywords: ['black', 'white', 'red', 'blue', 'green', 'yellow', 'orange', 'brown', 'gray', 'grey', 'navy', 'hi-vis', 'hi vis', 'high visibility'],
+    keywords: {
+      'black': 'Black',
+      'white': 'White',
+      'red': 'Red',
+      'blue': 'Blue',
+      'green': 'Green',
+      'yellow': 'Yellow',
+      'orange': 'Orange',
+      'brown': 'Brown',
+      'gray': 'Gray',
+      'grey': 'Gray',
+      'navy': 'Navy',
+      'hi-vis': 'Hi-Vis',
+      'hi vis': 'Hi-Vis',
+      'high visibility': 'Hi-Vis',
+    },
     label: 'Color',
   },
   protection: {
-    keywords: ['waterproof', 'water resistant', 'fire resistant', 'fr', 'flame resistant', 'cut resistant', 'puncture resistant', 'slip resistant', 'non-slip', 'anti-slip', 'insulated', 'thermal'],
+    keywords: {
+      'waterproof': 'Waterproof',
+      'water resistant': 'Water Resistant',
+      'fire resistant': 'Fire Resistant',
+      'fr': 'Fire Resistant',
+      'flame resistant': 'Fire Resistant',
+      'cut resistant': 'Cut Resistant',
+      'puncture resistant': 'Puncture Resistant',
+      'slip resistant': 'Slip Resistant',
+      'non-slip': 'Slip Resistant',
+      'anti-slip': 'Slip Resistant',
+      'insulated': 'Insulated',
+      'thermal': 'Thermal',
+    },
     label: 'Protection',
   },
   style: {
-    keywords: ['boot', 'shoe', 'sneaker', 'loafer', 'oxford', 'hiker', 'athletic', 'work boot', '6 inch', '6"', '8 inch', '8"'],
+    keywords: {
+      'boot': 'Boot',
+      'shoe': 'Shoe',
+      'sneaker': 'Sneaker',
+      'loafer': 'Loafer',
+      'oxford': 'Oxford',
+      'hiker': 'Hiker',
+      'athletic': 'Athletic',
+      'work boot': 'Work Boot',
+      '6 inch': '6 Inch',
+      '6"': '6 Inch',
+      '8 inch': '8 Inch',
+      '8"': '8 Inch',
+    },
     label: 'Style',
   },
 };
@@ -44,10 +125,11 @@ function extractSmartFilters(products: { name: string; description: string | nul
         filters[filterKey] = new Set();
       }
 
-      for (const keyword of keywords) {
-        if (text.includes(keyword.toLowerCase())) {
-          const normalizedKeyword = keyword.charAt(0).toUpperCase() + keyword.slice(1);
-          filters[filterKey].add(normalizedKeyword);
+      // keywords is now a Record<string, string> where key is the search term and value is the normalized display name
+      for (const [searchTerm, displayName] of Object.entries(keywords)) {
+        if (text.includes(searchTerm.toLowerCase())) {
+          // Add the normalized display name (this prevents duplicates like Men/Men's)
+          filters[filterKey].add(displayName);
         }
       }
     }
