@@ -119,28 +119,33 @@ export async function PUT(
       }
     }
 
+    // Convert empty strings to null for Decimal fields
+    const sanitizedRating = rating === '' || rating === null || rating === undefined ? null : parseFloat(rating);
+    const sanitizedOnTimeDeliveryRate = onTimeDeliveryRate === '' || onTimeDeliveryRate === null || onTimeDeliveryRate === undefined ? null : parseFloat(onTimeDeliveryRate);
+    const sanitizedQualityRating = qualityRating === '' || qualityRating === null || qualityRating === undefined ? null : parseFloat(qualityRating);
+
     const supplier = await prisma.supplier.update({
       where: { id: params.id },
       data: {
         name,
         code,
-        email,
-        phone,
-        website,
-        address,
-        city,
-        state,
+        email: email || null,
+        phone: phone || null,
+        website: website || null,
+        address: address || null,
+        city: city || null,
+        state: state || null,
         country,
-        zipCode,
-        taxId,
-        businessLicense,
-        rating,
-        onTimeDeliveryRate,
-        qualityRating,
+        zipCode: zipCode || null,
+        taxId: taxId || null,
+        businessLicense: businessLicense || null,
+        rating: sanitizedRating,
+        onTimeDeliveryRate: sanitizedOnTimeDeliveryRate,
+        qualityRating: sanitizedQualityRating,
         paymentTerms,
         currency,
         status,
-        notes,
+        notes: notes || null,
       },
     });
 

@@ -217,15 +217,14 @@ export default async function WarehousesPage() {
                 const totalValue = valueFromStock + valueFromProducts;
 
                 return (
-                  <div key={warehouse.id} className="p-6 hover:bg-gray-50 cursor-pointer" onClick={() => window.location.href = `/admin/warehouses/${warehouse.id}`}>
+                  <Link key={warehouse.id} href={`/admin/warehouses/${warehouse.id}`} className="block p-6 hover:bg-gray-50">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <Link
-                          href={`/admin/warehouses/${warehouse.id}`}
+                        <span
                           className="text-lg font-semibold text-black hover:text-safety-green-700 mb-1"
                         >
                           {warehouse.name}
-                        </Link>
+                        </span>
                         <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                           <MapPin className="w-4 h-4" />
                           {warehouse.address}, {warehouse.city}, {warehouse.state} {warehouse.zipCode}
@@ -256,7 +255,7 @@ export default async function WarehousesPage() {
                         <div className="text-lg font-semibold text-black">${totalValue.toFixed(0)}</div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
 
