@@ -56,6 +56,7 @@ interface Product {
     id: string;
     name: string;
     slug: string;
+    logo?: string | null;
   };
 }
 
@@ -689,6 +690,12 @@ function ProductGridCard({
               alt={product.name}
               className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform"
             />
+          ) : product.brand?.logo ? (
+            <img
+              src={product.brand.logo}
+              alt={product.brand.name}
+              className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform opacity-70"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-50">
               <ShieldCheck className="w-16 h-16 text-gray-300" />
@@ -827,6 +834,12 @@ function ProductListCard({
               src={getImageSize(product.images[0], 'medium')}
               alt={product.name}
               className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform"
+            />
+          ) : product.brand?.logo ? (
+            <img
+              src={product.brand.logo}
+              alt={product.brand.name}
+              className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform opacity-70"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-50">

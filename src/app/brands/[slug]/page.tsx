@@ -611,6 +611,7 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
                       <ProductGridCard
                         key={product.id}
                         product={product}
+                        brandLogo={data.brand.logo}
                         isInWishlist={isInWishlist(product.id)}
                         addingToCart={addingToCart === product.id}
                         onAddToCart={(e) => handleAddToCart(product, e)}
@@ -624,6 +625,7 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
                       <ProductListCard
                         key={product.id}
                         product={product}
+                        brandLogo={data.brand.logo}
                         isInWishlist={isInWishlist(product.id)}
                         addingToCart={addingToCart === product.id}
                         onAddToCart={(e) => handleAddToCart(product, e)}
@@ -699,12 +701,14 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
 
 function ProductGridCard({
   product,
+  brandLogo,
   isInWishlist,
   addingToCart,
   onAddToCart,
   onToggleWishlist,
 }: {
   product: Product;
+  brandLogo?: string | null;
   isInWishlist: boolean;
   addingToCart: boolean;
   onAddToCart: (e: React.MouseEvent) => void;
@@ -721,6 +725,12 @@ function ProductGridCard({
               src={getImageSize(product.images[0], 'medium')}
               alt={product.name}
               className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform"
+            />
+          ) : brandLogo ? (
+            <img
+              src={brandLogo}
+              alt="Brand"
+              className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform opacity-70"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-50">
@@ -816,12 +826,14 @@ function ProductGridCard({
 
 function ProductListCard({
   product,
+  brandLogo,
   isInWishlist,
   addingToCart,
   onAddToCart,
   onToggleWishlist,
 }: {
   product: Product;
+  brandLogo?: string | null;
   isInWishlist: boolean;
   addingToCart: boolean;
   onAddToCart: (e: React.MouseEvent) => void;
@@ -838,6 +850,12 @@ function ProductListCard({
               src={getImageSize(product.images[0], 'medium')}
               alt={product.name}
               className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform"
+            />
+          ) : brandLogo ? (
+            <img
+              src={brandLogo}
+              alt="Brand"
+              className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform opacity-70"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-50">

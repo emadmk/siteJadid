@@ -19,13 +19,26 @@ async function getWarehouseData() {
                 sku: true,
                 costPrice: true,
                 basePrice: true,
+                stockQuantity: true,
               },
             },
+          },
+        },
+        // Count products that have this warehouse as their default warehouse
+        products: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            costPrice: true,
+            basePrice: true,
+            stockQuantity: true,
           },
         },
         _count: {
           select: {
             stock: true,
+            products: true, // Count products with defaultWarehouseId = this warehouse
           },
         },
       },
@@ -70,18 +83,33 @@ async function getWarehouseData() {
     }),
   ]);
 
+  // Calculate total stock from both WarehouseStock and products with defaultWarehouseId
   const totalStock = warehouses.reduce((sum, warehouse) => {
-    return sum + warehouse.stock.reduce((s, stock) => s + stock.quantity, 0);
+    // Stock from WarehouseStock records
+    const stockFromRecords = warehouse.stock.reduce((s, stock) => s + stock.quantity, 0);
+    // Stock from products with defaultWarehouseId (if not already counted in stock records)
+    const stockProductIds = new Set(warehouse.stock.map(s => s.product.id));
+    const stockFromProducts = warehouse.products
+      .filter(p => !stockProductIds.has(p.id))
+      .reduce((s, p) => s + (p.stockQuantity || 0), 0);
+    return sum + stockFromRecords + stockFromProducts;
   }, 0);
 
   const totalValue = warehouses.reduce((sum, warehouse) => {
-    return (
-      sum +
-      warehouse.stock.reduce((s, stock) => {
-        const cost = stock.product.costPrice || stock.product.basePrice || 0;
-        return s + stock.quantity * Number(cost);
-      }, 0)
-    );
+    // Value from WarehouseStock records
+    const valueFromRecords = warehouse.stock.reduce((s, stock) => {
+      const cost = stock.product.costPrice || stock.product.basePrice || 0;
+      return s + stock.quantity * Number(cost);
+    }, 0);
+    // Value from products with defaultWarehouseId (if not already counted)
+    const stockProductIds = new Set(warehouse.stock.map(s => s.product.id));
+    const valueFromProducts = warehouse.products
+      .filter(p => !stockProductIds.has(p.id))
+      .reduce((s, p) => {
+        const cost = p.costPrice || p.basePrice || 0;
+        return s + (p.stockQuantity || 0) * Number(cost);
+      }, 0);
+    return sum + valueFromRecords + valueFromProducts;
   }, 0);
 
   return { warehouses, transfers, lowStockProducts, totalStock, totalValue };
@@ -162,17 +190,34 @@ export default async function WarehousesPage() {
 
             <div className="divide-y">
               {warehouses.map((warehouse) => {
-                const totalUnits = warehouse.stock.reduce((sum, s) => sum + s.quantity, 0);
-                const totalValue = warehouse.stock.reduce(
-                  (sum, s) => {
-                    const cost = s.product.costPrice || s.product.basePrice || 0;
-                    return sum + s.quantity * Number(cost);
-                  },
-                  0
-                );
+                // Get IDs of products already counted in stock records
+                const stockProductIds = new Set(warehouse.stock.map(s => s.product.id));
+                // Products from defaultWarehouseId that aren't already in stock records
+                const additionalProducts = warehouse.products.filter(p => !stockProductIds.has(p.id));
+
+                // Total product count = stock records + additional products with defaultWarehouseId
+                const productCount = warehouse._count.stock + additionalProducts.length;
+
+                // Total units from stock records
+                const unitsFromStock = warehouse.stock.reduce((sum, s) => sum + s.quantity, 0);
+                // Total units from additional products
+                const unitsFromProducts = additionalProducts.reduce((sum, p) => sum + (p.stockQuantity || 0), 0);
+                const totalUnits = unitsFromStock + unitsFromProducts;
+
+                // Total value from stock records
+                const valueFromStock = warehouse.stock.reduce((sum, s) => {
+                  const cost = s.product.costPrice || s.product.basePrice || 0;
+                  return sum + s.quantity * Number(cost);
+                }, 0);
+                // Total value from additional products
+                const valueFromProducts = additionalProducts.reduce((sum, p) => {
+                  const cost = p.costPrice || p.basePrice || 0;
+                  return sum + (p.stockQuantity || 0) * Number(cost);
+                }, 0);
+                const totalValue = valueFromStock + valueFromProducts;
 
                 return (
-                  <div key={warehouse.id} className="p-6 hover:bg-gray-50">
+                  <div key={warehouse.id} className="p-6 hover:bg-gray-50 cursor-pointer" onClick={() => window.location.href = `/admin/warehouses/${warehouse.id}`}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <Link
@@ -200,7 +245,7 @@ export default async function WarehousesPage() {
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <div className="text-sm text-gray-600">Products</div>
-                        <div className="text-lg font-semibold text-black">{warehouse._count.stock}</div>
+                        <div className="text-lg font-semibold text-black">{productCount}</div>
                       </div>
                       <div>
                         <div className="text-sm text-gray-600">Total Units</div>

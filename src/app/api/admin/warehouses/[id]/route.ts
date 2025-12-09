@@ -14,10 +14,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supplier = await prisma.supplier.findUnique({
+    const warehouse = await prisma.warehouse.findUnique({
       where: { id: params.id },
       include: {
-        products: {
+        stock: {
           include: {
             product: {
               select: {
@@ -26,35 +26,61 @@ export async function GET(
                 sku: true,
                 images: true,
                 stockQuantity: true,
+                costPrice: true,
+                basePrice: true,
+                brand: {
+                  select: {
+                    name: true,
+                    logo: true,
+                  },
+                },
+                category: {
+                  select: {
+                    name: true,
+                  },
+                },
               },
             },
           },
         },
-        purchaseOrders: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        },
-        _count: {
+        // Products that have this warehouse as their defaultWarehouseId
+        products: {
           select: {
-            products: true,
-            purchaseOrders: true,
+            id: true,
+            name: true,
+            sku: true,
+            images: true,
+            stockQuantity: true,
+            costPrice: true,
+            basePrice: true,
+            brand: {
+              select: {
+                name: true,
+                logo: true,
+              },
+            },
+            category: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
       },
     });
 
-    if (!supplier) {
+    if (!warehouse) {
       return NextResponse.json(
-        { error: 'Supplier not found' },
+        { error: 'Warehouse not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(supplier);
+    return NextResponse.json(warehouse);
   } catch (error) {
-    console.error('Error fetching supplier:', error);
+    console.error('Error fetching warehouse:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch supplier' },
+      { error: 'Failed to fetch warehouse' },
       { status: 500 }
     );
   }
@@ -74,81 +100,62 @@ export async function PUT(
     const body = await request.json();
 
     const {
-      name,
       code,
-      email,
-      phone,
-      website,
+      name,
       address,
       city,
       state,
-      country,
       zipCode,
-      taxId,
-      businessLicense,
-      rating,
-      onTimeDeliveryRate,
-      qualityRating,
-      paymentTerms,
-      currency,
-      status,
+      country,
+      phone,
+      email,
+      isPrimary,
+      isActive,
       notes,
     } = body;
 
-    const existingSupplier = await prisma.supplier.findUnique({
+    const existingWarehouse = await prisma.warehouse.findUnique({
       where: { id: params.id },
     });
 
-    if (!existingSupplier) {
+    if (!existingWarehouse) {
       return NextResponse.json(
-        { error: 'Supplier not found' },
+        { error: 'Warehouse not found' },
         { status: 404 }
       );
     }
 
-    if (code && code !== existingSupplier.code) {
-      const codeExists = await prisma.supplier.findUnique({
-        where: { code },
+    // If setting as primary, unset other primary warehouses
+    if (isPrimary && !existingWarehouse.isPrimary) {
+      await prisma.warehouse.updateMany({
+        where: { isPrimary: true },
+        data: { isPrimary: false },
       });
-
-      if (codeExists) {
-        return NextResponse.json(
-          { error: 'Supplier code already exists' },
-          { status: 400 }
-        );
-      }
     }
 
-    const supplier = await prisma.supplier.update({
+    const warehouse = await prisma.warehouse.update({
       where: { id: params.id },
       data: {
-        name,
         code,
-        email,
-        phone,
-        website,
+        name,
         address,
         city,
         state,
-        country,
         zipCode,
-        taxId,
-        businessLicense,
-        rating,
-        onTimeDeliveryRate,
-        qualityRating,
-        paymentTerms,
-        currency,
-        status,
+        country,
+        phone,
+        email,
+        isPrimary,
+        isActive,
         notes,
       },
     });
 
-    return NextResponse.json(supplier);
+    return NextResponse.json(warehouse);
   } catch (error) {
-    console.error('Error updating supplier:', error);
+    console.error('Error updating warehouse:', error);
     return NextResponse.json(
-      { error: 'Failed to update supplier' },
+      { error: 'Failed to update warehouse' },
       { status: 500 }
     );
   }
@@ -161,48 +168,45 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER'].includes(session.user.role)) {
+    if (!session || !['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supplier = await prisma.supplier.findUnique({
+    const warehouse = await prisma.warehouse.findUnique({
       where: { id: params.id },
       include: {
         _count: {
           select: {
+            stock: true,
             products: true,
-            purchaseOrders: true,
           },
         },
       },
     });
 
-    if (!supplier) {
+    if (!warehouse) {
       return NextResponse.json(
-        { error: 'Supplier not found' },
+        { error: 'Warehouse not found' },
         { status: 404 }
       );
     }
 
-    if (supplier._count.products > 0 || supplier._count.purchaseOrders > 0) {
+    if (warehouse._count.stock > 0 || warehouse._count.products > 0) {
       return NextResponse.json(
-        {
-          error:
-            'Cannot delete supplier with associated products or purchase orders',
-        },
+        { error: 'Cannot delete warehouse with associated products' },
         { status: 400 }
       );
     }
 
-    await prisma.supplier.delete({
+    await prisma.warehouse.delete({
       where: { id: params.id },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting supplier:', error);
+    console.error('Error deleting warehouse:', error);
     return NextResponse.json(
-      { error: 'Failed to delete supplier' },
+      { error: 'Failed to delete warehouse' },
       { status: 500 }
     );
   }

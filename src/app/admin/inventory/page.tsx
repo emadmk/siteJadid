@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { InventoryAdjustment } from '@/components/admin/InventoryAdjustment';
+import { VariantInventoryAdjustment } from '@/components/admin/VariantInventoryAdjustment';
 
 async function getInventory(searchParams: {
   search?: string;
@@ -645,15 +646,23 @@ export default async function InventoryPage({
                           ${inventoryValue.toFixed(2)}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <Link href={`/admin/products/${variant.product.id}/edit`}>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-gray-300 hover:border-blue-600 hover:text-blue-600"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </Link>
+                          <div className="flex items-center justify-end gap-2">
+                            <VariantInventoryAdjustment
+                              variantId={variant.id}
+                              variantName={variant.name}
+                              productName={variant.product.name}
+                              currentStock={variant.stockQuantity}
+                            />
+                            <Link href={`/admin/products/${variant.product.id}/edit`}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-gray-300 hover:border-blue-600 hover:text-blue-600"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     );

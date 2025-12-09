@@ -316,6 +316,14 @@ export async function GET(
           images: true,
           isFeatured: true,
           stockQuantity: true,
+          brand: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+            },
+          },
           _count: {
             select: {
               reviews: {
@@ -362,6 +370,7 @@ export async function GET(
       stockQuantity: product.stockQuantity,
       averageRating: ratingMap.get(product.id) || 0,
       reviewCount: product._count.reviews,
+      brand: product.brand,
     }));
 
     // Get all products for smart filter extraction (without pagination)
