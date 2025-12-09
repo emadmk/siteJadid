@@ -48,7 +48,7 @@ export default function GSAApprovalsPage() {
     }
   };
 
-  const handleApproval = async (userId: string, status: 'APPROVED' | 'REJECTED') => {
+  const handleApproval = async (userId: string, status: 'APPROVED' | 'REJECTED' | 'PENDING') => {
     setProcessingId(userId);
     try {
       const res = await fetch('/api/admin/gsa-approvals', {
