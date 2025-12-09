@@ -48,10 +48,10 @@ const footerLinks = {
     links: [
       { label: 'B2B Portal', href: '/b2b' },
       { label: 'GSA Advantage', href: '/gsa' },
-      { label: 'Bulk Orders', href: '/bulk-order' },
-      { label: 'Request Quote', href: '/quote' },
-      { label: 'Net Terms', href: '/net-terms' },
-      { label: 'Tax Exemption', href: '/tax-exemption' },
+      { label: 'Bulk Orders', href: '/b2b/bulk-orders' },
+      { label: 'Request Quote', href: '/b2b/request-quote' },
+      { label: 'Net Terms', href: '/b2b/net-terms' },
+      { label: 'Tax Exemption', href: '/b2b/tax-exemption' },
     ],
   },
   support: {

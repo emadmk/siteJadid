@@ -110,7 +110,7 @@ export function PromoSection() {
 
           {/* Quick Quote Card */}
           <Link
-            href="/quote"
+            href="/b2b/request-quote"
             className="group relative overflow-hidden rounded-xl bg-gray-900 p-6 lg:p-8 hover:bg-gray-800 transition-colors"
           >
             <div className="flex items-start gap-4">

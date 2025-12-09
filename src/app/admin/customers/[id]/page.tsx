@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft,
@@ -12,6 +14,7 @@ import {
   User,
 } from 'lucide-react';
 import { db } from '@/lib/db';
+import { UserManagement } from '@/components/admin/UserManagement';
 
 async function getCustomer(id: string) {
   const customer = await db.user.findUnique({
@@ -44,7 +47,7 @@ async function getCustomer(id: string) {
         },
       },
     },
-  });
+  }) as any; // Cast to include gsaDepartment
 
   if (!customer) {
     notFound();
@@ -58,6 +61,7 @@ export default async function CustomerDetailPage({
 }: {
   params: { id: string };
 }) {
+  const session = await getServerSession(authOptions);
   const customer = await getCustomer(params.id);
 
   const totalSpent = customer.orders.reduce(
@@ -383,6 +387,24 @@ export default async function CustomerDetailPage({
               </div>
             </div>
           </div>
+
+          {/* User Management - Edit/Delete */}
+          {session?.user && (
+            <UserManagement
+              user={{
+                id: customer.id,
+                name: customer.name,
+                email: customer.email,
+                phone: customer.phone,
+                role: customer.role,
+                accountType: customer.accountType,
+                gsaApprovalStatus: customer.gsaApprovalStatus,
+                gsaNumber: customer.gsaNumber,
+                gsaDepartment: customer.gsaDepartment,
+              }}
+              currentUserRole={session.user.role}
+            />
+          )}
         </div>
       </div>
     </div>

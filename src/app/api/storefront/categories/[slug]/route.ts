@@ -146,6 +146,40 @@ function extractSmartFilters(products: { name: string; description: string | nul
   return result;
 }
 
+// Recursive function to get all descendant category IDs
+async function getAllDescendantCategoryIds(categoryId: string): Promise<string[]> {
+  const children = await db.category.findMany({
+    where: {
+      parentId: categoryId,
+      isActive: true,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const childIds = children.map(c => c.id);
+  const grandchildIds: string[] = [];
+
+  for (const childId of childIds) {
+    const descendants = await getAllDescendantCategoryIds(childId);
+    grandchildIds.push(...descendants);
+  }
+
+  return [...childIds, ...grandchildIds];
+}
+
+// Get total product count for a category including all descendants
+async function getTotalProductCount(categoryIds: string[]): Promise<number> {
+  return db.product.count({
+    where: {
+      status: 'ACTIVE',
+      stockQuantity: { gt: 0 },
+      categoryId: { in: categoryIds },
+    },
+  });
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { slug: string } }
@@ -188,6 +222,10 @@ export async function GET(
             name: true,
             slug: true,
             image: true,
+            children: {
+              where: { isActive: true },
+              select: { id: true },
+            },
             _count: {
               select: {
                 products: {
@@ -223,9 +261,23 @@ export async function GET(
       );
     }
 
-    // Get all child category IDs for product search
-    const childCategoryIds = category.children.map((c) => c.id);
-    const categoryIds = [category.id, ...childCategoryIds];
+    // Get ALL descendant category IDs recursively for product search
+    const allDescendantIds = await getAllDescendantCategoryIds(category.id);
+    const categoryIds = [category.id, ...allDescendantIds];
+
+    // Calculate total products including all descendants for each child category
+    const childrenWithTotals = await Promise.all(
+      category.children.map(async (child) => {
+        const childDescendants = await getAllDescendantCategoryIds(child.id);
+        const totalProducts = await getTotalProductCount([child.id, ...childDescendants]);
+        return {
+          ...child,
+          _count: {
+            products: totalProducts,
+          },
+        };
+      })
+    );
 
     // Build product filter
     const where: any = {
@@ -397,8 +449,14 @@ export async function GET(
       }
     }
 
+    // Build category response with updated children counts
+    const categoryResponse = {
+      ...category,
+      children: childrenWithTotals.map(({ children, ...rest }) => rest), // Remove nested children from response
+    };
+
     return NextResponse.json({
-      category,
+      category: categoryResponse,
       products: formattedProducts,
       total,
       pages: Math.ceil(total / limit),
