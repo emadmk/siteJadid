@@ -69,6 +69,7 @@ export async function PUT(
         description: data.description || null,
         basePrice: data.basePrice,
         salePrice: data.salePrice,
+        wholesalePrice: data.wholesalePrice,
         gsaPrice: data.gsaPrice,
         costPrice: data.costPrice,
         stockQuantity: data.stockQuantity,

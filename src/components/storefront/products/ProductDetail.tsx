@@ -21,6 +21,7 @@ import {
   Building2,
   FileText,
   X,
+  Pencil,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddToCartButton } from '@/components/product/AddToCartButton';
@@ -29,6 +30,7 @@ import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { toast } from '@/lib/toast';
 import { getImageSize, getOptimizedImageUrl } from '@/lib/image-utils';
 import { VariantSelector } from './VariantSelector';
+import { ProductInlineEditor } from './ProductInlineEditor';
 
 interface Review {
   id: string;
@@ -80,6 +82,12 @@ interface Variant {
   attributeValues: AttributeValue[];
 }
 
+interface CategoryBreadcrumb {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface ProductDetailProps {
   product: {
     id: string;
@@ -87,19 +95,32 @@ interface ProductDetailProps {
     name: string;
     slug: string;
     description: string | null;
+    shortDescription: string | null;
     basePrice: number;
     salePrice: number | null;
     wholesalePrice: number | null;
     gsaPrice: number | null;
+    costPrice: number | null;
     images: string[];
     isFeatured: boolean;
+    isBestSeller: boolean;
+    isNewArrival: boolean;
     stockQuantity: number;
+    lowStockThreshold: number | null;
     weight: number | null;
     length: number | null;
     width: number | null;
     height: number | null;
     metaTitle: string | null;
     metaDescription: string | null;
+    metaKeywords: string | null;
+    status: string;
+    categoryId: string | null;
+    brandId: string | null;
+    defaultSupplierId: string | null;
+    defaultWarehouseId: string | null;
+    complianceCertifications: string[];
+    categoryHierarchy: CategoryBreadcrumb[];
     category: {
       id: string;
       name: string;
@@ -132,6 +153,10 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [showEditDrawer, setShowEditDrawer] = useState(false);
+
+  // Check if user is admin
+  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
 
   // Determine if product has variants
   const hasVariants = product.variants && product.variants.length > 0;
@@ -239,6 +264,46 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Admin Toolbar */}
+      {isAdmin && (
+        <div className="bg-gray-900 text-white">
+          <div className="container mx-auto px-4 py-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-xs bg-safety-green-600 px-2 py-1 rounded font-medium">
+                  Admin Mode
+                </span>
+                <span className="text-sm text-gray-400">
+                  Product ID: {product.id}
+                </span>
+                <span className="text-sm text-gray-400">
+                  Status: <span className={`font-medium ${
+                    product.status === 'ACTIVE' ? 'text-green-400' :
+                    product.status === 'DRAFT' ? 'text-yellow-400' :
+                    'text-red-400'
+                  }`}>{product.status}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowEditDrawer(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-safety-green-600 hover:bg-safety-green-700 text-white text-sm rounded-lg transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Quick Edit
+                </button>
+                <Link
+                  href={`/admin/products/${product.id}/edit`}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
+                >
+                  Full Edit
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-4">
@@ -250,17 +315,18 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
             <Link href="/products" className="text-gray-600 hover:text-safety-green-600">
               Products
             </Link>
-            {product.category && (
-              <>
+            {/* Show full category hierarchy */}
+            {product.categoryHierarchy && product.categoryHierarchy.map((cat) => (
+              <span key={cat.id} className="flex items-center gap-2">
                 <ChevronRight className="w-4 h-4 text-gray-400" />
                 <Link
-                  href={`/categories/${product.category.slug}`}
+                  href={`/categories/${cat.slug}`}
                   className="text-gray-600 hover:text-safety-green-600"
                 >
-                  {product.category.name}
+                  {cat.name}
                 </Link>
-              </>
-            )}
+              </span>
+            ))}
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <span className="text-black font-medium line-clamp-1">{product.name}</span>
           </div>
@@ -382,9 +448,20 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-black">
-              {product.name}
-            </h1>
+            <div className="flex items-start gap-3">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-black flex-1">
+                {product.name}
+              </h1>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowEditDrawer(true)}
+                  className="p-2 bg-safety-green-100 hover:bg-safety-green-200 text-safety-green-700 rounded-lg transition-colors flex-shrink-0"
+                  title="Edit Product"
+                >
+                  <Pencil className="w-5 h-5" />
+                </button>
+              )}
+            </div>
 
             {/* Rating */}
             {product.reviews.length > 0 && (
@@ -944,6 +1021,15 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
             </form>
           </div>
         </div>
+      )}
+
+      {/* Product Inline Editor - Only for Admins */}
+      {isAdmin && (
+        <ProductInlineEditor
+          product={product}
+          isOpen={showEditDrawer}
+          onClose={() => setShowEditDrawer(false)}
+        />
       )}
     </div>
   );

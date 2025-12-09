@@ -9,6 +9,38 @@ interface ProductPageProps {
   };
 }
 
+// Helper function to get full category hierarchy
+async function getCategoryHierarchy(categoryId: string | null): Promise<Array<{ id: string; name: string; slug: string }>> {
+  if (!categoryId) return [];
+
+  const hierarchy: Array<{ id: string; name: string; slug: string }> = [];
+  let currentId: string | null = categoryId;
+
+  while (currentId) {
+    const category = await db.category.findUnique({
+      where: { id: currentId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        parentId: true,
+      },
+    });
+
+    if (!category) break;
+
+    hierarchy.unshift({
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+    });
+
+    currentId = category.parentId;
+  }
+
+  return hierarchy;
+}
+
 async function getProduct(slug: string) {
   const product = await db.product.findUnique({
     where: { slug },
@@ -57,26 +89,41 @@ async function getProduct(slug: string) {
 
   if (!product) return null;
 
+  // Get full category hierarchy
+  const categoryHierarchy = await getCategoryHierarchy(product.categoryId);
+
   return {
     id: product.id,
     sku: product.sku,
     name: product.name,
     slug: product.slug,
     description: product.description,
+    shortDescription: product.shortDescription,
     basePrice: Number(product.basePrice),
     salePrice: product.salePrice ? Number(product.salePrice) : null,
     wholesalePrice: product.wholesalePrice ? Number(product.wholesalePrice) : null,
     gsaPrice: product.gsaPrice ? Number(product.gsaPrice) : null,
+    costPrice: product.costPrice ? Number(product.costPrice) : null,
     images: product.images as string[],
     isFeatured: product.isFeatured,
+    isBestSeller: product.isBestSeller,
+    isNewArrival: product.isNewArrival,
     stockQuantity: product.stockQuantity,
+    lowStockThreshold: product.lowStockThreshold,
     weight: product.weight ? Number(product.weight) : null,
     length: product.length ? Number(product.length) : null,
     width: product.width ? Number(product.width) : null,
     height: product.height ? Number(product.height) : null,
     metaTitle: product.metaTitle,
     metaDescription: product.metaDescription,
+    metaKeywords: product.metaKeywords,
     status: product.status,
+    categoryId: product.categoryId,
+    brandId: product.brandId,
+    defaultSupplierId: product.defaultSupplierId,
+    defaultWarehouseId: product.defaultWarehouseId,
+    complianceCertifications: product.complianceCertifications as string[],
+    categoryHierarchy,
     category: product.category
       ? {
           id: product.category.id,
