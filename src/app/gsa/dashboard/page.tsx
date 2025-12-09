@@ -12,7 +12,7 @@ export default async function GSADashboardPage() {
     where: { userId: session.user.id },
   });
 
-  if (!gsaProfile) redirect('/dashboard');
+  if (!gsaProfile) redirect('/account');
 
   return (
     <div className="p-8">

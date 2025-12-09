@@ -76,7 +76,7 @@ export default async function QuotesPage() {
 
   const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'];
   if (!adminRoles.includes(session.user.role as string)) {
-    redirect('/dashboard');
+    redirect('/account');
   }
 
   const [quotes, stats] = await Promise.all([getQuotes(), getQuoteStats()]);

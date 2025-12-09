@@ -98,9 +98,9 @@ export function Header() {
                 </div>
 
                 <div className="hidden lg:flex items-center gap-2">
-                  <Link href="/dashboard">
+                  <Link href="/account">
                     <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-100">
-                      Dashboard
+                      My Account
                     </Button>
                   </Link>
                   {isAdmin && (
@@ -203,9 +203,9 @@ export function Header() {
                       </span>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                      <Link href="/account" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="outline" size="sm" className="w-full justify-start">
-                          Dashboard
+                          My Account
                         </Button>
                       </Link>
                       {isAdmin && (

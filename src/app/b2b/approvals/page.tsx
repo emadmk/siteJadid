@@ -103,13 +103,13 @@ export default async function ApprovalsPage() {
   }
 
   if (session.user.accountType !== 'B2B') {
-    redirect('/dashboard');
+    redirect('/account');
   }
 
   const data = await getApprovalData(session.user.id);
 
   if (!data) {
-    redirect('/dashboard');
+    redirect('/account');
   }
 
   const { pendingApprovals, myRequests } = data;

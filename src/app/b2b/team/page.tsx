@@ -46,13 +46,13 @@ export default async function B2BTeamPage() {
   }
 
   if (session.user.accountType !== 'B2B') {
-    redirect('/dashboard');
+    redirect('/account');
   }
 
   const { b2bProfile } = await getTeamData(session.user.id);
 
   if (!b2bProfile) {
-    redirect('/dashboard');
+    redirect('/account');
   }
 
   // Check if user is admin

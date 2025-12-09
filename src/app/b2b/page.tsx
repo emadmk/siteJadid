@@ -206,7 +206,7 @@ export default async function B2BDashboardPage() {
   const data = await getB2BData(session.user.id);
 
   if (!data) {
-    redirect('/dashboard');
+    redirect('/account');
   }
 
   const { b2bProfile, recentOrders, pendingApprovals } = data;

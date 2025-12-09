@@ -18,7 +18,7 @@ export default async function AdminRootLayout({
   const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'CUSTOMER_SERVICE', 'WAREHOUSE_MANAGER', 'MARKETING_MANAGER', 'CONTENT_MANAGER'];
 
   if (!adminRoles.includes(session.user.role)) {
-    redirect('/dashboard');
+    redirect('/account');
   }
 
   return <AdminLayout>{children}</AdminLayout>;

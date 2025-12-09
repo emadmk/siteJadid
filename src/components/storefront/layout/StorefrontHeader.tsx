@@ -331,16 +331,16 @@ export function StorefrontHeader() {
               Contact us
             </Link>
 
-            {/* B2B/GSA Portal */}
-            {(isB2B || isGSA) && (
+            {/* B2B Portal - Only for B2B users */}
+            {isB2B && (
               <>
                 <div className="w-px h-6 bg-gray-200 mx-2"></div>
                 <Link
-                  href={isB2B ? '/b2b/dashboard' : '/gsa/dashboard'}
+                  href="/b2b/dashboard"
                   className="flex items-center gap-2 px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
                 >
                   <Building2 className="w-5 h-5" />
-                  {isB2B ? 'B2B Portal' : 'GSA Portal'}
+                  B2B Portal
                 </Link>
               </>
             )}

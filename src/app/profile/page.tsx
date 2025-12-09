@@ -101,9 +101,9 @@ export default async function ProfilePage() {
                 Manage your account settings and preferences
               </p>
             </div>
-            <Link href="/dashboard">
+            <Link href="/account">
               <Button variant="outline" className="bg-white text-safety-green-700 hover:bg-gray-100 border-0">
-                Back to Dashboard
+                Back to Account
               </Button>
             </Link>
           </div>
