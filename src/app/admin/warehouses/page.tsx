@@ -24,8 +24,8 @@ async function getWarehouseData() {
             },
           },
         },
-        // Count products that have this warehouse as their default warehouse
-        products: {
+        // Products that have this warehouse as their default warehouse
+        defaultProducts: {
           select: {
             id: true,
             name: true,
@@ -38,7 +38,7 @@ async function getWarehouseData() {
         _count: {
           select: {
             stock: true,
-            products: true, // Count products with defaultWarehouseId = this warehouse
+            defaultProducts: true, // Count products with defaultWarehouseId = this warehouse
           },
         },
       },
@@ -89,7 +89,7 @@ async function getWarehouseData() {
     const stockFromRecords = warehouse.stock.reduce((s, stock) => s + stock.quantity, 0);
     // Stock from products with defaultWarehouseId (if not already counted in stock records)
     const stockProductIds = new Set(warehouse.stock.map(s => s.product.id));
-    const stockFromProducts = warehouse.products
+    const stockFromProducts = warehouse.defaultProducts
       .filter(p => !stockProductIds.has(p.id))
       .reduce((s, p) => s + (p.stockQuantity || 0), 0);
     return sum + stockFromRecords + stockFromProducts;
@@ -103,7 +103,7 @@ async function getWarehouseData() {
     }, 0);
     // Value from products with defaultWarehouseId (if not already counted)
     const stockProductIds = new Set(warehouse.stock.map(s => s.product.id));
-    const valueFromProducts = warehouse.products
+    const valueFromProducts = warehouse.defaultProducts
       .filter(p => !stockProductIds.has(p.id))
       .reduce((s, p) => {
         const cost = p.costPrice || p.basePrice || 0;
@@ -193,7 +193,7 @@ export default async function WarehousesPage() {
                 // Get IDs of products already counted in stock records
                 const stockProductIds = new Set(warehouse.stock.map(s => s.product.id));
                 // Products from defaultWarehouseId that aren't already in stock records
-                const additionalProducts = warehouse.products.filter(p => !stockProductIds.has(p.id));
+                const additionalProducts = warehouse.defaultProducts.filter(p => !stockProductIds.has(p.id));
 
                 // Total product count = stock records + additional products with defaultWarehouseId
                 const productCount = warehouse._count.stock + additionalProducts.length;
