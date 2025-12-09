@@ -34,14 +34,25 @@ export default function RequestQuotePage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const res = await fetch('/api/quote-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-    // In production, this would send to an API endpoint
-    console.log('Quote request:', formData);
-
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+      if (res.ok) {
+        setIsSubmitted(true);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to submit quote request');
+      }
+    } catch (error) {
+      console.error('Error submitting quote request:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

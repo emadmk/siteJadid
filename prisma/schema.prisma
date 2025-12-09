@@ -62,6 +62,7 @@ model User {
   // GSA Fields
   gsaNumber           String?
   gsaApprovalStatus   GSAApprovalStatus?
+  gsaDepartment       String?             // DOW, DLA, USDA, NIH, GCSS-Army
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -1676,6 +1677,87 @@ enum QuoteStatus {
   REJECTED
   EXPIRED
   CONVERTED
+}
+
+enum QuoteRequestStatus {
+  PENDING
+  CONTACTED
+  CONVERTED
+  CLOSED
+}
+
+enum NetTermsApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  MORE_INFO_NEEDED
+}
+
+model NetTermsApplication {
+  id                String                      @id @default(cuid())
+
+  // Company Info
+  companyName       String
+  contactName       String
+  email             String
+  phone             String?
+  taxId             String
+
+  // Business Info
+  yearsInBusiness   String
+  annualRevenue     String
+  requestedTerms    String                      // "30", "45", "60"
+
+  // Credit References
+  creditReferences  String?
+  bankName          String?
+  bankContact       String?
+
+  // Status
+  status            NetTermsApplicationStatus   @default(PENDING)
+
+  // Admin fields
+  adminNotes        String?
+  approvedBy        String?
+  approvedAt        DateTime?
+  approvedTerms     Int?                        // Actual terms granted (30, 45, 60)
+  creditLimit       Decimal?                    @db.Decimal(12, 2)
+
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+
+  @@index([status])
+  @@index([email])
+}
+
+model QuoteRequest {
+  id              String             @id @default(cuid())
+
+  // Contact Info
+  companyName     String
+  contactName     String
+  email           String
+  phone           String?
+
+  // Request Details
+  products        String             // Products description
+  quantity        String             // Quantity range
+  timeline        String?            // Timeline preference
+  message         String?            // Additional message
+
+  // Status
+  status          QuoteRequestStatus @default(PENDING)
+
+  // Admin fields
+  adminNotes      String?
+  assignedTo      String?
+  convertedQuoteId String?
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([status])
+  @@index([email])
 }
 
 model Quote {

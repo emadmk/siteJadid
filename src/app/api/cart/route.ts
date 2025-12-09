@@ -125,13 +125,16 @@ export async function POST(request: NextRequest) {
       include: { b2bProfile: true, gsaProfile: true },
     });
 
+    // Check if user is approved GSA (must have accountType GSA AND gsaApprovalStatus APPROVED)
+    const isApprovedGSA = user?.accountType === 'GSA' && user?.gsaApprovalStatus === 'APPROVED';
+
     // Use variant prices if variant is selected, otherwise use product prices
     let price: number;
     if (variant) {
       // Use variant prices
       if (user?.accountType === 'B2B' && variant.wholesalePrice) {
         price = parseFloat(variant.wholesalePrice.toString());
-      } else if (user?.accountType === 'GSA' && variant.gsaPrice) {
+      } else if (isApprovedGSA && variant.gsaPrice) {
         price = parseFloat(variant.gsaPrice.toString());
       } else {
         price = parseFloat(variant.salePrice?.toString() || variant.basePrice.toString());
@@ -140,7 +143,7 @@ export async function POST(request: NextRequest) {
       // Use product prices
       if (user?.accountType === 'B2B' && product.wholesalePrice) {
         price = parseFloat(product.wholesalePrice.toString());
-      } else if (user?.accountType === 'GSA' && product.gsaPrice) {
+      } else if (isApprovedGSA && product.gsaPrice) {
         price = parseFloat(product.gsaPrice.toString());
       } else {
         price = parseFloat(product.salePrice?.toString() || product.basePrice.toString());

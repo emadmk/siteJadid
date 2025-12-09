@@ -43,13 +43,32 @@ export default function TaxExemptionPage() {
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      // First, upload the file (if you have a file upload endpoint)
+      // For now, we'll skip the file upload and submit the form data
+      // TODO: Implement file upload to cloud storage
 
-    console.log('Tax exemption application:', formData, selectedFile);
+      const res = await fetch('/api/tax-exemption', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          // certificateUrl will be added after file upload implementation
+        }),
+      });
 
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+      if (res.ok) {
+        setIsSubmitted(true);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to submit tax exemption request');
+      }
+    } catch (error) {
+      console.error('Error submitting tax exemption:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

@@ -16,6 +16,15 @@ export function AuthModal() {
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
+  // GSA Departments
+  const GSA_DEPARTMENTS = [
+    { value: 'DOW', label: 'Department of War (DOW)' },
+    { value: 'DLA', label: 'Defense Logistics Agency (DLA)' },
+    { value: 'USDA', label: 'US Department of Agriculture (USDA)' },
+    { value: 'NIH', label: 'National Institute of Health (NIH)' },
+    { value: 'GCSS-Army', label: 'Global Combat Support System-Army (GCSS-Army)' },
+  ];
+
   // Register form
   const [registerData, setRegisterData] = useState({
     name: '',
@@ -24,6 +33,7 @@ export function AuthModal() {
     confirmPassword: '',
     accountType: 'B2C' as 'B2C' | 'B2B' | 'GSA',
     companyName: '',
+    gsaDepartment: '',
   });
 
   // Forgot password form
@@ -83,6 +93,7 @@ export function AuthModal() {
           password: registerData.password,
           accountType: registerData.accountType,
           companyName: registerData.accountType !== 'B2C' ? registerData.companyName : undefined,
+          gsaDepartment: registerData.accountType === 'GSA' ? registerData.gsaDepartment : undefined,
         }),
       });
 
@@ -336,6 +347,28 @@ export function AuthModal() {
                       required
                     />
                   </div>
+                </div>
+              )}
+
+              {registerData.accountType === 'GSA' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
+                  <select
+                    value={registerData.gsaDepartment}
+                    onChange={(e) => setRegisterData({ ...registerData, gsaDepartment: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                    required
+                  >
+                    <option value="">Select your department</option>
+                    {GSA_DEPARTMENTS.map((dept) => (
+                      <option key={dept.value} value={dept.value}>
+                        {dept.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Your account will be pending admin approval
+                  </p>
                 </div>
               )}
 

@@ -3,6 +3,22 @@ import Image from 'next/image';
 import { ChevronRight, Package } from 'lucide-react';
 import { db } from '@/lib/db';
 
+interface ChildCategory {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  _count: {
+    products: number;
+  };
+  children: {
+    id: string;
+    _count: {
+      products: number;
+    };
+  }[];
+}
+
 interface CategoryWithChildren {
   id: string;
   name: string;
@@ -10,18 +26,21 @@ interface CategoryWithChildren {
   description: string | null;
   image: string | null;
   displayOrder: number;
-  children: {
-    id: string;
-    name: string;
-    slug: string;
-    image: string | null;
-    _count: {
-      products: number;
-    };
-  }[];
+  children: ChildCategory[];
   _count: {
     products: number;
   };
+}
+
+// Helper function to calculate total products including all nested children
+function getTotalProducts(category: CategoryWithChildren | ChildCategory): number {
+  let total = category._count.products;
+  if ('children' in category && category.children) {
+    for (const child of category.children) {
+      total += getTotalProducts(child as ChildCategory);
+    }
+  }
+  return total;
 }
 
 async function getCategories(): Promise<CategoryWithChildren[]> {
@@ -51,6 +70,20 @@ async function getCategories(): Promise<CategoryWithChildren[]> {
               products: true,
             },
           },
+          // Include grandchildren for counting
+          children: {
+            where: {
+              isActive: true,
+            },
+            select: {
+              id: true,
+              _count: {
+                select: {
+                  products: true,
+                },
+              },
+            },
+          },
         },
         orderBy: {
           displayOrder: 'asc',
@@ -67,15 +100,14 @@ async function getCategories(): Promise<CategoryWithChildren[]> {
     },
   });
 
-  return categories;
+  return categories as CategoryWithChildren[];
 }
 
 export default async function CategoriesPage() {
   const categories = await getCategories();
 
   const totalProducts = categories.reduce((acc, cat) => {
-    const childProducts = cat.children.reduce((sum, child) => sum + child._count.products, 0);
-    return acc + cat._count.products + childProducts;
+    return acc + getTotalProducts(cat);
   }, 0);
 
   return (
@@ -115,9 +147,7 @@ export default async function CategoriesPage() {
             {/* Main Categories Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {categories.map((category) => {
-                const totalCategoryProducts =
-                  category._count.products +
-                  category.children.reduce((sum, child) => sum + child._count.products, 0);
+                const totalCategoryProducts = getTotalProducts(category);
 
                 return (
                   <Link
@@ -221,7 +251,7 @@ export default async function CategoriesPage() {
                           {child.name}
                         </h3>
                         <p className="text-xs text-gray-400 text-center mt-0.5">
-                          {child._count.products} items
+                          {getTotalProducts(child)} items
                         </p>
                       </div>
                     </Link>

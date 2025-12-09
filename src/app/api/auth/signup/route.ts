@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
+// GSA Departments
+const GSA_DEPARTMENTS = ['DOW', 'DLA', 'USDA', 'NIH', 'GCSS-Army'] as const;
+
 // Validation schema
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -12,6 +15,7 @@ const signupSchema = z.object({
   accountType: z.enum(['B2C', 'B2B', 'GSA']).default('B2C'),
   companyName: z.string().optional(),
   taxId: z.string().optional(),
+  gsaDepartment: z.enum(GSA_DEPARTMENTS).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -53,6 +57,9 @@ export async function POST(req: NextRequest) {
         role: role,
         isActive: true,
         emailVerified: null,
+        // GSA-specific fields
+        gsaDepartment: validatedData.accountType === 'GSA' ? validatedData.gsaDepartment : null,
+        gsaApprovalStatus: validatedData.accountType === 'GSA' ? 'PENDING' : null,
       },
     });
 

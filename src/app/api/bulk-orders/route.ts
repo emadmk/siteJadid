@@ -117,11 +117,14 @@ export async function POST(request: NextRequest) {
             where: { id: session.user.id },
           });
 
+          // Check if user is approved GSA (must have accountType GSA AND gsaApprovalStatus APPROVED)
+          const isApprovedGSA = user?.accountType === 'GSA' && user?.gsaApprovalStatus === 'APPROVED';
+
           let price = parseFloat(product.salePrice?.toString() || product.basePrice.toString());
 
           if (user?.accountType === 'B2B' && product.wholesalePrice) {
             price = parseFloat(product.wholesalePrice.toString());
-          } else if (user?.accountType === 'GSA' && product.gsaPrice) {
+          } else if (isApprovedGSA && product.gsaPrice) {
             price = parseFloat(product.gsaPrice.toString());
           }
 
