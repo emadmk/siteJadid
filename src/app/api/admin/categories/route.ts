@@ -3,6 +3,44 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 
+// GET - List all categories
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '100');
+
+    const categories = await db.category.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        parentId: true,
+      },
+      orderBy: { name: 'asc' },
+      take: limit,
+    });
+
+    return NextResponse.json({ categories });
+  } catch (error: any) {
+    console.error('Fetch categories error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch categories' },
+      { status: 500 }
+    );
+  }
+}
+
 // POST - Create new category
 export async function POST(request: NextRequest) {
   try {

@@ -138,19 +138,35 @@ export default function BulkEditPage() {
       try {
         const [catRes, brandRes, whRes] = await Promise.all([
           fetch('/api/admin/categories?limit=100'),
-          fetch('/api/admin/brands?limit=100'),
+          fetch('/api/admin/brands'),
           fetch('/api/admin/warehouses'),
         ]);
 
-        const [catData, brandData, whData] = await Promise.all([
-          catRes.json(),
-          brandRes.json(),
-          whRes.json(),
-        ]);
+        // Parse responses
+        const catData = await catRes.json();
+        const brandData = await brandRes.json();
+        const whData = await whRes.json();
 
-        setCategories(catData.categories || []);
-        setBrands(brandData.brands || []);
-        setWarehouses(whData.warehouses || whData || []);
+        // Set categories with error check
+        if (catRes.ok && catData.categories) {
+          setCategories(catData.categories);
+        } else {
+          console.warn('Failed to fetch categories:', catData.error || 'Unknown error');
+        }
+
+        // Set brands with error check
+        if (brandRes.ok && brandData.brands) {
+          setBrands(brandData.brands);
+        } else {
+          console.warn('Failed to fetch brands:', brandData.error || 'Unknown error');
+        }
+
+        // Set warehouses with error check (warehouses API returns array directly)
+        if (whRes.ok) {
+          setWarehouses(Array.isArray(whData) ? whData : (whData.warehouses || []));
+        } else {
+          console.warn('Failed to fetch warehouses:', whData.error || 'Unknown error');
+        }
       } catch (error) {
         console.error('Failed to fetch filters:', error);
       }
