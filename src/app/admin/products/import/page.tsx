@@ -21,7 +21,11 @@ import {
   Tag,
   Warehouse,
   Truck,
+  Package,
+  Layers,
 } from 'lucide-react';
+
+type ImportType = 'gsa' | 'occunomix';
 
 interface Brand {
   id: string;
@@ -74,6 +78,9 @@ interface ImportResult {
 }
 
 export default function ProductImportPage() {
+  // Import type selection
+  const [importType, setImportType] = useState<ImportType>('occunomix');
+
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -189,7 +196,12 @@ export default function ProductImportPage() {
       formData.append('file', file);
       formData.append('options', JSON.stringify(options));
 
-      const response = await fetch('/api/admin/bulk-import', {
+      // Use different API based on import type
+      const apiUrl = importType === 'occunomix'
+        ? '/api/admin/occunomix-import'
+        : '/api/admin/bulk-import';
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         body: formData,
       });
@@ -261,33 +273,107 @@ export default function ProductImportPage() {
         </div>
       </div>
 
+      {/* Import Type Selector */}
+      <div className="mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
+          <button
+            onClick={() => {
+              setImportType('occunomix');
+              setFile(null);
+              setResult(null);
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              importType === 'occunomix'
+                ? 'bg-safety-green-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Package className="w-5 h-5" />
+            OccuNomix Import
+          </button>
+          <button
+            onClick={() => {
+              setImportType('gsa');
+              setFile(null);
+              setResult(null);
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              importType === 'gsa'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Layers className="w-5 h-5" />
+            GSA Import
+          </button>
+        </div>
+        <p className="mt-2 text-sm text-gray-500">
+          {importType === 'occunomix'
+            ? 'Import OccuNomix products with automatic category matching, variant detection, and image processing.'
+            : 'Import GSA products with custom field mapping and compliance data.'}
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Step 1: Download Template */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-safety-green-100 flex items-center justify-center flex-shrink-0">
-                <span className="text-safety-green-600 font-bold">1</span>
+          {/* Step 0: Select Import Type - Info Box */}
+          <div className={`rounded-lg border p-6 ${importType === 'occunomix' ? 'bg-safety-green-50 border-safety-green-200' : 'bg-blue-50 border-blue-200'}`}>
+            <h2 className={`text-lg font-semibold mb-3 ${importType === 'occunomix' ? 'text-safety-green-800' : 'text-blue-800'}`}>
+              {importType === 'occunomix' ? 'OccuNomix Import' : 'GSA Import'} Selected
+            </h2>
+            {importType === 'occunomix' ? (
+              <div className="space-y-2 text-sm text-safety-green-700">
+                <p><strong>Expected Columns:</strong> STYLE, Sku, Item Description, SubCategory, ADA site Price, LEV2, Images</p>
+                <p><strong>Features:</strong></p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Auto-detects variants from STYLE column</li>
+                  <li>Matches SubCategory with existing categories</li>
+                  <li>Creates missing categories automatically</li>
+                  <li>Parses semicolon-separated images</li>
+                  <li>Auto-generates SEO fields</li>
+                </ul>
               </div>
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-black mb-2">
-                  Download Template
-                </h2>
-                <p className="text-gray-600 mb-4">
-                  Get the Excel template with the correct column headers
-                </p>
-                <Button
-                  onClick={downloadTemplate}
-                  variant="outline"
-                  className="border-gray-300"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Template (.xlsx)
-                </Button>
+            ) : (
+              <div className="space-y-2 text-sm text-blue-700">
+                <p><strong>Expected Columns:</strong> Vendor Part Number, Item_name, Unit Price, GSA Price, Category, etc.</p>
+                <p><strong>Features:</strong></p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>GSA compliance fields (SIN, NSN)</li>
+                  <li>Custom field mapping support</li>
+                  <li>Multiple price tiers</li>
+                  <li>Image pattern matching</li>
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Step 1: Download Template - Only for GSA */}
+          {importType === 'gsa' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <span className="text-blue-600 font-bold">1</span>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold text-black mb-2">
+                    Download Template
+                  </h2>
+                  <p className="text-gray-600 mb-4">
+                    Get the Excel template with the correct column headers
+                  </p>
+                  <Button
+                    onClick={downloadTemplate}
+                    variant="outline"
+                    className="border-gray-300"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Template (.xlsx)
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Step 2: Prepare Images */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -335,15 +421,17 @@ export default function ProductImportPage() {
           {/* Step 3: Select Default Assignments */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-safety-green-100 flex items-center justify-center flex-shrink-0">
-                <span className="text-safety-green-600 font-bold">3</span>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${importType === 'occunomix' ? 'bg-safety-green-100' : 'bg-blue-100'}`}>
+                <span className={`font-bold ${importType === 'occunomix' ? 'text-safety-green-600' : 'text-blue-600'}`}>{importType === 'gsa' ? '2' : '1'}</span>
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-black mb-2">
-                  Select Default Assignments
+                  {importType === 'occunomix' ? 'Select Warehouse & Supplier' : 'Select Default Assignments'}
                 </h2>
                 <p className="text-gray-600 mb-4">
-                  All imported products will be assigned to these selections
+                  {importType === 'occunomix'
+                    ? 'Choose default warehouse and supplier for imported products'
+                    : 'All imported products will be assigned to these selections'}
                 </p>
 
                 {isLoadingDropdowns ? (
@@ -353,49 +441,53 @@ export default function ProductImportPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Brand Select */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                        <Tag className="w-4 h-4" />
-                        Brand
-                      </label>
-                      <select
-                        value={options.defaultBrandId}
-                        onChange={(e) =>
-                          setOptions({ ...options, defaultBrandId: e.target.value })
-                        }
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
-                      >
-                        <option value="">-- Select Brand --</option>
-                        {brands.map((brand) => (
-                          <option key={brand.id} value={brand.id}>
-                            {brand.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* Brand Select - Only for GSA */}
+                    {importType === 'gsa' && (
+                      <div>
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                          <Tag className="w-4 h-4" />
+                          Brand
+                        </label>
+                        <select
+                          value={options.defaultBrandId}
+                          onChange={(e) =>
+                            setOptions({ ...options, defaultBrandId: e.target.value })
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
+                        >
+                          <option value="">-- Select Brand --</option>
+                          {brands.map((brand) => (
+                            <option key={brand.id} value={brand.id}>
+                              {brand.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
-                    {/* Category Select */}
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                        <Building2 className="w-4 h-4" />
-                        Category
-                      </label>
-                      <select
-                        value={options.defaultCategoryId}
-                        onChange={(e) =>
-                          setOptions({ ...options, defaultCategoryId: e.target.value })
-                        }
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
-                      >
-                        <option value="">-- Select Category --</option>
-                        {categories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.parentId ? '└─ ' : ''}{category.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* Category Select - Only for GSA */}
+                    {importType === 'gsa' && (
+                      <div>
+                        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                          <Building2 className="w-4 h-4" />
+                          Category
+                        </label>
+                        <select
+                          value={options.defaultCategoryId}
+                          onChange={(e) =>
+                            setOptions({ ...options, defaultCategoryId: e.target.value })
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
+                        >
+                          <option value="">-- Select Category --</option>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.parentId ? '└─ ' : ''}{category.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
                     {/* Warehouse Select */}
                     <div>
