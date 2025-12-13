@@ -55,12 +55,12 @@ export async function POST(request: NextRequest) {
     // Create import job record
     const importJob = await prisma.bulkImportJob.create({
       data: {
-        type: 'OCCUNOMIX',
+        type: 'PRODUCTS',
         status: 'PROCESSING',
         fileName: file.name,
         fileSize: file.size,
         userId: session.user.id,
-        fieldMapping: { type: 'occunomix' },
+        fieldMapping: { importSource: 'occunomix' },
         options: options,
         startedAt: new Date(),
       },
@@ -169,7 +169,11 @@ export async function GET(request: NextRequest) {
     const jobs = await prisma.bulkImportJob.findMany({
       where: {
         userId: session.user.id,
-        type: 'OCCUNOMIX',
+        type: 'PRODUCTS',
+        fieldMapping: {
+          path: ['importSource'],
+          equals: 'occunomix',
+        },
       },
       orderBy: { createdAt: 'desc' },
       take: 20,
