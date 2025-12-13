@@ -25,6 +25,8 @@ import {
   CheckSquare,
   Square,
   RefreshCw,
+  ShoppingCart,
+  ChevronRight,
 } from 'lucide-react';
 
 interface Product {
@@ -70,7 +72,8 @@ type BulkAction =
   | 'move_warehouse'
   | 'update_status'
   | 'apply_discount'
-  | 'price_update';
+  | 'price_update'
+  | 'set_minimum_order';
 
 export default function BulkEditPage() {
   // Data states
@@ -105,6 +108,14 @@ export default function BulkEditPage() {
   const [discountValue, setDiscountValue] = useState('');
   const [priceField, setPriceField] = useState<'basePrice' | 'salePrice' | 'gsaPrice' | 'wholesalePrice'>('basePrice');
   const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [minimumOrderQty, setMinimumOrderQty] = useState('1');
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const ITEMS_PER_PAGE = 100;
 
   // Results
   const [result, setResult] = useState<{ success: boolean; message: string; affected?: number } | null>(null);
@@ -147,9 +158,12 @@ export default function BulkEditPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Fetch products
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
+  // Fetch products (initial load)
+  const fetchProducts = useCallback(async (resetPage = true) => {
+    if (resetPage) {
+      setLoading(true);
+      setPage(1);
+    }
     try {
       const params = new URLSearchParams();
       if (debouncedSearch) params.set('search', debouncedSearch);
@@ -157,17 +171,53 @@ export default function BulkEditPage() {
       if (filterBrand) params.set('brand', filterBrand);
       if (filterWarehouse) params.set('warehouse', filterWarehouse);
       if (filterStatus) params.set('status', filterStatus);
-      params.set('limit', '500');
+      params.set('limit', String(ITEMS_PER_PAGE));
+      params.set('page', '1');
 
       const res = await fetch(`/api/admin/products/bulk?${params}`);
       const data = await res.json();
       setProducts(data.products || []);
+      setTotalCount(data.total || data.products?.length || 0);
+      setHasMore((data.products?.length || 0) >= ITEMS_PER_PAGE);
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {
       setLoading(false);
     }
   }, [debouncedSearch, filterCategory, filterBrand, filterWarehouse, filterStatus]);
+
+  // Load more products
+  const loadMoreProducts = async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const params = new URLSearchParams();
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      if (filterCategory) params.set('category', filterCategory);
+      if (filterBrand) params.set('brand', filterBrand);
+      if (filterWarehouse) params.set('warehouse', filterWarehouse);
+      if (filterStatus) params.set('status', filterStatus);
+      params.set('limit', String(ITEMS_PER_PAGE));
+      params.set('page', String(nextPage));
+
+      const res = await fetch(`/api/admin/products/bulk?${params}`);
+      const data = await res.json();
+
+      if (data.products?.length > 0) {
+        setProducts(prev => [...prev, ...data.products]);
+        setPage(nextPage);
+        setHasMore(data.products.length >= ITEMS_PER_PAGE);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Failed to load more products:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // Fetch filter options
   useEffect(() => {
@@ -295,6 +345,11 @@ export default function BulkEditPage() {
             setSelectAll(false);
           }
           return;
+
+        case 'set_minimum_order':
+          body.action = 'set_minimum_order';
+          body.minimumOrderQty = parseInt(minimumOrderQty);
+          break;
       }
 
       const res = await fetch(endpoint, {
@@ -362,6 +417,7 @@ export default function BulkEditPage() {
     setTargetStatus('');
     setDiscountValue('');
     setExcelFile(null);
+    setMinimumOrderQty('1');
   };
 
   const statusColors: Record<string, string> = {
@@ -525,7 +581,8 @@ export default function BulkEditPage() {
           </button>
           <div className="h-6 w-px bg-white/20" />
           <span className="text-white/80">
-            <span className="font-bold text-white">{selectedIds.size}</span> of {products.length} selected
+            <span className="font-bold text-white">{selectedIds.size}</span> selected
+            <span className="ml-2 text-white/60">({products.length} loaded of {totalCount} total)</span>
           </span>
         </div>
 
@@ -558,6 +615,13 @@ export default function BulkEditPage() {
             >
               <Upload className="w-4 h-4" />
               Price Upload
+            </button>
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors"
+              onClick={() => setActiveModal('set_minimum_order')}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Min Order
             </button>
             <div className="h-6 w-px bg-white/20 mx-2" />
             <button
@@ -692,6 +756,30 @@ export default function BulkEditPage() {
                 ))}
               </tbody>
             </table>
+
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="p-4 border-t border-gray-200 flex justify-center">
+                <Button
+                  variant="outline"
+                  className="border-gray-300"
+                  onClick={loadMoreProducts}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <ChevronRight className="w-4 h-4 mr-2" />
+                      Load More ({products.length} of {totalCount})
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -940,6 +1028,41 @@ export default function BulkEditPage() {
               </>
             )}
 
+            {/* Set Minimum Order Modal */}
+            {activeModal === 'set_minimum_order' && (
+              <>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center">
+                    <ShoppingCart className="w-6 h-6 text-cyan-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Set Minimum Order Quantity</h3>
+                    <p className="text-sm text-gray-500">{selectedIds.size} products selected</p>
+                  </div>
+                </div>
+                <div className="space-y-4 mb-6">
+                  <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
+                    <p className="text-sm text-cyan-800">
+                      This will set the minimum quantity that customers must order for the selected products.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Minimum Order Quantity
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={minimumOrderQty}
+                      onChange={(e) => setMinimumOrderQty(e.target.value)}
+                      placeholder="Enter minimum quantity"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* Result Message */}
             {result && (
               <div className={`mb-4 p-4 rounded-lg ${result.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
@@ -978,7 +1101,8 @@ export default function BulkEditPage() {
                   (activeModal === 'move_warehouse' && !targetWarehouse) ||
                   (activeModal === 'update_status' && !targetStatus) ||
                   (activeModal === 'apply_discount' && !discountValue) ||
-                  (activeModal === 'price_update' && !excelFile)
+                  (activeModal === 'price_update' && !excelFile) ||
+                  (activeModal === 'set_minimum_order' && (!minimumOrderQty || parseInt(minimumOrderQty) < 1))
                 }
               >
                 {actionLoading ? (

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-// GET - Fetch products for bulk edit
+// GET - Fetch products for bulk edit with pagination
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
     const warehouse = searchParams.get('warehouse');
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '100');
+    const page = parseInt(searchParams.get('page') || '1');
+    const skip = (page - 1) * limit;
 
     const where: any = {};
 
@@ -44,6 +46,9 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
+    // Get total count for pagination
+    const total = await db.product.count({ where });
+
     const products = await db.product.findMany({
       where,
       select: {
@@ -68,10 +73,16 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { updatedAt: 'desc' },
+      skip,
       take: limit,
     });
 
-    return NextResponse.json({ products });
+    return NextResponse.json({
+      products,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     console.error('Error fetching products for bulk edit:', error);
     return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
@@ -205,6 +216,26 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: true,
           message: `Successfully applied discount to ${affected} product(s)`,
+          affected,
+        });
+      }
+
+      case 'set_minimum_order': {
+        const { minimumOrderQty } = params;
+
+        if (!minimumOrderQty || minimumOrderQty < 1) {
+          return NextResponse.json({ success: false, message: 'Minimum order quantity must be at least 1' }, { status: 400 });
+        }
+
+        const result = await db.product.updateMany({
+          where: { id: { in: productIds } },
+          data: { minimumOrderQty: parseInt(minimumOrderQty) },
+        });
+        affected = result.count;
+
+        return NextResponse.json({
+          success: true,
+          message: `Successfully set minimum order quantity to ${minimumOrderQty} for ${affected} product(s)`,
           affected,
         });
       }
