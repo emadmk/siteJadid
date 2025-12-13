@@ -82,6 +82,7 @@ export default function BulkEditPage() {
   const [filterBrand, setFilterBrand] = useState('');
   const [filterWarehouse, setFilterWarehouse] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -101,12 +102,20 @@ export default function BulkEditPage() {
   // Results
   const [result, setResult] = useState<{ success: boolean; message: string; affected?: number } | null>(null);
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   // Fetch products
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set('search', search);
+      if (debouncedSearch) params.set('search', debouncedSearch);
       if (filterCategory) params.set('category', filterCategory);
       if (filterBrand) params.set('brand', filterBrand);
       if (filterWarehouse) params.set('warehouse', filterWarehouse);
@@ -121,7 +130,7 @@ export default function BulkEditPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterCategory, filterBrand, filterWarehouse, filterStatus]);
+  }, [debouncedSearch, filterCategory, filterBrand, filterWarehouse, filterStatus]);
 
   // Fetch filter options
   useEffect(() => {
