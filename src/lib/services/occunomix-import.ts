@@ -103,12 +103,20 @@ export class OccuNomixImportService {
   async parseExcel(fileBuffer: Buffer | ArrayBuffer): Promise<ParsedOccuNomixRow[]> {
     const workbook = new ExcelJS.Workbook();
 
-    // Always create a fresh Buffer to satisfy ExcelJS types
-    const buffer = Buffer.isBuffer(fileBuffer)
-      ? Buffer.from(fileBuffer)
-      : Buffer.from(fileBuffer);
+    // Convert to ArrayBuffer which ExcelJS accepts
+    let arrayBuffer: ArrayBuffer;
+    if (Buffer.isBuffer(fileBuffer)) {
+      // Convert Buffer to ArrayBuffer
+      arrayBuffer = fileBuffer.buffer.slice(
+        fileBuffer.byteOffset,
+        fileBuffer.byteOffset + fileBuffer.byteLength
+      );
+    } else {
+      arrayBuffer = fileBuffer;
+    }
 
-    await workbook.xlsx.load(buffer as Buffer);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await workbook.xlsx.load(arrayBuffer as any);
 
     const worksheet = workbook.worksheets[0];
     if (!worksheet) {
