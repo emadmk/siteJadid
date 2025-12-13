@@ -707,9 +707,10 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
             {activeTab === 'description' && (
               <div className="prose max-w-none">
                 {product.description ? (
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {product.description}
-                  </p>
+                  <div
+                    className="text-gray-700 leading-relaxed [&>p]:mb-4 [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mt-6 [&>h3]:mb-2 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:mb-4 [&>li]:mb-1"
+                    dangerouslySetInnerHTML={{ __html: product.description }}
+                  />
                 ) : (
                   <p className="text-gray-500 italic">No description available.</p>
                 )}
