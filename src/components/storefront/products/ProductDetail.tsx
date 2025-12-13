@@ -107,6 +107,7 @@ interface ProductDetailProps {
     isNewArrival: boolean;
     stockQuantity: number;
     lowStockThreshold: number | null;
+    minimumOrderQty: number;
     weight: number | null;
     length: number | null;
     width: number | null;
@@ -585,12 +586,20 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
 
             {/* Add to Cart */}
             <div className="pt-4 border-t">
+              {product.minimumOrderQty > 1 && (
+                <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800">
+                    <strong>Minimum Order:</strong> {product.minimumOrderQty} units
+                  </p>
+                </div>
+              )}
               <AddToCartButton
                 productId={product.id}
                 variantId={selectedVariant?.id}
                 stockQuantity={currentStock}
                 showQuantitySelector={true}
                 disabled={hasVariants && !selectedVariant}
+                minimumQuantity={product.minimumOrderQty || 1}
               />
               {hasVariants && !selectedVariant && (
                 <p className="text-sm text-amber-600 mt-2">

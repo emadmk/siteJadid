@@ -40,6 +40,7 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
     // Inventory
     stockQuantity: product?.stockQuantity?.toString() || '0',
     lowStockThreshold: product?.lowStockThreshold?.toString() || '10',
+    minimumOrderQty: product?.minimumOrderQty?.toString() || '1',
 
     // Category, Brand & Status
     categoryId: product?.categoryId || '',
@@ -234,6 +235,7 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
           costPrice: formData.costPrice ? parseFloat(formData.costPrice) : null,
           stockQuantity: parseInt(formData.stockQuantity) || 0,
           lowStockThreshold: parseInt(formData.lowStockThreshold) || 10,
+          minimumOrderQty: parseInt(formData.minimumOrderQty) || 1,
           weight: formData.weight ? parseFloat(formData.weight) : null,
           length: formData.length ? parseFloat(formData.length) : null,
           width: formData.width ? parseFloat(formData.width) : null,
@@ -647,6 +649,19 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
               min="0"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Minimum Order Quantity
+            </label>
+            <input
+              type="number"
+              value={formData.minimumOrderQty}
+              onChange={(e) => setFormData(prev => ({ ...prev, minimumOrderQty: e.target.value }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+              min="1"
+            />
+            <p className="text-xs text-gray-500 mt-1">Minimum quantity customer must order</p>
           </div>
 
           <div>

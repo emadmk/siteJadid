@@ -110,6 +110,7 @@ async function getProduct(slug: string) {
     isNewArrival: product.isNewArrival,
     stockQuantity: product.stockQuantity,
     lowStockThreshold: product.lowStockThreshold,
+    minimumOrderQty: product.minimumOrderQty || 1,
     weight: product.weight ? Number(product.weight) : null,
     length: product.length ? Number(product.length) : null,
     width: product.width ? Number(product.width) : null,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, CheckCircle, Loader2, Minus, Plus } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
@@ -11,6 +11,7 @@ interface AddToCartButtonProps {
   stockQuantity: number;
   disabled?: boolean;
   showQuantitySelector?: boolean;
+  minimumQuantity?: number;
 }
 
 export function AddToCartButton({
@@ -19,11 +20,19 @@ export function AddToCartButton({
   stockQuantity,
   disabled = false,
   showQuantitySelector = true,
+  minimumQuantity = 1,
 }: AddToCartButtonProps) {
   const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(minimumQuantity);
+
+  // Update quantity when minimumQuantity changes
+  useEffect(() => {
+    if (quantity < minimumQuantity) {
+      setQuantity(minimumQuantity);
+    }
+  }, [minimumQuantity, quantity]);
 
   const handleAddToCart = async () => {
     setIsAdding(true);
@@ -48,7 +57,7 @@ export function AddToCartButton({
   };
 
   const decrementQuantity = () => {
-    if (quantity > 1) {
+    if (quantity > minimumQuantity) {
       setQuantity(quantity - 1);
     }
   };
@@ -76,19 +85,19 @@ export function AddToCartButton({
           <div className="flex items-center border border-gray-300 rounded-lg">
             <button
               onClick={decrementQuantity}
-              disabled={quantity <= 1}
+              disabled={quantity <= minimumQuantity}
               className="p-2 hover:bg-gray-100 rounded-l-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Minus className="w-4 h-4" />
             </button>
             <input
               type="number"
-              min="1"
+              min={minimumQuantity}
               max={stockQuantity}
               value={quantity}
               onChange={(e) => {
-                const val = parseInt(e.target.value) || 1;
-                setQuantity(Math.min(Math.max(1, val), stockQuantity));
+                const val = parseInt(e.target.value) || minimumQuantity;
+                setQuantity(Math.min(Math.max(minimumQuantity, val), stockQuantity));
               }}
               className="w-16 text-center border-x border-gray-300 py-2 focus:outline-none"
             />
