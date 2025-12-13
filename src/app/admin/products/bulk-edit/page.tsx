@@ -492,52 +492,42 @@ export default function BulkEditPage() {
 
         {selectedIds.size > 0 && (
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-white/30 text-white hover:bg-white/10"
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
               onClick={() => setActiveModal('update_status')}
             >
-              <Power className="w-4 h-4 mr-2" />
+              <Power className="w-4 h-4" />
               Change Status
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-white/30 text-white hover:bg-white/10"
+            </button>
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               onClick={() => setActiveModal('move_warehouse')}
             >
-              <Warehouse className="w-4 h-4 mr-2" />
+              <Warehouse className="w-4 h-4" />
               Move Warehouse
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-white/30 text-white hover:bg-white/10"
+            </button>
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-safety-green-600 hover:bg-safety-green-700 text-white rounded-lg transition-colors"
               onClick={() => setActiveModal('apply_discount')}
             >
-              <Percent className="w-4 h-4 mr-2" />
+              <Percent className="w-4 h-4" />
               Apply Discount
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-white/30 text-white hover:bg-white/10"
+            </button>
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
               onClick={() => setActiveModal('price_update')}
             >
-              <Upload className="w-4 h-4 mr-2" />
+              <Upload className="w-4 h-4" />
               Price Upload
-            </Button>
+            </button>
             <div className="h-6 w-px bg-white/20 mx-2" />
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-red-400 text-red-400 hover:bg-red-500/10"
+            <button
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
               onClick={() => setActiveModal('delete')}
             >
-              <Trash2 className="w-4 h-4 mr-2" />
+              <Trash2 className="w-4 h-4" />
               Delete
-            </Button>
+            </button>
           </div>
         )}
       </div>
