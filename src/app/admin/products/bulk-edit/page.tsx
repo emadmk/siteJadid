@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,6 +46,13 @@ interface Product {
 interface Category {
   id: string;
   name: string;
+  parentId: string | null;
+}
+
+interface HierarchicalCategory {
+  id: string;
+  name: string;
+  level: number;
 }
 
 interface Brand {
@@ -101,6 +108,36 @@ export default function BulkEditPage() {
 
   // Results
   const [result, setResult] = useState<{ success: boolean; message: string; affected?: number } | null>(null);
+
+  // Build hierarchical categories for dropdown
+  const hierarchicalCategories = useMemo(() => {
+    const result: HierarchicalCategory[] = [];
+
+    // Build a map for quick lookup
+    const categoryMap = new Map<string, Category>();
+    categories.forEach(cat => categoryMap.set(cat.id, cat));
+
+    // Find root categories (no parent)
+    const rootCategories = categories.filter(cat => !cat.parentId);
+
+    // Recursive function to add categories with proper level
+    const addCategoryWithChildren = (category: Category, level: number) => {
+      result.push({
+        id: category.id,
+        name: category.name,
+        level,
+      });
+
+      // Find and add children
+      const children = categories.filter(cat => cat.parentId === category.id);
+      children.forEach(child => addCategoryWithChildren(child, level + 1));
+    };
+
+    // Start with root categories
+    rootCategories.forEach(cat => addCategoryWithChildren(cat, 0));
+
+    return result;
+  }, [categories]);
 
   // Debounce search
   useEffect(() => {
@@ -400,8 +437,10 @@ export default function BulkEditPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
             >
               <option value="">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              {hierarchicalCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.level > 0 ? `${'   '.repeat(cat.level - 1)}└─ ${cat.name}` : cat.name}
+                </option>
               ))}
             </select>
           </div>
