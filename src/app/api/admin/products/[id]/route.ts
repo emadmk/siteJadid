@@ -74,6 +74,7 @@ export async function PUT(
         costPrice: data.costPrice,
         stockQuantity: data.stockQuantity,
         lowStockThreshold: data.lowStockThreshold,
+        minimumOrderQty: data.minimumOrderQty || 1,
         categoryId: data.categoryId,
         brandId: data.brandId,
         defaultSupplierId: data.defaultSupplierId,
