@@ -103,110 +103,118 @@ export class OccuNomixImportService {
   async parseExcel(fileBuffer: Buffer | ArrayBuffer): Promise<ParsedOccuNomixRow[]> {
     const workbook = new ExcelJS.Workbook();
 
-    // Convert to ArrayBuffer which ExcelJS accepts
-    let arrayBuffer: ArrayBuffer;
-    if (Buffer.isBuffer(fileBuffer)) {
-      // Convert Buffer to ArrayBuffer
-      arrayBuffer = fileBuffer.buffer.slice(
-        fileBuffer.byteOffset,
-        fileBuffer.byteOffset + fileBuffer.byteLength
-      );
-    } else {
-      arrayBuffer = fileBuffer;
-    }
+    // Write to temp file and read back to avoid buffer conversion issues
+    const tempFilePath = path.join('/tmp', `occunomix-import-${Date.now()}.xlsx`);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await workbook.xlsx.load(arrayBuffer as any);
+    try {
+      // Ensure we have a Buffer
+      const buffer = Buffer.isBuffer(fileBuffer)
+        ? fileBuffer
+        : Buffer.from(fileBuffer);
 
-    const worksheet = workbook.worksheets[0];
-    if (!worksheet) {
-      throw new Error('No worksheet found in Excel file');
-    }
+      // Write to temp file
+      await fs.writeFile(tempFilePath, buffer);
 
-    const rows: ParsedOccuNomixRow[] = [];
+      // Read with ExcelJS from file
+      await workbook.xlsx.readFile(tempFilePath);
 
-    // Get headers from row 1
-    const headerRow = worksheet.getRow(1);
-    const headers: Record<number, string> = {};
-    headerRow.eachCell((cell, colNumber) => {
-      headers[colNumber] = cell.value?.toString().trim() || '';
-    });
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
+        throw new Error('No worksheet found in Excel file');
+      }
 
-    // Find column indices
-    const colIndex = {
-      style: this.findColumnIndex(headers, ['STYLE', 'Style']),
-      sku: this.findColumnIndex(headers, ['Sku', 'SKU']),
-      name: this.findColumnIndex(headers, ['Item Description', 'Item_Description', 'Description']),
-      major: this.findColumnIndex(headers, ['Major']),
-      minor: this.findColumnIndex(headers, ['Minor']),
-      subCategory: this.findColumnIndex(headers, ['SubCategory', 'Sub Category', 'Category']),
-      basePrice: this.findColumnIndex(headers, ['ADA site Price', 'ADA Price', 'Site Price']),
-      costPrice: this.findColumnIndex(headers, ['LEV2', 'Lev2', 'Cost']),
-      upc: this.findColumnIndex(headers, ['UPC']),
-      countryOfOrigin: this.findColumnIndex(headers, ['COUNTRY OF ORIGIN', 'Country']),
-      length: this.findColumnIndex(headers, ['Length']),
-      width: this.findColumnIndex(headers, ['Width']),
-      height: this.findColumnIndex(headers, ['Height']),
-      weight: this.findColumnIndex(headers, ['Net Weight (lb)', 'Net Weight', 'Weight']),
-      qtyInPack: this.findColumnIndex(headers, ['Qty in Pk', 'Qty in Pack', 'Pack Qty']),
-      images: this.findColumnIndex(headers, ['Images', 'Image', 'Photos']),
-    };
+      const rows: ParsedOccuNomixRow[] = [];
 
-    console.log('Column indices found:', colIndex);
-
-    // Process each data row
-    worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber <= 1) return; // Skip header row
-
-      const getValue = (colIdx: number | null): string => {
-        if (!colIdx) return '';
-        const cell = row.getCell(colIdx);
-        return cell.value?.toString().trim() || '';
-      };
-
-      const getNumber = (colIdx: number | null): number => {
-        if (!colIdx) return 0;
-        const cell = row.getCell(colIdx);
-        const val = cell.value;
-        if (typeof val === 'number') return val;
-        return parseFloat(String(val || '0')) || 0;
-      };
-
-      const style = getValue(colIndex.style);
-      const sku = getValue(colIndex.sku);
-      const name = getValue(colIndex.name);
-
-      if (!sku && !style) return; // Skip empty rows
-
-      // Parse images (semicolon-separated)
-      const imagesStr = getValue(colIndex.images);
-      const images = imagesStr
-        ? imagesStr.split(';').map(img => img.trim()).filter(Boolean)
-        : [];
-
-      rows.push({
-        style: style || sku,
-        sku: sku || style,
-        name,
-        description: name, // Use name as base description
-        major: getValue(colIndex.major),
-        minor: getValue(colIndex.minor),
-        subCategory: getValue(colIndex.subCategory),
-        basePrice: getNumber(colIndex.basePrice),
-        costPrice: getNumber(colIndex.costPrice),
-        upc: getValue(colIndex.upc),
-        countryOfOrigin: getValue(colIndex.countryOfOrigin),
-        length: colIndex.length ? getNumber(colIndex.length) || null : null,
-        width: colIndex.width ? getNumber(colIndex.width) || null : null,
-        height: colIndex.height ? getNumber(colIndex.height) || null : null,
-        weight: colIndex.weight ? getNumber(colIndex.weight) || null : null,
-        qtyInPack: getNumber(colIndex.qtyInPack) || 1,
-        images,
-        rowNumber,
+      // Get headers from row 1
+      const headerRow = worksheet.getRow(1);
+      const headers: Record<number, string> = {};
+      headerRow.eachCell((cell, colNumber) => {
+        headers[colNumber] = cell.value?.toString().trim() || '';
       });
-    });
 
-    return rows;
+      // Find column indices
+      const colIndex = {
+        style: this.findColumnIndex(headers, ['STYLE', 'Style']),
+        sku: this.findColumnIndex(headers, ['Sku', 'SKU']),
+        name: this.findColumnIndex(headers, ['Item Description', 'Item_Description', 'Description']),
+        major: this.findColumnIndex(headers, ['Major']),
+        minor: this.findColumnIndex(headers, ['Minor']),
+        subCategory: this.findColumnIndex(headers, ['SubCategory', 'Sub Category', 'Category']),
+        basePrice: this.findColumnIndex(headers, ['ADA site Price', 'ADA Price', 'Site Price']),
+        costPrice: this.findColumnIndex(headers, ['LEV2', 'Lev2', 'Cost']),
+        upc: this.findColumnIndex(headers, ['UPC']),
+        countryOfOrigin: this.findColumnIndex(headers, ['COUNTRY OF ORIGIN', 'Country']),
+        length: this.findColumnIndex(headers, ['Length']),
+        width: this.findColumnIndex(headers, ['Width']),
+        height: this.findColumnIndex(headers, ['Height']),
+        weight: this.findColumnIndex(headers, ['Net Weight (lb)', 'Net Weight', 'Weight']),
+        qtyInPack: this.findColumnIndex(headers, ['Qty in Pk', 'Qty in Pack', 'Pack Qty']),
+        images: this.findColumnIndex(headers, ['Images', 'Image', 'Photos']),
+      };
+
+      console.log('Column indices found:', colIndex);
+
+      // Process each data row
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber <= 1) return; // Skip header row
+
+        const getValue = (colIdx: number | null): string => {
+          if (!colIdx) return '';
+          const cell = row.getCell(colIdx);
+          return cell.value?.toString().trim() || '';
+        };
+
+        const getNumber = (colIdx: number | null): number => {
+          if (!colIdx) return 0;
+          const cell = row.getCell(colIdx);
+          const val = cell.value;
+          if (typeof val === 'number') return val;
+          return parseFloat(String(val || '0')) || 0;
+        };
+
+        const style = getValue(colIndex.style);
+        const sku = getValue(colIndex.sku);
+        const name = getValue(colIndex.name);
+
+        if (!sku && !style) return; // Skip empty rows
+
+        // Parse images (semicolon-separated)
+        const imagesStr = getValue(colIndex.images);
+        const images = imagesStr
+          ? imagesStr.split(';').map(img => img.trim()).filter(Boolean)
+          : [];
+
+        rows.push({
+          style: style || sku,
+          sku: sku || style,
+          name,
+          description: name, // Use name as base description
+          major: getValue(colIndex.major),
+          minor: getValue(colIndex.minor),
+          subCategory: getValue(colIndex.subCategory),
+          basePrice: getNumber(colIndex.basePrice),
+          costPrice: getNumber(colIndex.costPrice),
+          upc: getValue(colIndex.upc),
+          countryOfOrigin: getValue(colIndex.countryOfOrigin),
+          length: colIndex.length ? getNumber(colIndex.length) || null : null,
+          width: colIndex.width ? getNumber(colIndex.width) || null : null,
+          height: colIndex.height ? getNumber(colIndex.height) || null : null,
+          weight: colIndex.weight ? getNumber(colIndex.weight) || null : null,
+          qtyInPack: getNumber(colIndex.qtyInPack) || 1,
+          images,
+          rowNumber,
+        });
+      });
+
+      return rows;
+    } finally {
+      // Clean up temp file
+      try {
+        await fs.unlink(tempFilePath);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
   }
 
   /**
