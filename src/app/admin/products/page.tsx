@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Eye, Package, Search, Upload } from 'lucide-react';
+import { Plus, Edit, Eye, Package, Search, Upload, Pencil } from 'lucide-react';
 import { db } from '@/lib/db';
 
 async function getProducts(searchParams: { status?: string; category?: string; search?: string; brand?: string }) {
@@ -140,6 +140,12 @@ export default async function ProductsPage({
           <p className="text-gray-600">Manage your product catalog</p>
         </div>
         <div className="flex gap-3">
+          <Link href="/admin/products/bulk-edit">
+            <Button variant="outline" className="border-gray-300">
+              <Pencil className="w-4 h-4 mr-2" />
+              Bulk Edit
+            </Button>
+          </Link>
           <Link href="/admin/products/import">
             <Button variant="outline" className="border-gray-300">
               <Upload className="w-4 h-4 mr-2" />
