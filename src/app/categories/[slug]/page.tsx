@@ -69,6 +69,15 @@ interface Product {
   } | null;
 }
 
+interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  _count: {
+    products: number;
+  };
+}
+
 interface PageData {
   category: Category;
   products: Product[];
@@ -77,6 +86,7 @@ interface PageData {
   currentPage: number;
   smartFilters: Record<string, string[]>;
   smartFilterLabels: Record<string, string>;
+  brands: Brand[];
 }
 
 export default function CategoryPage({ params }: { params: { slug: string } }) {
@@ -96,6 +106,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [sortBy, setSortBy] = useState('newest');
   const [activeSmartFilters, setActiveSmartFilters] = useState<Record<string, string[]>>({});
@@ -120,6 +131,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       });
 
       if (searchQuery) queryParams.set('search', searchQuery);
+      if (selectedBrand) queryParams.set('brand', selectedBrand);
       if (priceRange.min) queryParams.set('minPrice', priceRange.min);
       if (priceRange.max) queryParams.set('maxPrice', priceRange.max);
 
@@ -163,7 +175,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [params.slug, sortBy, searchQuery, priceRange, activeSmartFilters, router]);
+  }, [params.slug, sortBy, searchQuery, selectedBrand, priceRange, activeSmartFilters, router]);
 
   // Initial fetch
   useEffect(() => {
@@ -227,6 +239,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
 
   const clearFilters = () => {
     setSearchQuery('');
+    setSelectedBrand('');
     setPriceRange({ min: '', max: '' });
     setSortBy('newest');
     setActiveSmartFilters({});
@@ -260,7 +273,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     }));
   };
 
-  const hasActiveFilters = searchQuery || priceRange.min || priceRange.max ||
+  const hasActiveFilters = searchQuery || selectedBrand || priceRange.min || priceRange.max ||
     Object.values(activeSmartFilters).some(arr => arr.length > 0);
 
   if (loading) {
@@ -291,7 +304,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     );
   }
 
-  const { category, smartFilters, smartFilterLabels } = data;
+  const { category, smartFilters, smartFilterLabels, brands } = data;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -412,6 +425,47 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 </div>
               </div>
+
+              {/* Brands - First filter */}
+              {brands && brands.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-black mb-3">Brands</h3>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    <button
+                      onClick={() => {
+                        setSelectedBrand('');
+                        setTimeout(() => fetchData(1, true), 0);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                        !selectedBrand
+                          ? 'bg-safety-green-100 text-safety-green-800 font-medium'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      All Brands
+                    </button>
+                    {brands.map((brand) => (
+                      <button
+                        key={brand.id}
+                        onClick={() => {
+                          setSelectedBrand(brand.slug);
+                          setTimeout(() => fetchData(1, true), 0);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          selectedBrand === brand.slug
+                            ? 'bg-safety-green-100 text-safety-green-800 font-medium'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>{brand.name}</span>
+                          <span className="text-xs text-gray-500">{brand._count.products}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Price Range */}
               <div className="mb-6">
@@ -566,6 +620,22 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                     />
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   </div>
+
+                  {/* Brand Select (Mobile) */}
+                  {brands && brands.length > 0 && (
+                    <select
+                      value={selectedBrand}
+                      onChange={(e) => setSelectedBrand(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                    >
+                      <option value="">All Brands</option>
+                      {brands.map((brand) => (
+                        <option key={brand.id} value={brand.slug}>
+                          {brand.name} ({brand._count.products})
+                        </option>
+                      ))}
+                    </select>
+                  )}
 
                   {/* Price Range */}
                   <div className="grid grid-cols-2 gap-4">

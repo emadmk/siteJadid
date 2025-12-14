@@ -192,6 +192,7 @@ export async function GET(
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const search = searchParams.get('search');
+    const brand = searchParams.get('brand');
     const smartFilters = searchParams.get('filters'); // JSON string of active smart filters
 
     // Find the category
@@ -299,6 +300,17 @@ export async function GET(
         { description: { contains: search, mode: 'insensitive' } },
         { sku: { contains: search, mode: 'insensitive' } },
       ];
+    }
+
+    // Add brand filter
+    if (brand) {
+      const brandData = await db.brand.findUnique({
+        where: { slug: brand },
+        select: { id: true },
+      });
+      if (brandData) {
+        where.brandId = brandData.id;
+      }
     }
 
     // Add smart filters
@@ -449,6 +461,39 @@ export async function GET(
       }
     }
 
+    // Fetch brands that have products in this category
+    const brands = await db.brand.findMany({
+      where: {
+        isActive: true,
+        products: {
+          some: {
+            status: 'ACTIVE',
+            stockQuantity: { gt: 0 },
+            categoryId: { in: categoryIds },
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        _count: {
+          select: {
+            products: {
+              where: {
+                status: 'ACTIVE',
+                stockQuantity: { gt: 0 },
+                categoryId: { in: categoryIds },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
     // Build category response with updated children counts
     const categoryResponse = {
       ...category,
@@ -463,6 +508,7 @@ export async function GET(
       currentPage: page,
       smartFilters: availableSmartFilters,
       smartFilterLabels,
+      brands,
     });
   } catch (error: any) {
     console.error('Category fetch error:', error);
