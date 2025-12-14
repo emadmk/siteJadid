@@ -4,6 +4,7 @@ import { ProductsListing } from '@/components/storefront/products/ProductsListin
 interface ProductsPageProps {
   searchParams: {
     category?: string;
+    brand?: string;
     search?: string;
     minPrice?: string;
     maxPrice?: string;
@@ -45,6 +46,16 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
     }
   }
 
+  if (searchParams.brand) {
+    const brandData = await db.brand.findUnique({
+      where: { slug: searchParams.brand },
+      select: { id: true },
+    });
+    if (brandData) {
+      where.brandId = brandData.id;
+    }
+  }
+
   if (searchParams.minPrice || searchParams.maxPrice) {
     where.basePrice = {};
     if (searchParams.minPrice) where.basePrice.gte = parseFloat(searchParams.minPrice);
@@ -74,7 +85,7 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
       orderBy = { createdAt: 'desc' };
   }
 
-  const [products, total, categories] = await Promise.all([
+  const [products, total, categories, brands] = await Promise.all([
     db.product.findMany({
       where,
       select: {
@@ -94,6 +105,14 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
             slug: true,
           },
         },
+        brand: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logo: true,
+          },
+        },
         _count: {
           select: {
             reviews: {
@@ -111,6 +130,29 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
       where: {
         isActive: true,
         parentId: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        _count: {
+          select: {
+            products: {
+              where: {
+                status: 'ACTIVE',
+                stockQuantity: { gt: 0 },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    }),
+    db.brand.findMany({
+      where: {
+        isActive: true,
       },
       select: {
         id: true,
@@ -162,6 +204,7 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
     isFeatured: product.isFeatured,
     stockQuantity: product.stockQuantity,
     category: product.category || undefined,
+    brand: product.brand || undefined,
     averageRating: ratingMap.get(product.id) || 0,
     reviewCount: product._count.reviews,
     hasVariants: product._count.variants > 0,
@@ -175,11 +218,12 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
     total,
     pages: Math.ceil(total / limit),
     categories,
+    brands,
   };
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const { products, total, pages, categories } = await getInitialData(searchParams);
+  const { products, total, pages, categories, brands } = await getInitialData(searchParams);
 
   return (
     <ProductsListing
@@ -187,6 +231,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       initialTotal={total}
       initialPages={pages}
       categories={categories}
+      brands={brands}
       initialFilters={searchParams}
     />
   );

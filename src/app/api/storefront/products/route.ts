@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search');
     const category = searchParams.get('category');
+    const brand = searchParams.get('brand');
     const minPrice = searchParams.get('minPrice');
     const maxPrice = searchParams.get('maxPrice');
     const sort = searchParams.get('sort') || 'newest';
@@ -42,6 +43,16 @@ export async function GET(request: NextRequest) {
       if (categoryData) {
         const categoryIds = [categoryData.id, ...categoryData.children.map(c => c.id)];
         where.categoryId = { in: categoryIds };
+      }
+    }
+
+    if (brand) {
+      const brandData = await db.brand.findUnique({
+        where: { slug: brand },
+        select: { id: true },
+      });
+      if (brandData) {
+        where.brandId = brandData.id;
       }
     }
 
@@ -96,6 +107,14 @@ export async function GET(request: NextRequest) {
               slug: true,
             },
           },
+          brand: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+            },
+          },
           _count: {
             select: {
               reviews: {
@@ -142,6 +161,7 @@ export async function GET(request: NextRequest) {
       isFeatured: product.isFeatured,
       stockQuantity: product.stockQuantity,
       category: product.category,
+      brand: product.brand,
       averageRating: ratingMap.get(product.id) || 0,
       reviewCount: product._count.reviews,
       hasVariants: product._count.variants > 0,

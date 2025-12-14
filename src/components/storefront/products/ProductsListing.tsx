@@ -31,6 +31,15 @@ interface Category {
   };
 }
 
+interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  _count: {
+    products: number;
+  };
+}
+
 interface Product {
   id: string;
   sku: string;
@@ -65,8 +74,10 @@ interface ProductsListingProps {
   initialTotal: number;
   initialPages: number;
   categories: Category[];
+  brands: Brand[];
   initialFilters: {
     category?: string;
+    brand?: string;
     search?: string;
     minPrice?: string;
     maxPrice?: string;
@@ -80,6 +91,7 @@ export function ProductsListing({
   initialTotal,
   initialPages,
   categories,
+  brands,
   initialFilters,
 }: ProductsListingProps) {
   const router = useRouter();
@@ -101,6 +113,7 @@ export function ProductsListing({
   // Filter state
   const [searchQuery, setSearchQuery] = useState(initialFilters.search || '');
   const [selectedCategory, setSelectedCategory] = useState(initialFilters.category || '');
+  const [selectedBrand, setSelectedBrand] = useState(initialFilters.brand || '');
   const [priceRange, setPriceRange] = useState({
     min: initialFilters.minPrice || '',
     max: initialFilters.maxPrice || '',
@@ -126,6 +139,7 @@ export function ProductsListing({
 
       if (searchQuery) params.set('search', searchQuery);
       if (selectedCategory) params.set('category', selectedCategory);
+      if (selectedBrand) params.set('brand', selectedBrand);
       if (priceRange.min) params.set('minPrice', priceRange.min);
       if (priceRange.max) params.set('maxPrice', priceRange.max);
       if (sortBy) params.set('sort', sortBy);
@@ -150,7 +164,7 @@ export function ProductsListing({
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [searchQuery, selectedCategory, priceRange, sortBy, featured]);
+  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, featured]);
 
   // Infinite scroll for pages 1-5
   useEffect(() => {
@@ -195,6 +209,7 @@ export function ProductsListing({
     updateURL({
       search: searchQuery,
       category: selectedCategory,
+      brand: selectedBrand,
       minPrice: priceRange.min,
       maxPrice: priceRange.max,
       sort: sortBy,
@@ -210,6 +225,24 @@ export function ProductsListing({
       updateURL({
         search: searchQuery,
         category: slug,
+        brand: selectedBrand,
+        minPrice: priceRange.min,
+        maxPrice: priceRange.max,
+        sort: sortBy,
+        featured: featured ? 'true' : '',
+      });
+    }, 0);
+  };
+
+  const handleBrandChange = (slug: string) => {
+    setSelectedBrand(slug);
+    setCurrentPage(1);
+    setTimeout(() => {
+      fetchProducts(1, true);
+      updateURL({
+        search: searchQuery,
+        category: selectedCategory,
+        brand: slug,
         minPrice: priceRange.min,
         maxPrice: priceRange.max,
         sort: sortBy,
@@ -226,6 +259,7 @@ export function ProductsListing({
       updateURL({
         search: searchQuery,
         category: selectedCategory,
+        brand: selectedBrand,
         minPrice: priceRange.min,
         maxPrice: priceRange.max,
         sort: value,
@@ -240,6 +274,7 @@ export function ProductsListing({
     updateURL({
       search: searchQuery,
       category: selectedCategory,
+      brand: selectedBrand,
       minPrice: priceRange.min,
       maxPrice: priceRange.max,
       sort: sortBy,
@@ -251,6 +286,7 @@ export function ProductsListing({
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategory('');
+    setSelectedBrand('');
     setPriceRange({ min: '', max: '' });
     setSortBy('newest');
     setFeatured(false);
@@ -274,7 +310,7 @@ export function ProductsListing({
     await toggleWishlist(productId);
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory || priceRange.min || priceRange.max || featured;
+  const hasActiveFilters = searchQuery || selectedCategory || selectedBrand || priceRange.min || priceRange.max || featured;
 
   const activeCategory = categories.find(c => c.slug === selectedCategory);
 
@@ -329,6 +365,39 @@ export function ProductsListing({
                     Search
                   </Button>
                 </form>
+              </div>
+
+              {/* Brands - First filter after search */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-black mb-3">Brands</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => handleBrandChange('')}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                      !selectedBrand
+                        ? 'bg-safety-green-100 text-safety-green-800 font-medium'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    All Brands
+                  </button>
+                  {brands.map((brand) => (
+                    <button
+                      key={brand.id}
+                      onClick={() => handleBrandChange(brand.slug)}
+                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                        selectedBrand === brand.slug
+                          ? 'bg-safety-green-100 text-safety-green-800 font-medium'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{brand.name}</span>
+                        <span className="text-xs text-gray-500">{brand._count.products}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Categories */}
@@ -501,6 +570,20 @@ export function ProductsListing({
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     </div>
                   </form>
+
+                  {/* Brand Select */}
+                  <select
+                    value={selectedBrand}
+                    onChange={(e) => handleBrandChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                  >
+                    <option value="">All Brands</option>
+                    {brands.map((brand) => (
+                      <option key={brand.id} value={brand.slug}>
+                        {brand.name} ({brand._count.products})
+                      </option>
+                    ))}
+                  </select>
 
                   {/* Category Select */}
                   <select
