@@ -119,10 +119,10 @@ export class PipImportService {
   private brandCache = new Map<string, string>();
 
   /**
-   * Parse PiP Excel file
+   * Parse PiP Excel file from buffer
    */
-  async parseExcel(filePath: string): Promise<ParsedPipRow[]> {
-    const workbook = XLSX.readFile(filePath);
+  async parseExcel(fileBuffer: Buffer): Promise<ParsedPipRow[]> {
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     const data = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });

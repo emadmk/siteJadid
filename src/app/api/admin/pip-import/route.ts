@@ -3,8 +3,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { pipImportService } from '@/lib/services/pip-import';
-import path from 'path';
-import fs from 'fs/promises';
 
 // For App Router - set maximum duration
 export const maxDuration = 300; // 5 minutes timeout
@@ -47,13 +45,9 @@ export async function POST(request: NextRequest) {
     // Parse options
     const options = optionsStr ? JSON.parse(optionsStr) : {};
 
-    // Save uploaded file to temp location
+    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const tempFilePath = path.join('/tmp', `pip-import-${Date.now()}.xlsx`);
-    await fs.writeFile(tempFilePath, buffer);
-
-    const excelFilePath = tempFilePath;
 
     // Create import job record
     const importJob = await prisma.bulkImportJob.create({
@@ -70,16 +64,9 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-      // Parse Excel file
+      // Parse Excel file from buffer
       console.log('Parsing Excel file...');
-      const rows = await pipImportService.parseExcel(excelFilePath);
-
-      // Clean up temp file
-      try {
-        await fs.unlink(tempFilePath);
-      } catch {
-        // Ignore cleanup errors
-      }
+      const rows = await pipImportService.parseExcel(buffer);
 
       // Update job with total rows
       await prisma.bulkImportJob.update({
