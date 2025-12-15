@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { pipImportService } from '@/lib/services/pip-import';
 import path from 'path';
+import fs from 'fs/promises';
 
 // For App Router - set maximum duration
 export const maxDuration = 300; // 5 minutes timeout
@@ -26,27 +27,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const {
-      excelPath,
-      csvPath,
-      options = {},
-    } = body;
+    // Handle FormData upload
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    const optionsStr = formData.get('options') as string;
 
-    // Default paths for pre-uploaded files
-    const defaultExcelPath = path.join(process.cwd(), 'public/uploads/PIP-Product-Information-2025-12.xlsx');
-    const defaultCsvPath = path.join(process.cwd(), 'public/uploads/PIP-Product-Images-SKU-Level.csv');
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
 
-    const excelFilePath = excelPath || defaultExcelPath;
-    const csvFilePath = csvPath || defaultCsvPath;
+    // Validate file type
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      return NextResponse.json(
+        { error: 'Invalid file type. Please upload an Excel file (.xlsx)' },
+        { status: 400 }
+      );
+    }
+
+    // Parse options
+    const options = optionsStr ? JSON.parse(optionsStr) : {};
+
+    // Save uploaded file to temp location
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const tempFilePath = path.join('/tmp', `pip-import-${Date.now()}.xlsx`);
+    await fs.writeFile(tempFilePath, buffer);
+
+    const excelFilePath = tempFilePath;
 
     // Create import job record
     const importJob = await prisma.bulkImportJob.create({
       data: {
         type: 'PRODUCTS',
         status: 'PROCESSING',
-        fileName: 'PIP-Import',
-        fileSize: 0,
+        fileName: file.name,
+        fileSize: file.size,
         userId: session.user.id,
         fieldMapping: { importSource: 'pip' },
         options: options,
@@ -55,13 +70,16 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-      // Parse CSV images file first
-      console.log('Parsing images CSV...');
-      await pipImportService.parseImagesCsv(csvFilePath);
-
       // Parse Excel file
       console.log('Parsing Excel file...');
       const rows = await pipImportService.parseExcel(excelFilePath);
+
+      // Clean up temp file
+      try {
+        await fs.unlink(tempFilePath);
+      } catch {
+        // Ignore cleanup errors
+      }
 
       // Update job with total rows
       await prisma.bulkImportJob.update({

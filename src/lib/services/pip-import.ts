@@ -117,7 +117,6 @@ export class PipImportService {
   private skippedNoImage = 0;
   private categoryCache = new Map<string, string>();
   private brandCache = new Map<string, string>();
-  private imageMap = new Map<string, string[]>();
 
   /**
    * Parse PiP Excel file
@@ -192,79 +191,6 @@ export class PipImportService {
   }
 
   /**
-   * Parse CSV images file
-   */
-  async parseImagesCsv(filePath: string): Promise<void> {
-    const content = await fs.readFile(filePath, 'utf-8');
-    const lines = content.split('\n');
-
-    // Skip header lines (first 4 rows are header info)
-    let headerRowIdx = 0;
-    for (let i = 0; i < Math.min(lines.length, 10); i++) {
-      if (lines[i].includes('SKU') && lines[i].includes('Image')) {
-        headerRowIdx = i;
-        break;
-      }
-    }
-
-    const headerLine = lines[headerRowIdx];
-    const headers = this.parseCSVLine(headerLine);
-    const skuIdx = headers.findIndex(h => h.toUpperCase() === 'SKU');
-    const imageIdx = headers.findIndex(h => h.toUpperCase() === 'IMAGE');
-
-    if (skuIdx === -1 || imageIdx === -1) {
-      console.error('Could not find SKU or Image columns in CSV');
-      return;
-    }
-
-    this.imageMap.clear();
-
-    for (let i = headerRowIdx + 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-
-      const values = this.parseCSVLine(line);
-      const sku = values[skuIdx]?.trim();
-      const image = values[imageIdx]?.trim();
-
-      if (sku && image) {
-        if (!this.imageMap.has(sku)) {
-          this.imageMap.set(sku, []);
-        }
-        // Add image if not already in list
-        if (!this.imageMap.get(sku)!.includes(image)) {
-          this.imageMap.get(sku)!.push(image);
-        }
-      }
-    }
-
-    console.log(`Loaded ${this.imageMap.size} SKU image mappings`);
-  }
-
-  /**
-   * Parse a CSV line handling quoted values
-   */
-  private parseCSVLine(line: string): string[] {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    return result;
-  }
-
-  /**
    * Group rows by STYLE for variant detection
    */
   private groupByStyle(rows: ParsedPipRow[]): VariantGroup[] {
@@ -309,28 +235,61 @@ export class PipImportService {
   }
 
   /**
-   * Check if any variant in the group has images
+   * Check if any variant in the group has images in the import folder
    */
-  private groupHasImages(group: VariantGroup): boolean {
+  private async groupHasImages(group: VariantGroup, imageBasePath: string): Promise<boolean> {
     for (const row of group.rows) {
-      if (this.imageMap.has(row.sku) && this.imageMap.get(row.sku)!.length > 0) {
-        return true;
+      // Check for images by SKU or STYLE
+      const possibleNames = [row.sku, row.style, row.sku.replace('/', '-'), row.style.replace('/', '-')];
+      for (const name of possibleNames) {
+        const extensions = ['.jpg', '.jpeg', '.png', '.webp'];
+        for (const ext of extensions) {
+          const filePath = path.join(imageBasePath, name + ext);
+          if (existsSync(filePath)) {
+            return true;
+          }
+        }
       }
     }
     return false;
   }
 
   /**
-   * Get images for a group (from first variant that has images)
+   * Get images for a group (looks in import-images folder by SKU/STYLE)
    */
-  private getGroupImages(group: VariantGroup): string[] {
+  private getGroupImageNames(group: VariantGroup, imageBasePath: string): string[] {
+    const images: string[] = [];
+
+    // Try to find images for each variant
     for (const row of group.rows) {
-      const images = this.imageMap.get(row.sku);
-      if (images && images.length > 0) {
-        return images;
+      const possibleNames = [row.sku, row.style, row.sku.replace('/', '-'), row.style.replace('/', '-')];
+      for (const name of possibleNames) {
+        const extensions = ['.jpg', '.jpeg', '.png', '.webp'];
+        for (const ext of extensions) {
+          const filePath = path.join(imageBasePath, name + ext);
+          if (existsSync(filePath)) {
+            const fileName = name + ext;
+            if (!images.includes(fileName)) {
+              images.push(fileName);
+            }
+          }
+          // Also check for _2, _3 variants
+          for (let i = 2; i <= 5; i++) {
+            const variantPath = path.join(imageBasePath, `${name}_${i}${ext}`);
+            if (existsSync(variantPath)) {
+              const fileName = `${name}_${i}${ext}`;
+              if (!images.includes(fileName)) {
+                images.push(fileName);
+              }
+            }
+          }
+        }
       }
+      // If we found images, stop looking
+      if (images.length > 0) break;
     }
-    return [];
+
+    return images;
   }
 
   /**
@@ -575,8 +534,9 @@ export class PipImportService {
 
     for (const group of groups) {
       try {
-        // Skip if no images
-        if (!this.groupHasImages(group)) {
+        // Skip if no images (check in import-images folder)
+        const hasImages = await this.groupHasImages(group, imageBasePath);
+        if (!hasImages) {
           this.skippedNoImage++;
           continue;
         }
@@ -751,7 +711,7 @@ export class PipImportService {
 
     // Import images
     if (importImages && savedProduct) {
-      const images = this.getGroupImages(group);
+      const images = this.getGroupImageNames(group, imageBasePath);
       if (images.length > 0) {
         await this.processProductImages(
           savedProduct.id,

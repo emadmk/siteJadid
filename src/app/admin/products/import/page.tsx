@@ -25,7 +25,7 @@ import {
   Layers,
 } from 'lucide-react';
 
-type ImportType = 'gsa' | 'occunomix';
+type ImportType = 'gsa' | 'occunomix' | 'pip';
 
 interface Brand {
   id: string;
@@ -199,6 +199,8 @@ export default function ProductImportPage() {
       // Use different API based on import type
       const apiUrl = importType === 'occunomix'
         ? '/api/admin/occunomix-import'
+        : importType === 'pip'
+        ? '/api/admin/pip-import'
         : '/api/admin/bulk-import';
 
       const response = await fetch(apiUrl, {
@@ -293,6 +295,21 @@ export default function ProductImportPage() {
           </button>
           <button
             onClick={() => {
+              setImportType('pip');
+              setFile(null);
+              setResult(null);
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              importType === 'pip'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Package className="w-5 h-5" />
+            PiP Import
+          </button>
+          <button
+            onClick={() => {
               setImportType('gsa');
               setFile(null);
               setResult(null);
@@ -310,6 +327,8 @@ export default function ProductImportPage() {
         <p className="mt-2 text-sm text-gray-500">
           {importType === 'occunomix'
             ? 'Import OccuNomix products with automatic category matching, variant detection, and image processing.'
+            : importType === 'pip'
+            ? 'Import PiP products. Creates brands, categories (parent/child), and variants (Color/Size) automatically.'
             : 'Import GSA products with custom field mapping and compliance data.'}
         </p>
       </div>
@@ -318,9 +337,21 @@ export default function ProductImportPage() {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Step 0: Select Import Type - Info Box */}
-          <div className={`rounded-lg border p-6 ${importType === 'occunomix' ? 'bg-safety-green-50 border-safety-green-200' : 'bg-blue-50 border-blue-200'}`}>
-            <h2 className={`text-lg font-semibold mb-3 ${importType === 'occunomix' ? 'text-safety-green-800' : 'text-blue-800'}`}>
-              {importType === 'occunomix' ? 'OccuNomix Import' : 'GSA Import'} Selected
+          <div className={`rounded-lg border p-6 ${
+            importType === 'occunomix'
+              ? 'bg-safety-green-50 border-safety-green-200'
+              : importType === 'pip'
+              ? 'bg-purple-50 border-purple-200'
+              : 'bg-blue-50 border-blue-200'
+          }`}>
+            <h2 className={`text-lg font-semibold mb-3 ${
+              importType === 'occunomix'
+                ? 'text-safety-green-800'
+                : importType === 'pip'
+                ? 'text-purple-800'
+                : 'text-blue-800'
+            }`}>
+              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : 'GSA Import'} Selected
             </h2>
             {importType === 'occunomix' ? (
               <div className="space-y-2 text-sm text-safety-green-700">
@@ -332,6 +363,19 @@ export default function ProductImportPage() {
                   <li>Creates missing categories automatically</li>
                   <li>Parses semicolon-separated images</li>
                   <li>Auto-generates SEO fields</li>
+                </ul>
+              </div>
+            ) : importType === 'pip' ? (
+              <div className="space-y-2 text-sm text-purple-700">
+                <p><strong>Expected Columns:</strong> SKU, STYLE, COLOR, SIZE, BRAND WITH MARKS, SHORT DESCRIPTION, SELECT CODE, COMMODITY CODE</p>
+                <p><strong>Features:</strong></p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Product Name = Brand + Short Description</li>
+                  <li>Colors and Sizes become variants (same STYLE = one product)</li>
+                  <li>Creates brands automatically (Boss®, Brahma, G-Tek®, etc.)</li>
+                  <li>Parent/Child categories from SELECT CODE &amp; COMMODITY CODE</li>
+                  <li>Price set to $0.01 (update later via bulk edit)</li>
+                  <li>Products without images in import-images folder are skipped</li>
                 </ul>
               </div>
             ) : (
