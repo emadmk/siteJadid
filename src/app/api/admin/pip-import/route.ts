@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { pipImportService } from '@/lib/services/pip-import';
+import path from 'path';
 
 // For App Router - set maximum duration
 export const maxDuration = 300; // 5 minutes timeout
