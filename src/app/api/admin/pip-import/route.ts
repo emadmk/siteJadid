@@ -4,10 +4,18 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { pipImportService } from '@/lib/services/pip-import';
 import path from 'path';
+import { existsSync } from 'fs';
 
 // For App Router - set maximum duration
 export const maxDuration = 300; // 5 minutes timeout
 export const dynamic = 'force-dynamic';
+
+// Default image paths to check
+const IMAGE_PATHS = [
+  '/root/ada/siteJadid/import-images',
+  path.join(process.cwd(), 'import-images'),
+  '/home/user/siteJadid/import-images',
+];
 
 // POST - Start PiP import
 export async function POST(request: NextRequest) {
@@ -64,84 +72,99 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    try {
-      // Parse Excel file from buffer
-      console.log('Parsing Excel file...');
-      const rows = await pipImportService.parseExcel(buffer);
+    // Parse Excel file from buffer first (sync)
+    console.log('Parsing Excel file...');
+    const rows = await pipImportService.parseExcel(buffer);
 
-      // Update job with total rows
-      await prisma.bulkImportJob.update({
-        where: { id: importJob.id },
-        data: { totalRows: rows.length },
-      });
+    // Update job with total rows
+    await prisma.bulkImportJob.update({
+      where: { id: importJob.id },
+      data: { totalRows: rows.length },
+    });
 
-      console.log(`Found ${rows.length} rows to process`);
+    console.log(`Found ${rows.length} rows to process`);
 
-      // Import products
-      const result = await pipImportService.importProducts(rows, {
-        ...options,
-        imageBasePath: options.imageBasePath || path.join(process.cwd(), 'import-images'),
-      });
-
-      // Update job with results
-      await prisma.bulkImportJob.update({
-        where: { id: importJob.id },
-        data: {
-          status: result.success ? 'COMPLETED' : 'FAILED',
-          processedRows: result.processedRows,
-          successCount: result.successCount,
-          errorCount: result.errorCount,
-          errors: JSON.parse(JSON.stringify(result.errors.slice(0, 100))), // Limit errors stored
-          warnings: JSON.parse(JSON.stringify(result.warnings.slice(0, 100))),
-          summary: {
-            createdProducts: result.createdProducts.length,
-            updatedProducts: result.updatedProducts.length,
-            createdVariants: result.createdVariants,
-            createdCategories: result.createdCategories,
-            createdBrands: result.createdBrands,
-            skippedNoImage: result.skippedNoImage,
-          },
-          completedAt: new Date(),
-        },
-      });
-
-      return NextResponse.json({
-        success: true,
-        jobId: importJob.id,
-        result: {
-          ...result,
-          // Limit arrays in response
-          createdProducts: result.createdProducts.slice(0, 50),
-          updatedProducts: result.updatedProducts.slice(0, 50),
-          errors: result.errors.slice(0, 50),
-          warnings: result.warnings.slice(0, 50),
-        },
-      });
-    } catch (importError) {
-      console.error('Import error:', importError);
-
-      // Update job as failed
-      await prisma.bulkImportJob.update({
-        where: { id: importJob.id },
-        data: {
-          status: 'FAILED',
-          errors: JSON.parse(JSON.stringify([
-            {
-              row: 0,
-              field: 'general',
-              value: '',
-              message:
-                importError instanceof Error
-                  ? importError.message
-                  : 'Unknown error during import',
-            },
-          ])),
-          completedAt: new Date(),
-        },
-      });
-
-      throw importError;
+    // Find the correct image path
+    let imageBasePath = options.imageBasePath;
+    if (!imageBasePath) {
+      for (const testPath of IMAGE_PATHS) {
+        if (existsSync(testPath)) {
+          imageBasePath = testPath;
+          console.log(`Found image folder at: ${testPath}`);
+          break;
+        }
+      }
     }
+
+    if (!imageBasePath) {
+      imageBasePath = IMAGE_PATHS[0]; // Default to first path
+      console.log(`No image folder found, using default: ${imageBasePath}`);
+    }
+
+    console.log(`Using image base path: ${imageBasePath}`);
+
+    // Start background import (don't await - continues after response)
+    const backgroundImport = async () => {
+      try {
+        console.log('Starting background import...');
+        const result = await pipImportService.importProducts(rows, {
+          ...options,
+          imageBasePath,
+        });
+
+        // Update job with results
+        await prisma.bulkImportJob.update({
+          where: { id: importJob.id },
+          data: {
+            status: result.success ? 'COMPLETED' : 'FAILED',
+            processedRows: result.processedRows,
+            successCount: result.successCount,
+            errorCount: result.errorCount,
+            errors: JSON.parse(JSON.stringify(result.errors.slice(0, 100))),
+            warnings: JSON.parse(JSON.stringify(result.warnings.slice(0, 100))),
+            summary: {
+              createdProducts: result.createdProducts.length,
+              updatedProducts: result.updatedProducts.length,
+              createdVariants: result.createdVariants,
+              createdCategories: result.createdCategories,
+              createdBrands: result.createdBrands,
+              skippedNoImage: result.skippedNoImage,
+            },
+            completedAt: new Date(),
+          },
+        });
+
+        console.log(`Import completed: ${result.createdProducts.length} created, ${result.updatedProducts.length} updated, ${result.skippedNoImage} skipped (no image)`);
+      } catch (importError) {
+        console.error('Background import error:', importError);
+        await prisma.bulkImportJob.update({
+          where: { id: importJob.id },
+          data: {
+            status: 'FAILED',
+            errors: JSON.parse(JSON.stringify([
+              {
+                row: 0,
+                field: 'general',
+                value: '',
+                message: importError instanceof Error ? importError.message : 'Unknown error',
+              },
+            ])),
+            completedAt: new Date(),
+          },
+        });
+      }
+    };
+
+    // Start in background - don't await!
+    backgroundImport();
+
+    // Return immediately with job ID
+    return NextResponse.json({
+      success: true,
+      jobId: importJob.id,
+      message: `Import started in background. Processing ${rows.length} rows. Check status with job ID.`,
+      totalRows: rows.length,
+    });
   } catch (error) {
     console.error('Error in PiP import:', error);
     return NextResponse.json(

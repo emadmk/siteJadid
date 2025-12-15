@@ -242,16 +242,30 @@ export class PipImportService {
       // Check for images by SKU or STYLE
       const possibleNames = [row.sku, row.style, row.sku.replace('/', '-'), row.style.replace('/', '-')];
       for (const name of possibleNames) {
-        const extensions = ['.jpg', '.jpeg', '.png', '.webp'];
+        if (!name) continue;
+        const extensions = ['.jpg', '.jpeg', '.png', '.webp', '.JPG', '.JPEG', '.PNG', '.WEBP'];
         for (const ext of extensions) {
           const filePath = path.join(imageBasePath, name + ext);
           if (existsSync(filePath)) {
+            return true;
+          }
+          // Also try lowercase filename
+          const lowerFilePath = path.join(imageBasePath, name.toLowerCase() + ext);
+          if (existsSync(lowerFilePath)) {
             return true;
           }
         }
       }
     }
     return false;
+  }
+
+  /**
+   * Log what images we're looking for (for debugging)
+   */
+  logImageSearch(group: VariantGroup, imageBasePath: string): void {
+    const firstRow = group.rows[0];
+    console.log(`Looking for images for ${group.style}: SKU=${firstRow.sku}, checking in ${imageBasePath}`);
   }
 
   /**
@@ -530,7 +544,21 @@ export class PipImportService {
     const groups = this.groupByStyle(rows);
     console.log(`Found ${groups.length} product groups from ${rows.length} rows`);
 
+    // List files in image folder for debugging
+    try {
+      const files = await fs.readdir(imageBasePath);
+      console.log(`Image folder ${imageBasePath} has ${files.length} files`);
+      if (files.length > 0 && files.length <= 20) {
+        console.log('Sample files:', files.slice(0, 20));
+      } else if (files.length > 20) {
+        console.log('Sample files:', files.slice(0, 20), '...');
+      }
+    } catch (e) {
+      console.log(`Cannot read image folder ${imageBasePath}:`, e);
+    }
+
     let processedCount = 0;
+    let loggedFirstFewSkips = 0;
 
     for (const group of groups) {
       try {
@@ -538,6 +566,12 @@ export class PipImportService {
         const hasImages = await this.groupHasImages(group, imageBasePath);
         if (!hasImages) {
           this.skippedNoImage++;
+          // Log first few skipped for debugging
+          if (loggedFirstFewSkips < 5) {
+            const firstRow = group.rows[0];
+            console.log(`Skipping ${group.style} (SKU: ${firstRow.sku}) - no image found`);
+            loggedFirstFewSkips++;
+          }
           continue;
         }
 
