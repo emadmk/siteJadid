@@ -56,6 +56,7 @@ export interface PipImportOptions {
   updateExisting?: boolean;
   importImages?: boolean;
   imageBasePath?: string;
+  csvPath?: string; // Path to CSV file with image mappings
   dryRun?: boolean;
   defaultStockQuantity?: number;
   defaultStatus?: 'DRAFT' | 'ACTIVE' | 'INACTIVE';
@@ -118,6 +119,100 @@ export class PipImportService {
   private categoryCache = new Map<string, string>();
   private brandCache = new Map<string, string>();
   private imageIndex = new Map<string, string>(); // normalized name -> actual filename
+  private csvImageMap = new Map<string, string[]>(); // STYLE -> [image filenames]
+
+  /**
+   * Parse CSV file for image mapping (STYLE -> Image filenames)
+   */
+  async parseImageCsv(csvPath: string): Promise<void> {
+    this.csvImageMap.clear();
+
+    try {
+      const content = await fs.readFile(csvPath, 'utf-8');
+      const lines = content.split('\n');
+
+      // Find header row (contains "STYLE" and "Image")
+      let headerIdx = -1;
+      let styleCol = -1;
+      let imageCol = -1;
+
+      for (let i = 0; i < Math.min(lines.length, 10); i++) {
+        const cols = this.parseCsvLine(lines[i]);
+        const styleIdx = cols.findIndex(c => c.toUpperCase() === 'STYLE');
+        const imageIdx = cols.findIndex(c => c.toUpperCase() === 'IMAGE');
+
+        if (styleIdx !== -1 && imageIdx !== -1) {
+          headerIdx = i;
+          styleCol = styleIdx;
+          imageCol = imageIdx;
+          break;
+        }
+      }
+
+      if (headerIdx === -1) {
+        console.log('Could not find STYLE and Image columns in CSV');
+        return;
+      }
+
+      // Parse data rows
+      for (let i = headerIdx + 1; i < lines.length; i++) {
+        const cols = this.parseCsvLine(lines[i]);
+        if (cols.length <= Math.max(styleCol, imageCol)) continue;
+
+        const style = cols[styleCol]?.trim();
+        const image = cols[imageCol]?.trim();
+
+        if (style && image) {
+          if (!this.csvImageMap.has(style)) {
+            this.csvImageMap.set(style, []);
+          }
+          const images = this.csvImageMap.get(style)!;
+          if (!images.includes(image)) {
+            images.push(image);
+          }
+        }
+      }
+
+      console.log(`Loaded ${this.csvImageMap.size} STYLE->Image mappings from CSV`);
+
+      // Log sample entries
+      const samples = Array.from(this.csvImageMap.entries()).slice(0, 5);
+      console.log('Sample CSV mappings:', samples);
+
+    } catch (error) {
+      console.error('Error parsing CSV:', error);
+    }
+  }
+
+  /**
+   * Parse a CSV line handling quotes
+   */
+  private parseCsvLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  }
+
+  /**
+   * Get images for a STYLE from CSV mapping
+   */
+  getImagesFromCsv(style: string): string[] {
+    return this.csvImageMap.get(style) || [];
+  }
 
   /**
    * Parse PiP Excel file from buffer
@@ -318,10 +413,22 @@ export class PipImportService {
   }
 
   /**
-   * Check if any variant in the group has images in the import folder
+   * Check if any variant in the group has images
    */
   private async groupHasImages(group: VariantGroup, imageBasePath: string): Promise<boolean> {
-    // First try the index
+    // First check CSV mapping (most reliable)
+    const csvImages = this.getImagesFromCsv(group.style);
+    if (csvImages.length > 0) {
+      // Verify at least one image file exists
+      for (const img of csvImages) {
+        const filePath = path.join(imageBasePath, img);
+        if (existsSync(filePath)) {
+          return true;
+        }
+      }
+    }
+
+    // Then try the image index
     for (const row of group.rows) {
       const found = this.findImageInIndex(row.sku, row.style, row.color);
       if (found) return true;
@@ -345,12 +452,25 @@ export class PipImportService {
   }
 
   /**
-   * Get images for a group - uses the imageIndex first, then fallback to direct check
+   * Get images for a group - uses CSV mapping first, then index, then direct check
    */
   private getGroupImageNames(group: VariantGroup, imageBasePath: string): string[] {
     const images: string[] = [];
 
-    // First try the index
+    // First try CSV mapping (most reliable)
+    const csvImages = this.getImagesFromCsv(group.style);
+    for (const img of csvImages) {
+      const filePath = path.join(imageBasePath, img);
+      if (existsSync(filePath) && !images.includes(img)) {
+        images.push(img);
+      }
+    }
+
+    if (images.length > 0) {
+      return images;
+    }
+
+    // Then try the index
     for (const row of group.rows) {
       const foundImage = this.findImageInIndex(row.sku, row.style, row.color);
       if (foundImage && !images.includes(foundImage)) {
@@ -358,7 +478,6 @@ export class PipImportService {
       }
     }
 
-    // If found via index, return those
     if (images.length > 0) {
       return images;
     }
@@ -373,14 +492,6 @@ export class PipImportService {
           const filePath = path.join(imageBasePath, name + ext);
           if (existsSync(filePath)) {
             const fileName = name + ext;
-            if (!images.includes(fileName)) {
-              images.push(fileName);
-            }
-          }
-          // Also check lowercase
-          const lowerPath = path.join(imageBasePath, name.toLowerCase() + ext);
-          if (existsSync(lowerPath)) {
-            const fileName = name.toLowerCase() + ext;
             if (!images.includes(fileName)) {
               images.push(fileName);
             }
@@ -625,6 +736,7 @@ export class PipImportService {
       updateExisting = true,
       importImages = true,
       imageBasePath = path.join(process.cwd(), 'import-images'),
+      csvPath,
       dryRun = false,
       defaultStockQuantity = 100,
       defaultStatus = 'ACTIVE',
@@ -640,6 +752,22 @@ export class PipImportService {
     this.skippedNoImage = 0;
     this.categoryCache.clear();
     this.brandCache.clear();
+    this.csvImageMap.clear();
+
+    // Load CSV image mapping if provided or auto-detect
+    const csvPaths = [
+      csvPath,
+      path.join(process.cwd(), 'public/uploads/PIP-Product-Images-SKU-Level.csv'),
+      '/root/ada/siteJadid/public/uploads/PIP-Product-Images-SKU-Level.csv',
+    ].filter(Boolean) as string[];
+
+    for (const csv of csvPaths) {
+      if (existsSync(csv)) {
+        console.log(`Loading image mappings from CSV: ${csv}`);
+        await this.parseImageCsv(csv);
+        break;
+      }
+    }
 
     // Group rows by STYLE
     const groups = this.groupByStyle(rows);
