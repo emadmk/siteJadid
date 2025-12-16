@@ -429,7 +429,7 @@ export class PipImportService {
   }
 
   /**
-   * Find or create category (parent/child)
+   * Find or create category (parent/child) - with race condition handling
    */
   private async findOrCreateCategory(
     parentName: string,
@@ -453,29 +453,35 @@ export class PipImportService {
         .replace(/\s+/g, '-')
         .replace(/[^\w\-]+/g, '');
 
-      let parent = await prisma.category.findFirst({
-        where: {
-          OR: [
-            { name: { equals: parentName, mode: 'insensitive' } },
-            { slug: parentSlug },
-          ],
-          parentId: null,
-        },
-      });
-
-      if (!parent) {
-        parent = await prisma.category.create({
-          data: {
+      try {
+        // Use upsert to handle race condition
+        const parent = await prisma.category.upsert({
+          where: { slug: parentSlug },
+          update: {}, // Don't update if exists
+          create: {
             name: parentName,
             slug: parentSlug,
             isActive: true,
             description: `${parentName} products`,
           },
         });
-        this.createdCategories.push(parentName);
-        console.log(`Created parent category: ${parentName}`);
+        parentId = parent.id;
+
+        if (!this.createdCategories.includes(parentName)) {
+          this.createdCategories.push(parentName);
+          console.log(`Created parent category: ${parentName}`);
+        }
+      } catch (error) {
+        // If upsert fails, try to find existing
+        const existing = await prisma.category.findFirst({
+          where: { slug: parentSlug },
+        });
+        if (existing) {
+          parentId = existing.id;
+        } else {
+          throw error;
+        }
       }
-      parentId = parent.id;
     }
 
     // If no child, return parent
@@ -492,18 +498,12 @@ export class PipImportService {
       .replace(/\s+/g, '-')
       .replace(/[^\w\-]+/g, '');
 
-    let child = await prisma.category.findFirst({
-      where: {
-        OR: [
-          { name: { equals: childName, mode: 'insensitive' } },
-          { slug: childSlug },
-        ],
-      },
-    });
-
-    if (!child) {
-      child = await prisma.category.create({
-        data: {
+    try {
+      // Use upsert to handle race condition
+      const child = await prisma.category.upsert({
+        where: { slug: childSlug },
+        update: {}, // Don't update if exists
+        create: {
           name: childName,
           slug: childSlug,
           isActive: true,
@@ -511,12 +511,26 @@ export class PipImportService {
           parentId,
         },
       });
-      this.createdCategories.push(childName);
-      console.log(`Created child category: ${childName} under ${parentName}`);
-    }
 
-    this.categoryCache.set(cacheKey, child.id);
-    return child.id;
+      this.categoryCache.set(cacheKey, child.id);
+
+      if (!this.createdCategories.includes(childName)) {
+        this.createdCategories.push(childName);
+        console.log(`Created child category: ${childName} under ${parentName}`);
+      }
+
+      return child.id;
+    } catch (error) {
+      // If upsert fails, try to find existing
+      const existing = await prisma.category.findFirst({
+        where: { slug: childSlug },
+      });
+      if (existing) {
+        this.categoryCache.set(cacheKey, existing.id);
+        return existing.id;
+      }
+      throw error;
+    }
   }
 
   /**
