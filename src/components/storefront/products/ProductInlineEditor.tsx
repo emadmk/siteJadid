@@ -154,7 +154,11 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
       setVariantsLoading(true);
       fetch(`/api/admin/products/${product.id}/variants`)
         .then((res) => res.json())
-        .then((data) => setVariants(data.variants || []))
+        .then((data) => {
+          // API returns array directly or object with variants property
+          const variantsData = Array.isArray(data) ? data : (data.variants || []);
+          setVariants(variantsData);
+        })
         .catch(console.error)
         .finally(() => setVariantsLoading(false));
     }
