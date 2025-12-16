@@ -15,6 +15,8 @@ import {
   Tag,
   FileText,
   Settings,
+  Layers,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast';
@@ -65,13 +67,30 @@ interface ProductData {
   complianceCertifications: string[];
 }
 
+interface Variant {
+  id: string;
+  sku: string;
+  name: string;
+  basePrice: number;
+  salePrice: number | null;
+  wholesalePrice: number | null;
+  gsaPrice: number | null;
+  costPrice: number | null;
+  stockQuantity: number;
+  isActive: boolean;
+  attributeValues: {
+    value: string;
+    attribute: { name: string };
+  }[];
+}
+
 interface ProductInlineEditorProps {
   product: ProductData;
   isOpen: boolean;
   onClose: () => void;
 }
 
-type TabType = 'basic' | 'pricing' | 'images' | 'inventory' | 'seo';
+type TabType = 'basic' | 'pricing' | 'images' | 'inventory' | 'seo' | 'variants';
 
 export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineEditorProps) {
   const router = useRouter();
@@ -79,6 +98,11 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
   const [uploading, setUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [variants, setVariants] = useState<Variant[]>([]);
+  const [variantsLoading, setVariantsLoading] = useState(false);
+  const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
+  const [variantEditData, setVariantEditData] = useState<Partial<Variant>>({});
+  const [savingVariant, setSavingVariant] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('basic');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -113,7 +137,7 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
   const [images, setImages] = useState<string[]>(product.images || []);
   const [imageInput, setImageInput] = useState('');
 
-  // Load categories and brands
+  // Load categories, brands, and variants
   useEffect(() => {
     if (isOpen) {
       fetch('/api/categories')
@@ -125,8 +149,16 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
         .then((res) => res.json())
         .then((data) => setBrands(data.brands || data || []))
         .catch(console.error);
+
+      // Fetch variants for this product
+      setVariantsLoading(true);
+      fetch(`/api/admin/products/${product.id}/variants`)
+        .then((res) => res.json())
+        .then((data) => setVariants(data.variants || []))
+        .catch(console.error)
+        .finally(() => setVariantsLoading(false));
     }
-  }, [isOpen]);
+  }, [isOpen, product.id]);
 
   // Reset form when product changes
   useEffect(() => {
@@ -292,10 +324,53 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
   const tabs = [
     { id: 'basic' as TabType, label: 'Basic Info', icon: Package },
     { id: 'pricing' as TabType, label: 'Pricing', icon: DollarSign },
+    { id: 'variants' as TabType, label: `Variants (${variants.length})`, icon: Layers },
     { id: 'images' as TabType, label: 'Images', icon: ImageIcon },
     { id: 'inventory' as TabType, label: 'Inventory', icon: Tag },
     { id: 'seo' as TabType, label: 'SEO', icon: FileText },
   ];
+
+  // Variant editing functions
+  const startVariantEdit = (variant: Variant) => {
+    setEditingVariantId(variant.id);
+    setVariantEditData({
+      basePrice: variant.basePrice,
+      salePrice: variant.salePrice,
+      wholesalePrice: variant.wholesalePrice,
+      gsaPrice: variant.gsaPrice,
+      stockQuantity: variant.stockQuantity,
+    });
+  };
+
+  const cancelVariantEdit = () => {
+    setEditingVariantId(null);
+    setVariantEditData({});
+  };
+
+  const saveVariantEdit = async (variantId: string) => {
+    setSavingVariant(true);
+    try {
+      const response = await fetch(`/api/admin/variants/${variantId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(variantEditData),
+      });
+
+      if (!response.ok) throw new Error('Failed to update variant');
+
+      // Update local state
+      setVariants(prev => prev.map(v =>
+        v.id === variantId ? { ...v, ...variantEditData } as Variant : v
+      ));
+      setEditingVariantId(null);
+      setVariantEditData({});
+      toast.success('Variant updated!');
+    } catch (error) {
+      toast.error('Failed to update variant');
+    } finally {
+      setSavingVariant(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -644,6 +719,228 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Variants Tab */}
+          {activeTab === 'variants' && (
+            <div className="space-y-4">
+              {variantsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                </div>
+              ) : variants.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                  <Layers className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No variants for this product.</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Add variants from the full edit page.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                          Variant
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                          SKU
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                          Base
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                          Sale
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                          B2B
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                          GSA
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                          Stock
+                        </th>
+                        <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {variants.map((variant) => (
+                        <tr key={variant.id} className="hover:bg-gray-50">
+                          {editingVariantId === variant.id ? (
+                            <>
+                              <td className="px-3 py-2" colSpan={2}>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {variant.attributeValues
+                                    .map((av) => av.value)
+                                    .join(' / ')}
+                                </div>
+                                <div className="text-xs text-gray-500 font-mono">
+                                  {variant.sku}
+                                </div>
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={variantEditData.basePrice ?? ''}
+                                  onChange={(e) =>
+                                    setVariantEditData((prev) => ({
+                                      ...prev,
+                                      basePrice: parseFloat(e.target.value) || 0,
+                                    }))
+                                  }
+                                  className="w-20 px-2 py-1 text-sm border rounded text-right"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={variantEditData.salePrice ?? ''}
+                                  onChange={(e) =>
+                                    setVariantEditData((prev) => ({
+                                      ...prev,
+                                      salePrice: e.target.value ? parseFloat(e.target.value) : null,
+                                    }))
+                                  }
+                                  className="w-20 px-2 py-1 text-sm border rounded text-right"
+                                  placeholder="-"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={variantEditData.wholesalePrice ?? ''}
+                                  onChange={(e) =>
+                                    setVariantEditData((prev) => ({
+                                      ...prev,
+                                      wholesalePrice: e.target.value ? parseFloat(e.target.value) : null,
+                                    }))
+                                  }
+                                  className="w-20 px-2 py-1 text-sm border rounded text-right"
+                                  placeholder="-"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={variantEditData.gsaPrice ?? ''}
+                                  onChange={(e) =>
+                                    setVariantEditData((prev) => ({
+                                      ...prev,
+                                      gsaPrice: e.target.value ? parseFloat(e.target.value) : null,
+                                    }))
+                                  }
+                                  className="w-20 px-2 py-1 text-sm border rounded text-right"
+                                  placeholder="-"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  value={variantEditData.stockQuantity ?? ''}
+                                  onChange={(e) =>
+                                    setVariantEditData((prev) => ({
+                                      ...prev,
+                                      stockQuantity: parseInt(e.target.value) || 0,
+                                    }))
+                                  }
+                                  className="w-16 px-2 py-1 text-sm border rounded text-right"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    onClick={() => saveVariantEdit(variant.id)}
+                                    disabled={savingVariant}
+                                    className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                    title="Save"
+                                  >
+                                    {savingVariant ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Check className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={cancelVariantEdit}
+                                    className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                                    title="Cancel"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="px-3 py-2">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {variant.attributeValues
+                                    .map((av) => av.value)
+                                    .join(' / ')}
+                                </div>
+                              </td>
+                              <td className="px-3 py-2">
+                                <span className="text-xs font-mono text-gray-500">
+                                  {variant.sku}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-right text-sm">
+                                ${Number(variant.basePrice).toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 text-right text-sm text-red-600">
+                                {variant.salePrice
+                                  ? `$${Number(variant.salePrice).toFixed(2)}`
+                                  : '-'}
+                              </td>
+                              <td className="px-3 py-2 text-right text-sm text-blue-600">
+                                {variant.wholesalePrice
+                                  ? `$${Number(variant.wholesalePrice).toFixed(2)}`
+                                  : '-'}
+                              </td>
+                              <td className="px-3 py-2 text-right text-sm text-purple-600">
+                                {variant.gsaPrice
+                                  ? `$${Number(variant.gsaPrice).toFixed(2)}`
+                                  : '-'}
+                              </td>
+                              <td className="px-3 py-2 text-right text-sm">
+                                <span
+                                  className={
+                                    variant.stockQuantity < 10
+                                      ? 'text-red-600 font-medium'
+                                      : ''
+                                  }
+                                >
+                                  {variant.stockQuantity}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center justify-center">
+                                  <button
+                                    onClick={() => startVariantEdit(variant)}
+                                    className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                                    title="Edit"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
