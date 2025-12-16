@@ -117,6 +117,7 @@ export class PipImportService {
   private skippedNoImage = 0;
   private categoryCache = new Map<string, string>();
   private brandCache = new Map<string, string>();
+  private imageIndex = new Map<string, string>(); // normalized name -> actual filename
 
   /**
    * Parse PiP Excel file from buffer
@@ -235,11 +236,99 @@ export class PipImportService {
   }
 
   /**
+   * Build image index from folder - maps various name patterns to actual filenames
+   */
+  private async buildImageIndex(imageBasePath: string): Promise<void> {
+    this.imageIndex.clear();
+
+    try {
+      const files = await fs.readdir(imageBasePath);
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+
+      for (const file of files) {
+        const ext = path.extname(file).toLowerCase();
+        if (!imageExtensions.includes(ext)) continue;
+
+        const baseName = path.basename(file, path.extname(file));
+
+        // Store multiple lookup keys for each image:
+        // 1. Exact filename (without extension)
+        this.imageIndex.set(baseName.toLowerCase(), file);
+
+        // 2. If filename has dash, also index the part before dash (STYLE part)
+        // e.g., "1070-CAMO" -> also index "1070"
+        if (baseName.includes('-')) {
+          const stylePart = baseName.split('-')[0];
+          if (!this.imageIndex.has(stylePart.toLowerCase())) {
+            this.imageIndex.set(stylePart.toLowerCase(), file);
+          }
+        }
+
+        // 3. If filename has underscore, also index the part before underscore
+        if (baseName.includes('_')) {
+          const stylePart = baseName.split('_')[0];
+          if (!this.imageIndex.has(stylePart.toLowerCase())) {
+            this.imageIndex.set(stylePart.toLowerCase(), file);
+          }
+        }
+
+        // 4. If filename has space, also index the part before space
+        if (baseName.includes(' ')) {
+          const stylePart = baseName.split(' ')[0];
+          if (!this.imageIndex.has(stylePart.toLowerCase())) {
+            this.imageIndex.set(stylePart.toLowerCase(), file);
+          }
+        }
+      }
+
+      console.log(`Built image index with ${this.imageIndex.size} entries from ${files.length} files`);
+
+      // Log some sample entries for debugging
+      const sampleEntries = Array.from(this.imageIndex.entries()).slice(0, 10);
+      console.log('Sample image index entries:', sampleEntries);
+
+    } catch (error) {
+      console.error('Error building image index:', error);
+    }
+  }
+
+  /**
+   * Find image for a product using the index
+   */
+  private findImageInIndex(sku: string, style: string, color: string): string | null {
+    const searchTerms = [
+      sku,
+      style,
+      `${style}-${color}`,
+      `${style}_${color}`,
+      `${style}${color}`,
+      sku.replace('/', '-'),
+      style.replace('/', '-'),
+    ].filter(Boolean);
+
+    for (const term of searchTerms) {
+      if (!term) continue;
+      const normalized = term.toLowerCase().trim();
+      if (this.imageIndex.has(normalized)) {
+        return this.imageIndex.get(normalized)!;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Check if any variant in the group has images in the import folder
    */
   private async groupHasImages(group: VariantGroup, imageBasePath: string): Promise<boolean> {
+    // First try the index
     for (const row of group.rows) {
-      // Check for images by SKU or STYLE
+      const found = this.findImageInIndex(row.sku, row.style, row.color);
+      if (found) return true;
+    }
+
+    // Fallback: direct file check
+    for (const row of group.rows) {
       const possibleNames = [row.sku, row.style, row.sku.replace('/', '-'), row.style.replace('/', '-')];
       for (const name of possibleNames) {
         if (!name) continue;
@@ -249,23 +338,10 @@ export class PipImportService {
           if (existsSync(filePath)) {
             return true;
           }
-          // Also try lowercase filename
-          const lowerFilePath = path.join(imageBasePath, name.toLowerCase() + ext);
-          if (existsSync(lowerFilePath)) {
-            return true;
-          }
         }
       }
     }
     return false;
-  }
-
-  /**
-   * Log what images we're looking for (for debugging)
-   */
-  logImageSearch(group: VariantGroup, imageBasePath: string): void {
-    const firstRow = group.rows[0];
-    console.log(`Looking for images for ${group.style}: SKU=${firstRow.sku}, checking in ${imageBasePath}`);
   }
 
   /**
@@ -544,21 +620,21 @@ export class PipImportService {
     const groups = this.groupByStyle(rows);
     console.log(`Found ${groups.length} product groups from ${rows.length} rows`);
 
-    // List files in image folder for debugging
-    try {
-      const files = await fs.readdir(imageBasePath);
-      console.log(`Image folder ${imageBasePath} has ${files.length} files`);
-      if (files.length > 0 && files.length <= 20) {
-        console.log('Sample files:', files.slice(0, 20));
-      } else if (files.length > 20) {
-        console.log('Sample files:', files.slice(0, 20), '...');
-      }
-    } catch (e) {
-      console.log(`Cannot read image folder ${imageBasePath}:`, e);
+    // Log first few products to see their structure
+    console.log('Sample product data:');
+    for (let i = 0; i < Math.min(5, groups.length); i++) {
+      const g = groups[i];
+      const r = g.rows[0];
+      console.log(`  Product ${i + 1}: STYLE="${r.style}", SKU="${r.sku}", COLOR="${r.color}"`);
     }
+
+    // Build image index
+    console.log('Building image index...');
+    await this.buildImageIndex(imageBasePath);
 
     let processedCount = 0;
     let loggedFirstFewSkips = 0;
+    let loggedFirstFewFound = 0;
 
     for (const group of groups) {
       try {
@@ -569,10 +645,18 @@ export class PipImportService {
           // Log first few skipped for debugging
           if (loggedFirstFewSkips < 5) {
             const firstRow = group.rows[0];
-            console.log(`Skipping ${group.style} (SKU: ${firstRow.sku}) - no image found`);
+            console.log(`Skipping ${group.style} (SKU: ${firstRow.sku}, COLOR: ${firstRow.color}) - no image found`);
             loggedFirstFewSkips++;
           }
           continue;
+        }
+
+        // Log first few found for debugging
+        if (loggedFirstFewFound < 5) {
+          const firstRow = group.rows[0];
+          const foundImage = this.findImageInIndex(firstRow.sku, firstRow.style, firstRow.color);
+          console.log(`Found image for ${group.style} (SKU: ${firstRow.sku}, COLOR: ${firstRow.color}) -> ${foundImage}`);
+          loggedFirstFewFound++;
         }
 
         await this.importProductGroup(group, {
