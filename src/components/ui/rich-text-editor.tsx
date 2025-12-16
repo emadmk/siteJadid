@@ -360,7 +360,110 @@ export function RichTextEditor({
 
       {/* Editor Content */}
       {mode === 'visual' ? (
-        <div className="bg-white">
+        <div className="bg-white rich-text-content">
+          <style jsx global>{`
+            .rich-text-content .ProseMirror {
+              min-height: 200px;
+              padding: 1rem;
+              outline: none;
+            }
+            .rich-text-content .ProseMirror h1 {
+              font-size: 1.875rem;
+              font-weight: 700;
+              margin-bottom: 0.5rem;
+              margin-top: 1rem;
+              line-height: 1.2;
+            }
+            .rich-text-content .ProseMirror h2 {
+              font-size: 1.5rem;
+              font-weight: 700;
+              margin-bottom: 0.5rem;
+              margin-top: 1rem;
+              line-height: 1.3;
+            }
+            .rich-text-content .ProseMirror h3 {
+              font-size: 1.25rem;
+              font-weight: 600;
+              margin-bottom: 0.5rem;
+              margin-top: 0.75rem;
+              line-height: 1.4;
+            }
+            .rich-text-content .ProseMirror p {
+              margin-bottom: 0.75rem;
+            }
+            .rich-text-content .ProseMirror ul {
+              list-style-type: disc;
+              padding-left: 1.5rem;
+              margin-bottom: 0.75rem;
+            }
+            .rich-text-content .ProseMirror ol {
+              list-style-type: decimal;
+              padding-left: 1.5rem;
+              margin-bottom: 0.75rem;
+            }
+            .rich-text-content .ProseMirror li {
+              margin-bottom: 0.25rem;
+            }
+            .rich-text-content .ProseMirror blockquote {
+              border-left: 3px solid #d1d5db;
+              padding-left: 1rem;
+              margin-left: 0;
+              margin-bottom: 0.75rem;
+              color: #6b7280;
+              font-style: italic;
+            }
+            .rich-text-content .ProseMirror code {
+              background-color: #f3f4f6;
+              padding: 0.125rem 0.25rem;
+              border-radius: 0.25rem;
+              font-family: monospace;
+              font-size: 0.875rem;
+            }
+            .rich-text-content .ProseMirror pre {
+              background-color: #1f2937;
+              color: #f9fafb;
+              padding: 1rem;
+              border-radius: 0.5rem;
+              overflow-x: auto;
+              margin-bottom: 0.75rem;
+            }
+            .rich-text-content .ProseMirror pre code {
+              background: none;
+              padding: 0;
+              color: inherit;
+            }
+            .rich-text-content .ProseMirror hr {
+              border: none;
+              border-top: 1px solid #e5e7eb;
+              margin: 1rem 0;
+            }
+            .rich-text-content .ProseMirror a {
+              color: #2563eb;
+              text-decoration: underline;
+            }
+            .rich-text-content .ProseMirror strong {
+              font-weight: 700;
+            }
+            .rich-text-content .ProseMirror em {
+              font-style: italic;
+            }
+            .rich-text-content .ProseMirror u {
+              text-decoration: underline;
+            }
+            .rich-text-content .ProseMirror s {
+              text-decoration: line-through;
+            }
+            .rich-text-content .ProseMirror mark {
+              background-color: #fef08a;
+              padding: 0.125rem 0;
+            }
+            .rich-text-content .ProseMirror .is-empty::before {
+              content: attr(data-placeholder);
+              color: #9ca3af;
+              pointer-events: none;
+              position: absolute;
+            }
+          `}</style>
           <EditorContent editor={editor} />
         </div>
       ) : (

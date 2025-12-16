@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/lib/toast';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 interface Category {
   id: string;
@@ -408,13 +409,12 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Full Description
                 </label>
-                <textarea
+                <RichTextEditor
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, description: value }))
                   }
-                  rows={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                  placeholder="Write product description..."
                 />
               </div>
 
