@@ -1,11 +1,28 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Eye, Package, Search, Upload, Pencil } from 'lucide-react';
+import { Plus, Edit, Eye, Package, Search, Upload, Pencil, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db } from '@/lib/db';
 
-async function getProducts(searchParams: { status?: string; category?: string; search?: string; brand?: string }) {
-  const where: any = {};
+interface SearchParams {
+  status?: string;
+  category?: string;
+  search?: string;
+  brand?: string;
+  warehouse?: string;
+  supplier?: string;
+  page?: string;
+  pageSize?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}
 
+async function getProducts(searchParams: SearchParams) {
+  const where: any = {};
+  const page = parseInt(searchParams.page || '1');
+  const pageSize = parseInt(searchParams.pageSize || '50');
+  const skip = (page - 1) * pageSize;
+
+  // Build where clause
   if (searchParams.status) {
     where.status = searchParams.status;
   }
@@ -18,9 +35,16 @@ async function getProducts(searchParams: { status?: string; category?: string; s
     where.brandId = searchParams.brand;
   }
 
+  if (searchParams.warehouse) {
+    where.defaultWarehouseId = searchParams.warehouse;
+  }
+
+  if (searchParams.supplier) {
+    where.defaultSupplierId = searchParams.supplier;
+  }
+
   if (searchParams.search) {
     const search = searchParams.search;
-    // Check if search is a number (for price search)
     const searchNumber = parseFloat(search);
     const isNumericSearch = !isNaN(searchNumber);
 
@@ -30,17 +54,12 @@ async function getProducts(searchParams: { status?: string; category?: string; s
       { description: { contains: search, mode: 'insensitive' } },
       { shortDescription: { contains: search, mode: 'insensitive' } },
       { metaKeywords: { contains: search, mode: 'insensitive' } },
-      // Search by brand name
       { brand: { name: { contains: search, mode: 'insensitive' } } },
-      // Search by category name
       { category: { name: { contains: search, mode: 'insensitive' } } },
-      // Search by supplier name
       { defaultSupplier: { name: { contains: search, mode: 'insensitive' } } },
-      // Search by warehouse name
       { defaultWarehouse: { name: { contains: search, mode: 'insensitive' } } },
     ];
 
-    // If it's a numeric search, also search by price
     if (isNumericSearch) {
       where.OR.push(
         { basePrice: { equals: searchNumber } },
@@ -49,78 +68,309 @@ async function getProducts(searchParams: { status?: string; category?: string; s
     }
   }
 
-  const products = await db.product.findMany({
-    where,
-    include: {
-      category: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      brand: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      defaultSupplier: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      defaultWarehouse: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: 100,
-  });
+  // Build orderBy
+  let orderBy: any = { createdAt: 'desc' };
+  if (searchParams.sortBy) {
+    const sortOrder = searchParams.sortOrder === 'asc' ? 'asc' : 'desc';
+    switch (searchParams.sortBy) {
+      case 'sku':
+        orderBy = { sku: sortOrder };
+        break;
+      case 'brand':
+        orderBy = { brand: { name: sortOrder } };
+        break;
+      case 'price':
+        orderBy = { basePrice: sortOrder };
+        break;
+      case 'stock':
+        orderBy = { stockQuantity: sortOrder };
+        break;
+      case 'status':
+        orderBy = { status: sortOrder };
+        break;
+      case 'name':
+        orderBy = { name: sortOrder };
+        break;
+    }
+  }
 
-  return products;
+  const [products, totalCount] = await Promise.all([
+    db.product.findMany({
+      where,
+      include: {
+        category: { select: { id: true, name: true } },
+        brand: { select: { id: true, name: true } },
+        defaultSupplier: { select: { id: true, name: true } },
+        defaultWarehouse: { select: { id: true, name: true } },
+      },
+      orderBy,
+      skip,
+      take: pageSize,
+    }),
+    db.product.count({ where }),
+  ]);
+
+  return {
+    products,
+    totalCount,
+    page,
+    pageSize,
+    totalPages: Math.ceil(totalCount / pageSize),
+  };
 }
 
 async function getCategories() {
   return await db.category.findMany({
     where: { isActive: true },
-    select: {
-      id: true,
-      name: true,
-    },
-    orderBy: {
-      name: 'asc',
-    },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
   });
 }
 
 async function getBrands() {
   return await db.brand.findMany({
     where: { isActive: true },
-    select: {
-      id: true,
-      name: true,
-    },
-    orderBy: {
-      name: 'asc',
-    },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
   });
+}
+
+async function getWarehouses() {
+  return await db.warehouse.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+}
+
+async function getSuppliers() {
+  return await db.supplier.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+}
+
+function SortableHeader({
+  label,
+  sortKey,
+  currentSort,
+  currentOrder,
+  searchParams,
+}: {
+  label: string;
+  sortKey: string;
+  currentSort?: string;
+  currentOrder?: string;
+  searchParams: SearchParams;
+}) {
+  const isActive = currentSort === sortKey;
+  const nextOrder = isActive && currentOrder === 'asc' ? 'desc' : 'asc';
+
+  // Build URL with new sort params
+  const params = new URLSearchParams();
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (value && key !== 'sortBy' && key !== 'sortOrder') {
+      params.set(key, value);
+    }
+  });
+  params.set('sortBy', sortKey);
+  params.set('sortOrder', nextOrder);
+
+  return (
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+      <Link
+        href={`/admin/products?${params.toString()}`}
+        className="flex items-center gap-1 hover:text-safety-green-600 cursor-pointer"
+      >
+        {label}
+        {isActive ? (
+          currentOrder === 'asc' ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )
+        ) : (
+          <ChevronsUpDown className="w-4 h-4 opacity-40" />
+        )}
+      </Link>
+    </th>
+  );
+}
+
+function Pagination({
+  page,
+  totalPages,
+  totalCount,
+  pageSize,
+  searchParams,
+}: {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  pageSize: number;
+  searchParams: SearchParams;
+}) {
+  // Build base URL params
+  const buildUrl = (newPage: number) => {
+    const params = new URLSearchParams();
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value && key !== 'page') {
+        params.set(key, value);
+      }
+    });
+    params.set('page', newPage.toString());
+    return `/admin/products?${params.toString()}`;
+  };
+
+  // Generate page numbers to show
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const showPages = 5; // Number of page buttons to show
+
+    if (totalPages <= showPages + 2) {
+      // Show all pages if total is small
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+
+      // Calculate range around current page
+      let start = Math.max(2, page - 2);
+      let end = Math.min(totalPages - 1, page + 2);
+
+      // Adjust if near start or end
+      if (page <= 3) {
+        end = Math.min(showPages, totalPages - 1);
+      } else if (page >= totalPages - 2) {
+        start = Math.max(2, totalPages - showPages + 1);
+      }
+
+      // Add ellipsis if needed
+      if (start > 2) {
+        pages.push('...');
+      }
+
+      // Add middle pages
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      // Add ellipsis if needed
+      if (end < totalPages - 1) {
+        pages.push('...');
+      }
+
+      // Always show last page
+      if (totalPages > 1) {
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  };
+
+  const startItem = (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalCount);
+
+  return (
+    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+      <div className="text-sm text-gray-600">
+        Showing <span className="font-medium">{startItem}</span> to{' '}
+        <span className="font-medium">{endItem}</span> of{' '}
+        <span className="font-medium">{totalCount}</span> products
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* Previous button */}
+        {page > 1 ? (
+          <Link href={buildUrl(page - 1)}>
+            <Button variant="outline" size="sm" className="border-gray-300">
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+          </Link>
+        ) : (
+          <Button variant="outline" size="sm" className="border-gray-300 opacity-50" disabled>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+        )}
+
+        {/* Page numbers */}
+        <div className="flex items-center gap-1">
+          {getPageNumbers().map((p, idx) => (
+            typeof p === 'number' ? (
+              <Link key={idx} href={buildUrl(p)}>
+                <Button
+                  variant={p === page ? 'default' : 'outline'}
+                  size="sm"
+                  className={p === page
+                    ? 'bg-safety-green-600 hover:bg-safety-green-700 text-white min-w-[36px]'
+                    : 'border-gray-300 min-w-[36px]'
+                  }
+                >
+                  {p}
+                </Button>
+              </Link>
+            ) : (
+              <span key={idx} className="px-2 text-gray-400">...</span>
+            )
+          ))}
+        </div>
+
+        {/* Next button */}
+        {page < totalPages ? (
+          <Link href={buildUrl(page + 1)}>
+            <Button variant="outline" size="sm" className="border-gray-300">
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </Link>
+        ) : (
+          <Button variant="outline" size="sm" className="border-gray-300 opacity-50" disabled>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        )}
+
+        {/* Jump to page */}
+        <div className="flex items-center gap-2 ml-4">
+          <span className="text-sm text-gray-600">Go to:</span>
+          <form action="/admin/products" method="GET" className="flex items-center gap-1">
+            {/* Preserve existing params */}
+            {Object.entries(searchParams).map(([key, value]) =>
+              value && key !== 'page' ? (
+                <input key={key} type="hidden" name={key} value={value} />
+              ) : null
+            )}
+            <input
+              type="number"
+              name="page"
+              min="1"
+              max={totalPages}
+              placeholder={page.toString()}
+              className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-safety-green-500"
+            />
+            <Button type="submit" variant="outline" size="sm" className="border-gray-300">
+              Go
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: { status?: string; category?: string; search?: string; brand?: string };
+  searchParams: SearchParams;
 }) {
-  const [products, categories, brands] = await Promise.all([
+  const [{ products, totalCount, page, pageSize, totalPages }, categories, brands, warehouses, suppliers] = await Promise.all([
     getProducts(searchParams),
     getCategories(),
     getBrands(),
+    getWarehouses(),
+    getSuppliers(),
   ]);
 
   const stats = {
@@ -179,9 +429,9 @@ export default async function ProductsPage({
 
       {/* Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-        <form className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <form className="grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Search */}
-          <div className="md:col-span-5">
+          <div className="md:col-span-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Search
             </label>
@@ -253,7 +503,45 @@ export default async function ProductsPage({
             </select>
           </div>
 
-          <div className="md:col-span-5 flex gap-2">
+          {/* Warehouse Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Warehouse
+            </label>
+            <select
+              name="warehouse"
+              defaultValue={searchParams.warehouse || ''}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+            >
+              <option value="">All Warehouses</option>
+              {warehouses.map((wh) => (
+                <option key={wh.id} value={wh.id}>
+                  {wh.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Supplier Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Supplier
+            </label>
+            <select
+              name="supplier"
+              defaultValue={searchParams.supplier || ''}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+            >
+              <option value="">All Suppliers</option>
+              {suppliers.map((sup) => (
+                <option key={sup.id} value={sup.id}>
+                  {sup.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="md:col-span-6 flex gap-2">
             <Button type="submit" className="bg-safety-green-600 hover:bg-safety-green-700">
               Apply Filters
             </Button>
@@ -286,146 +574,177 @@ export default async function ProductsPage({
               </Link>
             </div>
           ) : (
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    Product
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    SKU
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    Brand
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    Price
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    Stock
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {products.map((product: any) => {
-                  const images = product.images as string[];
-                  const statusColors: Record<string, string> = {
-                    ACTIVE: 'bg-safety-green-100 text-safety-green-800',
-                    DRAFT: 'bg-gray-100 text-gray-800',
-                    OUT_OF_STOCK: 'bg-red-100 text-red-800',
-                    DISCONTINUED: 'bg-yellow-100 text-yellow-800',
-                  };
+            <>
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+                      Product
+                    </th>
+                    <SortableHeader
+                      label="SKU"
+                      sortKey="sku"
+                      currentSort={searchParams.sortBy}
+                      currentOrder={searchParams.sortOrder}
+                      searchParams={searchParams}
+                    />
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
+                      Category
+                    </th>
+                    <SortableHeader
+                      label="Brand"
+                      sortKey="brand"
+                      currentSort={searchParams.sortBy}
+                      currentOrder={searchParams.sortOrder}
+                      searchParams={searchParams}
+                    />
+                    <SortableHeader
+                      label="Price"
+                      sortKey="price"
+                      currentSort={searchParams.sortBy}
+                      currentOrder={searchParams.sortOrder}
+                      searchParams={searchParams}
+                    />
+                    <SortableHeader
+                      label="Stock"
+                      sortKey="stock"
+                      currentSort={searchParams.sortBy}
+                      currentOrder={searchParams.sortOrder}
+                      searchParams={searchParams}
+                    />
+                    <SortableHeader
+                      label="Status"
+                      sortKey="status"
+                      currentSort={searchParams.sortBy}
+                      currentOrder={searchParams.sortOrder}
+                      searchParams={searchParams}
+                    />
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {products.map((product: any) => {
+                    const images = product.images as string[];
+                    const statusColors: Record<string, string> = {
+                      ACTIVE: 'bg-safety-green-100 text-safety-green-800',
+                      DRAFT: 'bg-gray-100 text-gray-800',
+                      OUT_OF_STOCK: 'bg-red-100 text-red-800',
+                      DISCONTINUED: 'bg-yellow-100 text-yellow-800',
+                    };
 
-                  return (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gray-100 rounded flex-shrink-0">
-                            {images && images.length > 0 ? (
-                              <img
-                                src={images[0]}
-                                alt={product.name}
-                                className="w-full h-full object-cover rounded"
-                              />
+                    return (
+                      <tr key={product.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gray-100 rounded flex-shrink-0">
+                              {images && images.length > 0 ? (
+                                <img
+                                  src={images[0]}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover rounded"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="w-5 h-5 text-gray-300" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-medium text-black line-clamp-1">
+                                {product.name}
+                              </div>
+                              <div className="text-xs text-gray-600 line-clamp-1">
+                                {product.shortDescription}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-mono text-gray-700">
+                          {product.sku}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {product.category?.name || '-'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {product.brand?.name || '-'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm">
+                            {product.salePrice ? (
+                              <div>
+                                <div className="font-semibold text-safety-green-600">
+                                  ${Number(product.salePrice).toFixed(2)}
+                                </div>
+                                <div className="text-xs text-gray-400 line-through">
+                                  ${Number(product.basePrice).toFixed(2)}
+                                </div>
+                              </div>
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Package className="w-5 h-5 text-gray-300" />
+                              <div className="font-semibold text-black">
+                                ${Number(product.basePrice).toFixed(2)}
                               </div>
                             )}
                           </div>
-                          <div className="min-w-0">
-                            <div className="font-medium text-black line-clamp-1">
-                              {product.name}
-                            </div>
-                            <div className="text-xs text-gray-600 line-clamp-1">
-                              {product.shortDescription}
-                            </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              product.stockQuantity === 0
+                                ? 'bg-red-100 text-red-800'
+                                : product.stockQuantity <= 10
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-safety-green-100 text-safety-green-800'
+                            }`}
+                          >
+                            {product.stockQuantity}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[product.status]}`}
+                          >
+                            {product.status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link href={`/products/${product.slug}`} target="_blank">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-gray-300 hover:border-blue-600 hover:text-blue-600"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </Link>
+                            <Link href={`/admin/products/${product.id}/edit`}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-gray-300 hover:border-safety-green-600 hover:text-safety-green-600"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </Link>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-mono text-gray-700">
-                        {product.sku}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {product.category?.name || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {product.brand?.name || '-'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm">
-                          {product.salePrice ? (
-                            <div>
-                              <div className="font-semibold text-safety-green-600">
-                                ${Number(product.salePrice).toFixed(2)}
-                              </div>
-                              <div className="text-xs text-gray-400 line-through">
-                                ${Number(product.basePrice).toFixed(2)}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="font-semibold text-black">
-                              ${Number(product.basePrice).toFixed(2)}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            product.stockQuantity === 0
-                              ? 'bg-red-100 text-red-800'
-                              : product.stockQuantity <= 10
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-safety-green-100 text-safety-green-800'
-                          }`}
-                        >
-                          {product.stockQuantity}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[product.status]}`}
-                        >
-                          {product.status.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/products/${product.slug}`} target="_blank">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-gray-300 hover:border-blue-600 hover:text-blue-600"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <Link href={`/admin/products/${product.id}/edit`}>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-gray-300 hover:border-safety-green-600 hover:text-safety-green-600"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {/* Pagination */}
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                searchParams={searchParams}
+              />
+            </>
           )}
         </div>
       </div>
