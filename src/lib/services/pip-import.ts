@@ -345,16 +345,30 @@ export class PipImportService {
   }
 
   /**
-   * Get images for a group (looks in import-images folder by SKU/STYLE)
+   * Get images for a group - uses the imageIndex first, then fallback to direct check
    */
   private getGroupImageNames(group: VariantGroup, imageBasePath: string): string[] {
     const images: string[] = [];
 
-    // Try to find images for each variant
+    // First try the index
+    for (const row of group.rows) {
+      const foundImage = this.findImageInIndex(row.sku, row.style, row.color);
+      if (foundImage && !images.includes(foundImage)) {
+        images.push(foundImage);
+      }
+    }
+
+    // If found via index, return those
+    if (images.length > 0) {
+      return images;
+    }
+
+    // Fallback: direct file check
     for (const row of group.rows) {
       const possibleNames = [row.sku, row.style, row.sku.replace('/', '-'), row.style.replace('/', '-')];
       for (const name of possibleNames) {
-        const extensions = ['.jpg', '.jpeg', '.png', '.webp'];
+        if (!name) continue;
+        const extensions = ['.jpg', '.jpeg', '.png', '.webp', '.JPG', '.JPEG', '.PNG', '.WEBP'];
         for (const ext of extensions) {
           const filePath = path.join(imageBasePath, name + ext);
           if (existsSync(filePath)) {
@@ -363,19 +377,16 @@ export class PipImportService {
               images.push(fileName);
             }
           }
-          // Also check for _2, _3 variants
-          for (let i = 2; i <= 5; i++) {
-            const variantPath = path.join(imageBasePath, `${name}_${i}${ext}`);
-            if (existsSync(variantPath)) {
-              const fileName = `${name}_${i}${ext}`;
-              if (!images.includes(fileName)) {
-                images.push(fileName);
-              }
+          // Also check lowercase
+          const lowerPath = path.join(imageBasePath, name.toLowerCase() + ext);
+          if (existsSync(lowerPath)) {
+            const fileName = name.toLowerCase() + ext;
+            if (!images.includes(fileName)) {
+              images.push(fileName);
             }
           }
         }
       }
-      // If we found images, stop looking
       if (images.length > 0) break;
     }
 
