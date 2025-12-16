@@ -441,7 +441,7 @@ export default function BulkEditPage() {
           <div>
             <h1 className="text-3xl font-bold text-black mb-2">Bulk Edit Products</h1>
             <p className="text-gray-600">
-              Select products and perform bulk operations
+              Select products and perform bulk operations. Export includes all variants.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -460,7 +460,7 @@ export default function BulkEditPage() {
               disabled={selectedIds.size === 0}
             >
               <FileSpreadsheet className="w-4 h-4 mr-2" />
-              Export Selected
+              Export with Variants
             </Button>
           </div>
         </div>
@@ -972,22 +972,26 @@ export default function BulkEditPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">Update Prices via Excel</h3>
-                    <p className="text-sm text-gray-500">Upload an Excel file with price updates</p>
+                    <p className="text-sm text-gray-500">Works with both products and variants</p>
                   </div>
                 </div>
                 <div className="space-y-4 mb-6">
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <h4 className="font-medium text-orange-800 mb-2">Excel Format</h4>
+                    <h4 className="font-medium text-orange-800 mb-2">Excel Format (Supports Variants)</h4>
                     <p className="text-sm text-orange-700">
                       Your Excel file should have these columns:
                     </p>
                     <ul className="text-sm text-orange-700 mt-2 list-disc list-inside">
-                      <li><strong>SKU</strong> (required)</li>
+                      <li><strong>SKU</strong> (required - variant or product SKU)</li>
+                      <li><strong>Type</strong> (optional - &quot;Variant&quot; or &quot;Product&quot;)</li>
                       <li><strong>Base Price</strong> (optional)</li>
                       <li><strong>Sale Price</strong> (optional)</li>
                       <li><strong>GSA Price</strong> (optional)</li>
                       <li><strong>Wholesale Price</strong> (optional)</li>
                     </ul>
+                    <p className="text-xs text-orange-600 mt-2">
+                      Tip: Export products first to get the correct format with variant SKUs
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

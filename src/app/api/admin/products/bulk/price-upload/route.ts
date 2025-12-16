@@ -29,26 +29,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Excel file is empty' }, { status: 400 });
     }
 
-    let updated = 0;
+    let updatedVariants = 0;
+    let updatedProducts = 0;
     let notFound = 0;
     let errors: string[] = [];
 
     for (const row of data as any[]) {
       const sku = row['SKU'] || row['sku'] || row['Sku'];
+      const type = row['Type'] || row['type'] || '';
 
       if (!sku) {
         errors.push('Row without SKU found');
-        continue;
-      }
-
-      // Find product by SKU
-      const product = await db.product.findUnique({
-        where: { sku: String(sku) },
-      });
-
-      if (!product) {
-        notFound++;
-        errors.push(`SKU not found: ${sku}`);
         continue;
       }
 
@@ -115,24 +106,81 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Update product if there's any data to update
-      if (Object.keys(updateData).length > 0) {
-        try {
-          await db.product.update({
-            where: { id: product.id },
-            data: updateData,
-          });
-          updated++;
-        } catch (err) {
-          errors.push(`Failed to update SKU: ${sku}`);
+      // Skip if no data to update
+      if (Object.keys(updateData).length === 0) {
+        continue;
+      }
+
+      // Try variant first (if type is Variant or if we should auto-detect)
+      let found = false;
+
+      if (type.toLowerCase() !== 'product') {
+        // Try to find as variant first
+        const variant = await db.productVariant.findUnique({
+          where: { sku: String(sku) },
+        });
+
+        if (variant) {
+          try {
+            await db.productVariant.update({
+              where: { id: variant.id },
+              data: updateData,
+            });
+            updatedVariants++;
+            found = true;
+          } catch (err) {
+            errors.push(`Failed to update variant SKU: ${sku}`);
+          }
         }
       }
+
+      // If not found as variant (or type is Product), try product
+      if (!found) {
+        const product = await db.product.findUnique({
+          where: { sku: String(sku) },
+        });
+
+        if (product) {
+          try {
+            await db.product.update({
+              where: { id: product.id },
+              data: updateData,
+            });
+            updatedProducts++;
+            found = true;
+          } catch (err) {
+            errors.push(`Failed to update product SKU: ${sku}`);
+          }
+        }
+      }
+
+      if (!found) {
+        notFound++;
+        errors.push(`SKU not found: ${sku}`);
+      }
+    }
+
+    const totalUpdated = updatedVariants + updatedProducts;
+    let message = `Updated ${totalUpdated} item(s)`;
+    if (updatedVariants > 0) {
+      message += ` (${updatedVariants} variant(s)`;
+      if (updatedProducts > 0) {
+        message += `, ${updatedProducts} product(s)`;
+      }
+      message += ')';
+    } else if (updatedProducts > 0) {
+      message += ` (${updatedProducts} product(s))`;
+    }
+    if (notFound > 0) {
+      message += `, ${notFound} SKU(s) not found`;
     }
 
     return NextResponse.json({
       success: true,
-      message: `Updated ${updated} product(s)${notFound > 0 ? `, ${notFound} SKU(s) not found` : ''}`,
-      affected: updated,
+      message,
+      affected: totalUpdated,
+      updatedVariants,
+      updatedProducts,
       notFound,
       errors: errors.length > 5 ? errors.slice(0, 5).concat([`...and ${errors.length - 5} more`]) : errors,
     });
