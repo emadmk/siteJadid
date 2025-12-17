@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ChevronRight,
   SlidersHorizontal,
@@ -91,14 +91,18 @@ interface PageData {
 
 export default function CategoryPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+
+  // Get initial page from URL
+  const initialPage = parseInt(searchParams.get('page') || '1');
 
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [hasMore, setHasMore] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -115,6 +119,17 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
+  // Helper to update URL without full page reload
+  const updateUrlPage = useCallback((page: number) => {
+    const url = new URL(window.location.href);
+    if (page > 1) {
+      url.searchParams.set('page', page.toString());
+    } else {
+      url.searchParams.delete('page');
+    }
+    window.history.pushState({}, '', url.toString());
+  }, []);
+
   // Fetch category and products
   const fetchData = useCallback(async (page: number, reset: boolean = false) => {
     if (page === 1) {
@@ -126,6 +141,11 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     // Scroll to top when using pagination (reset=true and page > 1)
     if (reset && page > 1) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Update URL for pagination (for back button support)
+    if (reset) {
+      updateUrlPage(page);
     }
 
     try {
@@ -182,10 +202,25 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     }
   }, [params.slug, sortBy, searchQuery, selectedBrand, priceRange, activeSmartFilters, router]);
 
-  // Initial fetch
+  // Initial fetch - use page from URL if available (for back button support)
   useEffect(() => {
-    fetchData(1, true);
+    const pageFromUrl = parseInt(searchParams.get('page') || '1');
+    fetchData(pageFromUrl, true);
   }, [params.slug]);
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const url = new URL(window.location.href);
+      const pageFromUrl = parseInt(url.searchParams.get('page') || '1');
+      if (pageFromUrl !== currentPage) {
+        fetchData(pageFromUrl, true);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentPage, fetchData]);
 
   // Refetch when sort changes
   useEffect(() => {
