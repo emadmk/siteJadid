@@ -67,7 +67,12 @@ async function getCategories(): Promise<CategoryWithChildren[]> {
           image: true,
           _count: {
             select: {
-              products: true,
+              products: {
+                where: {
+                  status: 'ACTIVE',
+                  stockQuantity: { gt: 0 },
+                },
+              },
             },
           },
           // Include grandchildren for counting
@@ -79,7 +84,12 @@ async function getCategories(): Promise<CategoryWithChildren[]> {
               id: true,
               _count: {
                 select: {
-                  products: true,
+                  products: {
+                    where: {
+                      status: 'ACTIVE',
+                      stockQuantity: { gt: 0 },
+                    },
+                  },
                 },
               },
             },
@@ -91,7 +101,12 @@ async function getCategories(): Promise<CategoryWithChildren[]> {
       },
       _count: {
         select: {
-          products: true,
+          products: {
+            where: {
+              status: 'ACTIVE',
+              stockQuantity: { gt: 0 },
+            },
+          },
         },
       },
     },

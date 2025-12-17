@@ -286,7 +286,7 @@ function Pagination({
       <div className="flex items-center gap-2">
         {/* Previous button */}
         {page > 1 ? (
-          <Link href={buildUrl(page - 1)}>
+          <Link href={buildUrl(page - 1)} scroll={true}>
             <Button variant="outline" size="sm" className="border-gray-300">
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -301,7 +301,7 @@ function Pagination({
         <div className="flex items-center gap-1">
           {getPageNumbers().map((p, idx) => (
             typeof p === 'number' ? (
-              <Link key={idx} href={buildUrl(p)}>
+              <Link key={idx} href={buildUrl(p)} scroll={true}>
                 <Button
                   variant={p === page ? 'default' : 'outline'}
                   size="sm"
@@ -321,7 +321,7 @@ function Pagination({
 
         {/* Next button */}
         {page < totalPages ? (
-          <Link href={buildUrl(page + 1)}>
+          <Link href={buildUrl(page + 1)} scroll={true}>
             <Button variant="outline" size="sm" className="border-gray-300">
               <ChevronRight className="w-4 h-4" />
             </Button>

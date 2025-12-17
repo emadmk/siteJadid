@@ -123,6 +123,11 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       setLoadingMore(true);
     }
 
+    // Scroll to top when using pagination (reset=true and page > 1)
+    if (reset && page > 1) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     try {
       const queryParams = new URLSearchParams({
         page: page.toString(),

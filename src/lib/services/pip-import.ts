@@ -60,6 +60,8 @@ export interface PipImportOptions {
   dryRun?: boolean;
   defaultStockQuantity?: number;
   defaultStatus?: 'DRAFT' | 'ACTIVE' | 'INACTIVE';
+  defaultSupplierId?: string;
+  defaultWarehouseId?: string;
 }
 
 interface ParsedPipRow {
@@ -865,6 +867,8 @@ export class PipImportService {
       dryRun = false,
       defaultStockQuantity = 100,
       defaultStatus = 'ACTIVE',
+      defaultSupplierId,
+      defaultWarehouseId,
     } = options;
 
     // Find or create brand
@@ -912,6 +916,8 @@ export class PipImportService {
       metaKeywords: seo.metaKeywords,
       ...(brandId && { brand: { connect: { id: brandId } } }),
       ...(categoryId && { category: { connect: { id: categoryId } } }),
+      ...(defaultSupplierId && { defaultSupplier: { connect: { id: defaultSupplierId } } }),
+      ...(defaultWarehouseId && { defaultWarehouse: { connect: { id: defaultWarehouseId } } }),
     };
 
     if (dryRun) {
