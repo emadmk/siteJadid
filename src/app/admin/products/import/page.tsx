@@ -23,9 +23,10 @@ import {
   Truck,
   Package,
   Layers,
+  Footprints,
 } from 'lucide-react';
 
-type ImportType = 'gsa' | 'occunomix' | 'pip';
+type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine';
 
 interface Brand {
   id: string;
@@ -201,6 +202,8 @@ export default function ProductImportPage() {
         ? '/api/admin/occunomix-import'
         : importType === 'pip'
         ? '/api/admin/pip-import'
+        : importType === 'wolverine'
+        ? '/api/admin/wolverine-import'
         : '/api/admin/bulk-import';
 
       const response = await fetch(apiUrl, {
@@ -310,6 +313,21 @@ export default function ProductImportPage() {
           </button>
           <button
             onClick={() => {
+              setImportType('wolverine');
+              setFile(null);
+              setResult(null);
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              importType === 'wolverine'
+                ? 'bg-amber-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Footprints className="w-5 h-5" />
+            Wolverine Bates
+          </button>
+          <button
+            onClick={() => {
               setImportType('gsa');
               setFile(null);
               setResult(null);
@@ -329,6 +347,8 @@ export default function ProductImportPage() {
             ? 'Import OccuNomix products with automatic category matching, variant detection, and image processing.'
             : importType === 'pip'
             ? 'Import PiP products. Creates brands, categories (parent/child), and variants (Color/Size) automatically.'
+            : importType === 'wolverine'
+            ? 'Import Wolverine/Bates footwear products. Creates size variants automatically from manufacturer part numbers.'
             : 'Import GSA products with custom field mapping and compliance data.'}
         </p>
       </div>
@@ -342,6 +362,8 @@ export default function ProductImportPage() {
               ? 'bg-safety-green-50 border-safety-green-200'
               : importType === 'pip'
               ? 'bg-purple-50 border-purple-200'
+              : importType === 'wolverine'
+              ? 'bg-amber-50 border-amber-200'
               : 'bg-blue-50 border-blue-200'
           }`}>
             <h2 className={`text-lg font-semibold mb-3 ${
@@ -349,9 +371,11 @@ export default function ProductImportPage() {
                 ? 'text-safety-green-800'
                 : importType === 'pip'
                 ? 'text-purple-800'
+                : importType === 'wolverine'
+                ? 'text-amber-800'
                 : 'text-blue-800'
             }`}>
-              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : 'GSA Import'} Selected
+              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : importType === 'wolverine' ? 'Wolverine Bates Import' : 'GSA Import'} Selected
             </h2>
             {importType === 'occunomix' ? (
               <div className="space-y-2 text-sm text-safety-green-700">
@@ -376,6 +400,19 @@ export default function ProductImportPage() {
                   <li>Parent/Child categories from SELECT CODE &amp; COMMODITY CODE</li>
                   <li>Price set to $0.01 (update later via bulk edit)</li>
                   <li>Products without images in import-images folder are skipped</li>
+                </ul>
+              </div>
+            ) : importType === 'wolverine' ? (
+              <div className="space-y-2 text-sm text-amber-700">
+                <p><strong>Expected Columns:</strong> manufacturer_part_number, vendor_part_number, item_name, item_description, commercial_price, Website Price 45% GM, govt_price_with_fee</p>
+                <p><strong>Features:</strong></p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Style extracted from manufacturer_part_number (E01830 from E01830-3M)</li>
+                  <li>Size variants created automatically (3M, 7EW, 8.5M, etc.)</li>
+                  <li>Multiple price types: Commercial, Website, GSA</li>
+                  <li>Image matching: {'{style}'}.jpg, {'{style}'}_2.jpg, {'{style}'}_3.jpg</li>
+                  <li>Products without images in import-images folder are skipped</li>
+                  <li>GSA SIN and pricing automatically captured</li>
                 </ul>
               </div>
             ) : (
