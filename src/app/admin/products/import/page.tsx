@@ -522,8 +522,8 @@ export default function ProductImportPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Brand Select - Only for GSA */}
-                    {importType === 'gsa' && (
+                    {/* Brand Select - For GSA and Wolverine */}
+                    {(importType === 'gsa' || importType === 'wolverine') && (
                       <div>
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                           <Tag className="w-4 h-4" />
@@ -546,8 +546,8 @@ export default function ProductImportPage() {
                       </div>
                     )}
 
-                    {/* Category Select - Only for GSA */}
-                    {importType === 'gsa' && (
+                    {/* Category Select - For GSA and Wolverine */}
+                    {(importType === 'gsa' || importType === 'wolverine') && (
                       <div>
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                           <Building2 className="w-4 h-4" />
