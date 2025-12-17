@@ -15,7 +15,7 @@ async function getSuppliers(status?: SupplierStatus) {
     include: {
       _count: {
         select: {
-          products: true,
+          defaultProducts: true,
           purchaseOrders: true,
         },
       },
@@ -225,7 +225,7 @@ export default async function SuppliersPage({
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {supplier._count.products} products
+                    {supplier._count.defaultProducts} products
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
                     ${Number(supplier.totalPurchases).toLocaleString()}

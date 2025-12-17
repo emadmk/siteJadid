@@ -742,6 +742,8 @@ export class PipImportService {
       dryRun = false,
       defaultStockQuantity = 100,
       defaultStatus = 'ACTIVE',
+      defaultSupplierId,
+      defaultWarehouseId,
     } = options;
 
     this.errors = [];
@@ -821,6 +823,8 @@ export class PipImportService {
           dryRun,
           defaultStockQuantity,
           defaultStatus,
+          defaultSupplierId,
+          defaultWarehouseId,
         });
 
         processedCount += group.rows.length;
@@ -959,8 +963,8 @@ export class PipImportService {
     }
 
     // Create variants if multiple rows
+    let totalStock = hasVariants ? 0 : defaultStockQuantity;
     if (hasVariants) {
-      let totalStock = 0;
       for (const row of group.rows) {
         const variantName = [row.color, row.size].filter(Boolean).join(' / ') || 'Default';
 
@@ -998,6 +1002,11 @@ export class PipImportService {
           existingProduct !== null
         );
       }
+    }
+
+    // Create warehouse stock entry if warehouse is specified
+    if (defaultWarehouseId && savedProduct) {
+      await this.createWarehouseStock(savedProduct.id, defaultWarehouseId, totalStock);
     }
   }
 
@@ -1111,6 +1120,51 @@ export class PipImportService {
         row: 0,
         field: 'images',
         message: `Failed to process images for ${sku}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    }
+  }
+
+  /**
+   * Create warehouse stock entry
+   */
+  private async createWarehouseStock(
+    productId: string,
+    warehouseId: string,
+    quantity: number
+  ): Promise<void> {
+    const existing = await prisma.warehouseStock.findUnique({
+      where: {
+        warehouseId_productId: {
+          warehouseId,
+          productId,
+        },
+      },
+    });
+
+    if (existing) {
+      await prisma.warehouseStock.update({
+        where: {
+          warehouseId_productId: {
+            warehouseId,
+            productId,
+          },
+        },
+        data: {
+          quantity,
+          available: quantity,
+        },
+      });
+    } else {
+      await prisma.warehouseStock.create({
+        data: {
+          warehouseId,
+          productId,
+          quantity,
+          available: quantity,
+          reserved: 0,
+          reorderPoint: 10,
+          reorderQuantity: 50,
+        },
       });
     }
   }
