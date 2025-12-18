@@ -495,24 +495,6 @@ export default function BrandsPage() {
                       />
                     </label>
                   </div>
-
-                  {/* Or URL Input */}
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white dark:bg-gray-800 px-2 text-gray-500">or enter URL</span>
-                    </div>
-                  </div>
-
-                  <input
-                    type="url"
-                    value={formData.logo}
-                    onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                    placeholder="https://example.com/logo.png"
-                  />
                 </div>
               </div>
 
