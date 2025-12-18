@@ -110,6 +110,11 @@ interface VariantGroup {
   deliveryDays: number;
   warrantyPeriod: number;
   warrantyUnit: string;
+  // Physical dimensions
+  length: number | null;
+  width: number | null;
+  height: number | null;
+  weight: number | null;
   rows: ParsedWolverineRow[];
 }
 
@@ -201,10 +206,11 @@ export class WolverineImportService {
         deliveryDays: getNumber('delivery_days'),
         warrantyPeriod: getNumber('warranty_period'),
         warrantyUnit: getValue('warranty_unit_of_time'),
-        length: getNumber('length') || null,
-        width: getNumber('width') || null,
-        height: getNumber('height') || null,
-        weightLbs: getNumber('weight_lbs') || null,
+        // Support both formats: "length" and "length (in)"
+        length: getNumber('length (in)') || getNumber('length') || null,
+        width: getNumber('width (in)') || getNumber('width') || null,
+        height: getNumber('height (in)') || getNumber('height') || null,
+        weightLbs: getNumber('weight (lbs)') || getNumber('weight_lbs') || null,
         style,
         size,
         rowNumber: i + 1,
@@ -246,6 +252,11 @@ export class WolverineImportService {
         deliveryDays: firstRow.deliveryDays,
         warrantyPeriod: firstRow.warrantyPeriod,
         warrantyUnit: firstRow.warrantyUnit,
+        // Physical dimensions from first row
+        length: firstRow.length,
+        width: firstRow.width,
+        height: firstRow.height,
+        weight: firstRow.weightLbs,
         rows: groupRows,
       });
     }
@@ -517,6 +528,11 @@ export class WolverineImportService {
       metaTitle: seo.metaTitle,
       metaDescription: seo.metaDescription,
       metaKeywords: seo.metaKeywords,
+      // Physical dimensions
+      ...(group.length && { length: new Decimal(group.length) }),
+      ...(group.width && { width: new Decimal(group.width) }),
+      ...(group.height && { height: new Decimal(group.height) }),
+      ...(group.weight && { weight: new Decimal(group.weight) }),
       ...(defaultBrandId && { brand: { connect: { id: defaultBrandId } } }),
       ...(defaultCategoryId && { category: { connect: { id: defaultCategoryId } } }),
       ...(defaultSupplierId && { defaultSupplier: { connect: { id: defaultSupplierId } } }),
