@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import prisma from '@/lib/db';
 import SupplierEditForm from '@/components/admin/SupplierEditForm';
-import ProductSupplierManager from '@/components/admin/ProductSupplierManager';
 
 async function getSupplier(id: string) {
   const supplier = await prisma.supplier.findUnique({
@@ -25,6 +24,17 @@ async function getSupplier(id: string) {
         },
         orderBy: [{ isPrimary: 'desc' }, { priority: 'desc' }],
       },
+      // Products that have this supplier as their defaultSupplierId
+      defaultProducts: {
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          images: true,
+          stockQuantity: true,
+          basePrice: true,
+        },
+      },
       purchaseOrders: {
         orderBy: { createdAt: 'desc' },
         take: 10,
@@ -40,6 +50,7 @@ async function getSupplier(id: string) {
       _count: {
         select: {
           products: true,
+          defaultProducts: true,
           purchaseOrders: true,
         },
       },
@@ -131,7 +142,7 @@ export default async function SupplierDetailPage({
             Products Supplied
           </div>
           <div className="text-2xl font-bold text-gray-900 mt-2">
-            {supplier._count.products}
+            {supplier._count.defaultProducts}
           </div>
         </div>
 
@@ -165,12 +176,52 @@ export default async function SupplierDetailPage({
 
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Products ({supplier.products.length})
+              Products ({supplier.defaultProducts?.length || 0})
             </h2>
-            <ProductSupplierManager
-              supplierId={supplier.id}
-              products={supplier.products}
-            />
+            {supplier.defaultProducts && supplier.defaultProducts.length > 0 ? (
+              <div className="space-y-3">
+                {supplier.defaultProducts.map((product: any) => (
+                  <Link
+                    key={product.id}
+                    href={`/admin/products/${product.id}/edit`}
+                    className="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                      {product.images?.[0] ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          📦
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{product.name}</div>
+                      <div className="text-sm text-gray-500">SKU: {product.sku}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-gray-900">
+                        ${Number(product.basePrice).toFixed(2)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Stock: {product.stockQuantity}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No products linked to this supplier yet.</p>
+                <p className="text-sm mt-1">
+                  Add products to this supplier from the product management page.
+                </p>
+              </div>
+            )}
           </div>
 
           {supplier.purchaseOrders.length > 0 && (

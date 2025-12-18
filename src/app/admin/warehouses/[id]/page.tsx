@@ -49,7 +49,7 @@ interface Warehouse {
   isActive: boolean;
   isPrimary: boolean;
   stock: WarehouseStock[];
-  products: Product[];
+  defaultProducts: Product[];
 }
 
 export default function WarehouseDetailPage({ params }: { params: { id: string } }) {
@@ -110,15 +110,15 @@ export default function WarehouseDetailPage({ params }: { params: { id: string }
   }
 
   // Combine products from stock records and defaultWarehouseId
-  const stockProductIds = new Set(warehouse.stock.map(s => s.product.id));
-  const productsFromStock = warehouse.stock.map(s => ({
+  const stockProductIds = new Set((warehouse.stock || []).map(s => s.product.id));
+  const productsFromStock = (warehouse.stock || []).map(s => ({
     ...s.product,
     warehouseStock: s.quantity,
     warehouseAvailable: s.available,
     warehouseReserved: s.reserved,
     source: 'stock' as const,
   }));
-  const productsFromDefault = warehouse.products
+  const productsFromDefault = (warehouse.defaultProducts || [])
     .filter(p => !stockProductIds.has(p.id))
     .map(p => ({
       ...p,
