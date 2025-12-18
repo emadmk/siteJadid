@@ -42,6 +42,7 @@ export default function BrandsPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -128,6 +129,56 @@ export default function BrandsPage() {
       setMessage({ type: 'error', text: 'An error occurred' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setMessage({ type: 'error', text: 'Invalid file type. Allowed: JPEG, PNG, GIF, WebP' });
+      return;
+    }
+
+    // Validate file size (max 5MB for logos)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setMessage({ type: 'error', text: 'File too large. Maximum size is 5MB' });
+      return;
+    }
+
+    setUploadingLogo(true);
+    setMessage(null);
+
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('files', file);
+      uploadFormData.append('brandSlug', formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'brand');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Use the original size URL for brand logos (better quality)
+        const logoUrl = data.images?.[0]?.original || data.urls?.[0];
+        if (logoUrl) {
+          setFormData({ ...formData, logo: logoUrl });
+          setMessage({ type: 'success', text: 'Logo uploaded successfully' });
+        }
+      } else {
+        const data = await res.json();
+        setMessage({ type: 'error', text: data.error || 'Failed to upload logo' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to upload logo' });
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
@@ -382,32 +433,87 @@ export default function BrandsPage() {
                 />
               </div>
 
-              {/* Logo URL */}
+              {/* Logo Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Logo URL
+                  Brand Logo
                 </label>
-                <div className="flex gap-2">
+
+                {/* Upload Area */}
+                <div className="space-y-3">
+                  {/* Preview / Upload Zone */}
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                    {formData.logo ? (
+                      <div className="relative">
+                        <img
+                          src={formData.logo}
+                          alt="Logo preview"
+                          className="max-h-32 mx-auto object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '';
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, logo: '' })}
+                          className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <ImageIcon className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          No logo uploaded
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload Button */}
+                  <div className="flex gap-2">
+                    <label className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer disabled:opacity-50">
+                      {uploadingLogo ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          Upload Logo
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={handleLogoUpload}
+                        disabled={uploadingLogo}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Or URL Input */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white dark:bg-gray-800 px-2 text-gray-500">or enter URL</span>
+                    </div>
+                  </div>
+
                   <input
                     type="url"
                     value={formData.logo}
                     onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                    className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                     placeholder="https://example.com/logo.png"
                   />
                 </div>
-                {formData.logo && (
-                  <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                    <img
-                      src={formData.logo}
-                      alt="Logo preview"
-                      className="max-h-20 mx-auto object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Website */}
