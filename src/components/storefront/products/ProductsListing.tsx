@@ -124,6 +124,76 @@ export function ProductsListing({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
+  // Track if this is initial mount
+  const isInitialMount = useRef(true);
+  const prevSearchParams = useRef(searchParams.toString());
+
+  // Sync filter state with URL changes (when navigating from header search)
+  useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Only run if URL actually changed
+    const currentParams = searchParams.toString();
+    if (currentParams === prevSearchParams.current) {
+      return;
+    }
+    prevSearchParams.current = currentParams;
+
+    const urlSearch = searchParams.get('search') || '';
+    const urlCategory = searchParams.get('category') || '';
+    const urlBrand = searchParams.get('brand') || '';
+    const urlMinPrice = searchParams.get('minPrice') || '';
+    const urlMaxPrice = searchParams.get('maxPrice') || '';
+    const urlSort = searchParams.get('sort') || 'newest';
+    const urlFeatured = searchParams.get('featured') === 'true';
+
+    setSearchQuery(urlSearch);
+    setSelectedCategory(urlCategory);
+    setSelectedBrand(urlBrand);
+    setPriceRange({ min: urlMinPrice, max: urlMaxPrice });
+    setSortBy(urlSort);
+    setFeatured(urlFeatured);
+    setCurrentPage(1);
+    setProducts([]);
+    setLoading(true);
+
+    // Fetch with new params directly
+    const fetchNewProducts = async () => {
+      try {
+        const params = new URLSearchParams();
+        params.set('page', '1');
+        params.set('limit', '20');
+
+        if (urlSearch) params.set('search', urlSearch);
+        if (urlCategory) params.set('category', urlCategory);
+        if (urlBrand) params.set('brand', urlBrand);
+        if (urlMinPrice) params.set('minPrice', urlMinPrice);
+        if (urlMaxPrice) params.set('maxPrice', urlMaxPrice);
+        if (urlSort) params.set('sort', urlSort);
+        if (urlFeatured) params.set('featured', 'true');
+
+        const response = await fetch(`/api/storefront/products?${params}`);
+        const data = await response.json();
+
+        setProducts(data.products);
+        setTotal(data.total);
+        setPages(data.pages);
+        setCurrentPage(data.currentPage);
+        setHasMore(data.currentPage < data.pages);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNewProducts();
+  }, [searchParams]);
+
   // Fetch products
   const fetchProducts = useCallback(async (page: number, reset: boolean = false) => {
     if (page === 1 && reset) {
