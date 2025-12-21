@@ -85,6 +85,16 @@ interface ParsedPipRow {
   imagesLink: string;
   status: string;
   countryOfOrigin: string;
+  // Physical dimensions
+  lowestLength: number | null;
+  lowestWidth: number | null;
+  lowestHeight: number | null;
+  lowestWeight: number | null;
+  // Pricing
+  costPrice: number | null;       // PRICE PER UM.1 - قیمت خرید
+  websitePrice: number | null;    // Website 22% - قیمت سایت
+  minSellQty: number | null;      // MIN SELL QTY - حداقل سفارش
+  stockType: string;              // STOCK TYPE
   rowNumber: number;
 }
 
@@ -106,6 +116,16 @@ interface VariantGroup {
   specs: string;
   applications: string;
   specsheetLink: string;
+  // Physical dimensions (from first row)
+  lowestLength: number | null;
+  lowestWidth: number | null;
+  lowestHeight: number | null;
+  lowestWeight: number | null;
+  // Pricing (from first row)
+  costPrice: number | null;
+  websitePrice: number | null;
+  minSellQty: number | null;
+  stockType: string;
   rows: ParsedPipRow[];
 }
 
@@ -255,6 +275,20 @@ export class PipImportService {
         return idx !== undefined && row[idx] !== undefined ? String(row[idx]).trim() : '';
       };
 
+      const getNumericValue = (colName: string): number | null => {
+        const idx = colMap[colName.toUpperCase()];
+        if (idx === undefined || row[idx] === undefined) return null;
+        const val = row[idx];
+        // Handle string with $ sign or other formatting
+        if (typeof val === 'string') {
+          const cleaned = val.replace(/[$,\s]/g, '');
+          const num = parseFloat(cleaned);
+          return isNaN(num) ? null : num;
+        }
+        const num = parseFloat(val);
+        return isNaN(num) ? null : num;
+      };
+
       const sku = getValue('SKU');
       const style = getValue('STYLE');
 
@@ -281,6 +315,16 @@ export class PipImportService {
         imagesLink: getValue('IMAGES LINK'),
         status: getValue('STATUS'),
         countryOfOrigin: getValue('COO'),
+        // Physical dimensions
+        lowestLength: getNumericValue('LOWEST_LENGTH'),
+        lowestWidth: getNumericValue('LOWEST_WIDTH'),
+        lowestHeight: getNumericValue('LOWEST_HEIGHT'),
+        lowestWeight: getNumericValue('LOWEST_WEIGHT'),
+        // Pricing
+        costPrice: getNumericValue('PRICE PER UM.1'),      // قیمت خرید
+        websitePrice: getNumericValue('WEBSITE 22%'),       // قیمت سایت
+        minSellQty: getNumericValue('MIN SELL QTY'),
+        stockType: getValue('STOCK TYPE'),
         rowNumber: i + 1,
       });
     }
@@ -325,6 +369,16 @@ export class PipImportService {
         specs: firstRow.specs,
         applications: firstRow.applications,
         specsheetLink: firstRow.specsheetLink,
+        // Physical dimensions from first row
+        lowestLength: firstRow.lowestLength,
+        lowestWidth: firstRow.lowestWidth,
+        lowestHeight: firstRow.lowestHeight,
+        lowestWeight: firstRow.lowestWeight,
+        // Pricing from first row
+        costPrice: firstRow.costPrice,
+        websitePrice: firstRow.websitePrice,
+        minSellQty: firstRow.minSellQty,
+        stockType: firstRow.stockType,
         rows: groupRows,
       });
     }
@@ -906,15 +960,40 @@ export class PipImportService {
 
     const hasVariants = group.rows.length > 1;
 
+    // Price mapping:
+    // - websitePrice (Website 22%) -> basePrice (قیمت فروش سایت)
+    // - costPrice (PRICE PER UM.1) -> costPrice (قیمت خرید - only internal)
+    const basePrice = group.websitePrice ? new Decimal(group.websitePrice) : new Decimal(0.01);
+    const costPrice = group.costPrice ? new Decimal(group.costPrice) : null;
+    const minimumOrderQty = group.minSellQty || 1;
+
+    // Determine status based on STOCK TYPE
+    let productStatus = defaultStatus;
+    if (group.stockType) {
+      const stockTypeLower = group.stockType.toLowerCase();
+      if (stockTypeLower.includes('discontinued') || stockTypeLower.includes('non-stock')) {
+        productStatus = 'INACTIVE';
+      } else if (stockTypeLower.includes('stock') || stockTypeLower.includes('active')) {
+        productStatus = 'ACTIVE';
+      }
+    }
+
     const productData = {
       name: group.productName,
       slug: group.style.toLowerCase().replace(/[^\w]+/g, '-'),
       description,
       shortDescription: group.productName,
-      basePrice: new Decimal(0.01), // $0.01 as requested
+      basePrice,                                    // قیمت سایت (Website 22%)
+      ...(costPrice && { costPrice }),              // قیمت خرید (PRICE PER UM.1) - internal only
+      minimumOrderQty,                              // حداقل سفارش
       stockQuantity: hasVariants ? 0 : defaultStockQuantity,
-      status: defaultStatus,
+      status: productStatus,
       hasVariants,
+      // Physical dimensions
+      ...(group.lowestLength && { length: new Decimal(group.lowestLength) }),
+      ...(group.lowestWidth && { width: new Decimal(group.lowestWidth) }),
+      ...(group.lowestHeight && { height: new Decimal(group.lowestHeight) }),
+      ...(group.lowestWeight && { weight: new Decimal(group.lowestWeight) }),
       metaTitle: seo.metaTitle,
       metaDescription: seo.metaDescription,
       metaKeywords: seo.metaKeywords,
@@ -968,12 +1047,17 @@ export class PipImportService {
       for (const row of group.rows) {
         const variantName = [row.color, row.size].filter(Boolean).join(' / ') || 'Default';
 
+        // Use variant-specific prices if available
+        const variantBasePrice = row.websitePrice ? new Decimal(row.websitePrice) : basePrice;
+        const variantCostPrice = row.costPrice ? new Decimal(row.costPrice) : null;
+
         await prisma.productVariant.create({
           data: {
             productId: savedProduct.id,
             sku: row.sku,
             name: variantName,
-            basePrice: new Decimal(0.01),
+            basePrice: variantBasePrice,                           // قیمت سایت
+            ...(variantCostPrice && { costPrice: variantCostPrice }), // قیمت خرید
             stockQuantity: defaultStockQuantity,
             isActive: true,
             images: [],
