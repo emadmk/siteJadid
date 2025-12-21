@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { ProductVariantsManager } from '@/components/admin/ProductVariantsManager';
 
 interface Category {
   id: string;
@@ -1070,6 +1071,14 @@ export default function ProductReviewPage() {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Variants */}
+              <div className="bg-white rounded-lg border p-6">
+                <ProductVariantsManager
+                  productId={editedProduct.id}
+                  categoryId={editedProduct.categoryId || selectedCategoryIds[0] || undefined}
+                />
               </div>
             </div>
           )}
