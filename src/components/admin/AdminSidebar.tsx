@@ -99,6 +99,7 @@ const menuItems: MenuItem[] = [
     children: [
       { title: 'All Products', href: '/admin/products', icon: Package, permissions: ['products.view'] },
       { title: 'Add Product', href: '/admin/products/new', icon: Package, permissions: ['products.create'] },
+      { title: 'Product Review', href: '/admin/products/review', icon: ClipboardList, permissions: ['products.edit'] },
       { title: 'Bulk Import', href: '/admin/products/import', icon: Upload, permissions: ['products.create'] },
       { title: 'Delete Products', href: '/admin/products/delete', icon: Trash2, permissions: ['products.delete'] },
       { title: 'Categories', href: '/admin/categories', icon: FolderTree, permissions: ['products.view'] },

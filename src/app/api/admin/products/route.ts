@@ -21,31 +21,61 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status');
+    const brandId = searchParams.get('brand');
+    const categoryId = searchParams.get('category');
+    const supplierId = searchParams.get('supplier');
+    const warehouseId = searchParams.get('warehouse');
     const includeOrderCount = searchParams.get('includeOrderCount') === 'true';
 
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: any = {};
+    const where: any = { AND: [] };
 
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-        { brand: { name: { contains: search, mode: 'insensitive' } } },
-      ];
+      where.AND.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { sku: { contains: search, mode: 'insensitive' } },
+          { brand: { name: { contains: search, mode: 'insensitive' } } },
+        ],
+      });
     }
 
     if (status && status !== 'all') {
-      where.status = status;
+      where.AND.push({ status });
     }
 
+    if (brandId) {
+      where.AND.push({ brandId });
+    }
+
+    if (categoryId) {
+      where.AND.push({
+        OR: [
+          { categoryId: categoryId },
+          { categories: { some: { categoryId: categoryId } } },
+        ],
+      });
+    }
+
+    if (supplierId) {
+      where.AND.push({ defaultSupplierId: supplierId });
+    }
+
+    if (warehouseId) {
+      where.AND.push({ defaultWarehouseId: warehouseId });
+    }
+
+    // If no filters, remove the AND wrapper
+    const finalWhere = where.AND.length > 0 ? where : {};
+
     // Get total count
-    const total = await db.product.count({ where });
+    const total = await db.product.count({ where: finalWhere });
 
     // Get products
     const products = await db.product.findMany({
-      where,
+      where: finalWhere,
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },

@@ -341,11 +341,29 @@ model Category {
 
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
-  products    Product[]
+  products    Product[]  // Products with this as primary category
+  productCategories ProductCategory[]  // Many-to-many: products in this category
   categoryDiscounts CategoryDiscount[]
 
   @@index([slug])
   @@index([parentId])
+}
+
+// Junction table for many-to-many Product-Category relationship
+model ProductCategory {
+  id          String    @id @default(cuid())
+  productId   String
+  categoryId  String
+  isPrimary   Boolean   @default(false)  // Indicates if this is the primary category
+  displayOrder Int      @default(0)
+  createdAt   DateTime  @default(now())
+
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, categoryId])
+  @@index([productId])
+  @@index([categoryId])
 }
 
 model Brand {
@@ -434,6 +452,7 @@ model Product {
   // Relations
   categoryId      String?
   category        Category?     @relation(fields: [categoryId], references: [id])
+  categories      ProductCategory[]  // Many-to-many: additional categories
   brandId         String?
   brand           Brand?        @relation(fields: [brandId], references: [id])
 

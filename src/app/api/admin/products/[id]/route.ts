@@ -3,6 +3,55 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 
+// GET single product with all details
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['ADMIN', 'SUPER_ADMIN', 'WAREHOUSE_MANAGER'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const product = await db.product.findUnique({
+      where: { id: params.id },
+      include: {
+        category: { select: { id: true, name: true } },
+        brand: { select: { id: true, name: true } },
+        defaultSupplier: { select: { id: true, name: true, code: true } },
+        defaultWarehouse: { select: { id: true, name: true, code: true } },
+        categories: {
+          select: {
+            categoryId: true,
+            isPrimary: true,
+            displayOrder: true,
+            category: { select: { id: true, name: true } },
+          },
+          orderBy: { displayOrder: 'asc' },
+        },
+      },
+    });
+
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(product);
+  } catch (error: any) {
+    console.error('Get product error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to get product' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -95,6 +144,26 @@ export async function PUT(
         complianceCertifications: data.complianceCertifications || [],
       },
     });
+
+    // Handle multiple categories if provided
+    if (data.categoryIds && Array.isArray(data.categoryIds)) {
+      // Delete existing category relationships
+      await db.productCategory.deleteMany({
+        where: { productId: params.id },
+      });
+
+      // Create new category relationships
+      if (data.categoryIds.length > 0) {
+        await db.productCategory.createMany({
+          data: data.categoryIds.map((categoryId: string, index: number) => ({
+            productId: params.id,
+            categoryId,
+            isPrimary: index === 0,
+            displayOrder: index,
+          })),
+        });
+      }
+    }
 
     return NextResponse.json(product);
   } catch (error: any) {
