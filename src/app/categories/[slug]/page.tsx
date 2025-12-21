@@ -22,8 +22,6 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { getImageSize } from '@/lib/image-utils';
-import { ProductFilters, ActiveFilterTags } from '@/components/storefront/products/ProductFilters';
-import { getFiltersForCategory, FilterGroup } from '@/lib/filter-config';
 
 interface Category {
   id: string;
@@ -118,16 +116,6 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
   const [activeSmartFilters, setActiveSmartFilters] = useState<Record<string, string[]>>({});
   const [expandedFilterSections, setExpandedFilterSections] = useState<Record<string, boolean>>({});
 
-  // Category-specific static filters (e.g., toeType, gender, material)
-  const [categoryFilters, setCategoryFilters] = useState<Record<string, string[]>>({});
-  const [filterGroups, setFilterGroups] = useState<FilterGroup[]>([]);
-
-  // Update filter groups when category changes
-  useEffect(() => {
-    const groups = getFiltersForCategory(params.slug);
-    setFilterGroups(groups);
-  }, [params.slug]);
-
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -178,13 +166,6 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
         queryParams.set('filters', JSON.stringify(activeSmartFilters));
       }
 
-      // Add category-specific static filters
-      Object.entries(categoryFilters).forEach(([key, values]) => {
-        if (values.length > 0) {
-          queryParams.set(key, values.join(','));
-        }
-      });
-
       const response = await fetch(`/api/storefront/categories/${params.slug}?${queryParams}`);
 
       if (!response.ok) {
@@ -219,7 +200,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [params.slug, sortBy, searchQuery, selectedBrand, priceRange, activeSmartFilters, categoryFilters, router]);
+  }, [params.slug, sortBy, searchQuery, selectedBrand, priceRange, activeSmartFilters, router]);
 
   // Initial fetch - use page from URL if available (for back button support)
   useEffect(() => {
@@ -302,35 +283,9 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     setPriceRange({ min: '', max: '' });
     setSortBy('newest');
     setActiveSmartFilters({});
-    setCategoryFilters({});
     setCurrentPage(1);
     fetchData(1, true);
     setShowMobileFilters(false);
-  };
-
-  // Handle category-specific filter changes
-  const handleCategoryFilterChange = (key: string, values: string[]) => {
-    setCategoryFilters(prev => ({
-      ...prev,
-      [key]: values,
-    }));
-    setCurrentPage(1);
-    setTimeout(() => fetchData(1, true), 100);
-  };
-
-  const handleRemoveCategoryFilter = (key: string, value: string) => {
-    setCategoryFilters(prev => ({
-      ...prev,
-      [key]: (prev[key] || []).filter(v => v !== value),
-    }));
-    setCurrentPage(1);
-    setTimeout(() => fetchData(1, true), 100);
-  };
-
-  const clearCategoryFilters = () => {
-    setCategoryFilters({});
-    setCurrentPage(1);
-    setTimeout(() => fetchData(1, true), 100);
   };
 
   const toggleSmartFilter = (filterKey: string, value: string) => {
@@ -358,9 +313,8 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     }));
   };
 
-  const hasCategoryFilters = Object.values(categoryFilters).some(v => v.length > 0);
   const hasActiveFilters = searchQuery || selectedBrand || priceRange.min || priceRange.max ||
-    Object.values(activeSmartFilters).some(arr => arr.length > 0) || hasCategoryFilters;
+    Object.values(activeSmartFilters).some(arr => arr.length > 0);
 
   if (loading) {
     return (
@@ -612,19 +566,6 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                 </div>
               ))}
 
-              {/* Category-specific Static Filters */}
-              {filterGroups.length > 0 && (
-                <div className="border-t pt-4 mt-4">
-                  <h3 className="text-sm font-bold text-black mb-4">Product Filters</h3>
-                  <ProductFilters
-                    categorySlug={params.slug}
-                    selectedFilters={categoryFilters}
-                    onFilterChange={handleCategoryFilterChange}
-                    onClearAll={clearCategoryFilters}
-                  />
-                </div>
-              )}
-
               {/* Apply / Clear */}
               <div className="space-y-2 mt-6 pt-4 border-t">
                 <Button onClick={applyFilters} className="w-full bg-safety-green-600 hover:bg-safety-green-700">
@@ -791,16 +732,6 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                 </div>
               )}
             </div>
-
-            {/* Active Category Filter Tags */}
-            {hasCategoryFilters && (
-              <ActiveFilterTags
-                selectedFilters={categoryFilters}
-                filterGroups={filterGroups}
-                onRemove={handleRemoveCategoryFilter}
-                onClearAll={clearCategoryFilters}
-              />
-            )}
 
             {/* Products */}
             {products.length === 0 ? (

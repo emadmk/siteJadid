@@ -21,8 +21,6 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { getImageSize } from '@/lib/image-utils';
-import { ProductFilters, ActiveFilterTags } from './ProductFilters';
-import { getFiltersForCategory, FilterGroup } from '@/lib/filter-config';
 
 interface Category {
   id: string;
@@ -123,20 +121,6 @@ export function ProductsListing({
   const [sortBy, setSortBy] = useState(initialFilters.sort || 'newest');
   const [featured, setFeatured] = useState(initialFilters.featured === 'true');
 
-  // Category-specific filters (e.g., toeType, material, color, etc.)
-  const [categoryFilters, setCategoryFilters] = useState<Record<string, string[]>>({});
-  const [filterGroups, setFilterGroups] = useState<FilterGroup[]>([]);
-
-  // Update filter groups when category changes
-  useEffect(() => {
-    if (selectedCategory) {
-      const groups = getFiltersForCategory(selectedCategory);
-      setFilterGroups(groups);
-    } else {
-      setFilterGroups([]);
-    }
-  }, [selectedCategory]);
-
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -231,13 +215,6 @@ export function ProductsListing({
       if (sortBy) params.set('sort', sortBy);
       if (featured) params.set('featured', 'true');
 
-      // Add category-specific filters
-      Object.entries(categoryFilters).forEach(([key, values]) => {
-        if (values.length > 0) {
-          params.set(key, values.join(','));
-        }
-      });
-
       const response = await fetch(`/api/storefront/products?${params}`);
       const data = await response.json();
 
@@ -257,7 +234,7 @@ export function ProductsListing({
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, featured, categoryFilters]);
+  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, featured]);
 
   // Infinite scroll for pages 1-5
   useEffect(() => {
@@ -383,36 +360,10 @@ export function ProductsListing({
     setPriceRange({ min: '', max: '' });
     setSortBy('newest');
     setFeatured(false);
-    setCategoryFilters({});
     setCurrentPage(1);
     router.push('/products');
     setTimeout(() => fetchProducts(1, true), 0);
     setShowFilters(false);
-  };
-
-  // Handle category-specific filter changes
-  const handleCategoryFilterChange = (key: string, values: string[]) => {
-    setCategoryFilters(prev => ({
-      ...prev,
-      [key]: values,
-    }));
-    setCurrentPage(1);
-    setTimeout(() => fetchProducts(1, true), 100);
-  };
-
-  const handleRemoveCategoryFilter = (key: string, value: string) => {
-    setCategoryFilters(prev => ({
-      ...prev,
-      [key]: (prev[key] || []).filter(v => v !== value),
-    }));
-    setCurrentPage(1);
-    setTimeout(() => fetchProducts(1, true), 100);
-  };
-
-  const clearCategoryFilters = () => {
-    setCategoryFilters({});
-    setCurrentPage(1);
-    setTimeout(() => fetchProducts(1, true), 100);
   };
 
   const handleAddToCart = async (product: Product, e: React.MouseEvent) => {
@@ -429,8 +380,7 @@ export function ProductsListing({
     await toggleWishlist(productId);
   };
 
-  const hasCategoryFilters = Object.values(categoryFilters).some(v => v.length > 0);
-  const hasActiveFilters = searchQuery || selectedCategory || selectedBrand || priceRange.min || priceRange.max || featured || hasCategoryFilters;
+  const hasActiveFilters = searchQuery || selectedCategory || selectedBrand || priceRange.min || priceRange.max || featured;
 
   const activeCategory = categories.find(c => c.slug === selectedCategory);
 
@@ -600,19 +550,6 @@ export function ProductsListing({
                 </label>
               </div>
 
-              {/* Category-specific Filters */}
-              {selectedCategory && filterGroups.length > 0 && (
-                <div className="mb-6 border-t border-gray-200 pt-6">
-                  <h3 className="text-sm font-bold text-black mb-4">Product Filters</h3>
-                  <ProductFilters
-                    categorySlug={selectedCategory}
-                    selectedFilters={categoryFilters}
-                    onFilterChange={handleCategoryFilterChange}
-                    onClearAll={clearCategoryFilters}
-                  />
-                </div>
-              )}
-
               {/* Clear Filters */}
               {hasActiveFilters && (
                 <Button
@@ -763,16 +700,6 @@ export function ProductsListing({
                 </div>
               )}
             </div>
-
-            {/* Active Category Filter Tags */}
-            {hasCategoryFilters && (
-              <ActiveFilterTags
-                selectedFilters={categoryFilters}
-                filterGroups={filterGroups}
-                onRemove={handleRemoveCategoryFilter}
-                onClearAll={clearCategoryFilters}
-              />
-            )}
 
             {/* Loading State */}
             {loading ? (
