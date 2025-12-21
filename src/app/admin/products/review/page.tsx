@@ -140,7 +140,8 @@ export default function ProductReviewPage() {
         }
         if (whRes.ok) {
           const data = await whRes.json();
-          setWarehouses(data.warehouses || data || []);
+          // Warehouses API returns array directly, not { warehouses: [...] }
+          setWarehouses(Array.isArray(data) ? data : (data.warehouses || []));
         }
       } catch (error) {
         console.error('Error fetching filter options:', error);
@@ -166,7 +167,8 @@ export default function ProductReviewPage() {
       if (response.ok) {
         const data = await response.json();
         setProducts(data.products || []);
-        setTotalProducts(data.products?.length || 0);
+        // Use pagination.total for accurate count (not limited by page size)
+        setTotalProducts(data.pagination?.total || data.products?.length || 0);
         if (data.products?.length > 0) {
           setCurrentIndex(0);
           loadProductDetails(data.products[0].id);
