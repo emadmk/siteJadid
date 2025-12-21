@@ -836,40 +836,19 @@ export class PipImportService {
     for (let i = 0; i < Math.min(5, groups.length); i++) {
       const g = groups[i];
       const r = g.rows[0];
-      console.log(`  Product ${i + 1}: STYLE="${r.style}", SKU="${r.sku}", COLOR="${r.color}"`);
+      console.log(`  Product ${i + 1}: STYLE="${r.style}", SKU="${r.sku}", Price=$${r.websitePrice || 0}`);
     }
 
-    // Build image index
-    console.log('Building image index...');
-    await this.buildImageIndex(imageBasePath);
+    // Build image index only if importImages is enabled
+    if (importImages) {
+      console.log('Building image index...');
+      await this.buildImageIndex(imageBasePath);
+    }
 
     let processedCount = 0;
-    let loggedFirstFewSkips = 0;
-    let loggedFirstFewFound = 0;
 
     for (const group of groups) {
       try {
-        // Skip if no images (check in import-images folder)
-        const hasImages = await this.groupHasImages(group, imageBasePath);
-        if (!hasImages) {
-          this.skippedNoImage++;
-          // Log first few skipped for debugging
-          if (loggedFirstFewSkips < 5) {
-            const firstRow = group.rows[0];
-            console.log(`Skipping ${group.style} (SKU: ${firstRow.sku}, COLOR: ${firstRow.color}) - no image found`);
-            loggedFirstFewSkips++;
-          }
-          continue;
-        }
-
-        // Log first few found for debugging
-        if (loggedFirstFewFound < 5) {
-          const firstRow = group.rows[0];
-          const foundImage = this.findImageInIndex(firstRow.sku, firstRow.style, firstRow.color);
-          console.log(`Found image for ${group.style} (SKU: ${firstRow.sku}, COLOR: ${firstRow.color}) -> ${foundImage}`);
-          loggedFirstFewFound++;
-        }
-
         await this.importProductGroup(group, {
           updateExisting,
           importImages,
@@ -882,6 +861,12 @@ export class PipImportService {
         });
 
         processedCount += group.rows.length;
+
+        // Log progress every 100 products
+        if (this.createdProducts.length + this.updatedProducts.length > 0 &&
+            (this.createdProducts.length + this.updatedProducts.length) % 100 === 0) {
+          console.log(`Progress: ${this.createdProducts.length} created, ${this.updatedProducts.length} updated`);
+        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         this.errors.push({
@@ -1016,19 +1001,14 @@ export class PipImportService {
     }
 
     let savedProduct;
-    if (existingProduct && updateExisting) {
+    const isUpdate = existingProduct && updateExisting;
+
+    if (isUpdate) {
       savedProduct = await prisma.product.update({
         where: { id: existingProduct.id },
         data: productData,
       });
       this.updatedProducts.push(group.style);
-
-      // Delete existing variants if has variants
-      if (hasVariants) {
-        await prisma.productVariant.deleteMany({
-          where: { productId: savedProduct.id },
-        });
-      }
     } else if (!existingProduct) {
       savedProduct = await prisma.product.create({
         data: {
@@ -1041,7 +1021,7 @@ export class PipImportService {
       savedProduct = existingProduct;
     }
 
-    // Create variants if multiple rows
+    // Handle variants - upsert by SKU to preserve existing data
     let totalStock = hasVariants ? 0 : defaultStockQuantity;
     if (hasVariants) {
       for (const row of group.rows) {
@@ -1051,13 +1031,21 @@ export class PipImportService {
         const variantBasePrice = row.websitePrice ? new Decimal(row.websitePrice) : basePrice;
         const variantCostPrice = row.costPrice ? new Decimal(row.costPrice) : null;
 
-        await prisma.productVariant.create({
-          data: {
-            productId: savedProduct.id,
-            sku: row.sku,
+        // Upsert variant - update if exists by SKU, create if not
+        await prisma.productVariant.upsert({
+          where: { sku: row.sku },
+          update: {
             name: variantName,
             basePrice: variantBasePrice,                           // قیمت سایت
             ...(variantCostPrice && { costPrice: variantCostPrice }), // قیمت خرید
+            isActive: true,
+          },
+          create: {
+            productId: savedProduct.id,
+            sku: row.sku,
+            name: variantName,
+            basePrice: variantBasePrice,
+            ...(variantCostPrice && { costPrice: variantCostPrice }),
             stockQuantity: defaultStockQuantity,
             isActive: true,
             images: [],
@@ -1074,8 +1062,8 @@ export class PipImportService {
       });
     }
 
-    // Import images
-    if (importImages && savedProduct) {
+    // Import images only for NEW products (skip for updates to save time)
+    if (importImages && savedProduct && !isUpdate) {
       const images = this.getGroupImageNames(group, imageBasePath);
       if (images.length > 0) {
         await this.processProductImages(
@@ -1083,7 +1071,7 @@ export class PipImportService {
           group.style,
           images,
           imageBasePath,
-          existingProduct !== null
+          false
         );
       }
     }
