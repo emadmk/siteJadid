@@ -81,19 +81,96 @@ export async function DELETE(
         where: { productId: { in: allProductIds } },
       });
 
-      // Delete product variants
+      // Delete product categories
+      await tx.productCategory.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete product discounts
+      await tx.productDiscount.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete product suppliers
+      await tx.productSupplier.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete tiered prices
+      await tx.tieredPrice.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete bundle items (products included in bundles)
+      await tx.bundleItem.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete back orders
+      await tx.backOrder.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete product attribute values
+      await tx.productAttributeValue.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete RMA items
+      await tx.rMAItem.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete frequently bought together
+      await tx.frequentlyBoughtTogether.deleteMany({
+        where: {
+          OR: [
+            { productId: { in: allProductIds } },
+            { relatedProductId: { in: allProductIds } },
+          ],
+        },
+      });
+
+      // Delete flash sale items
+      await tx.flashSaleItem.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete product questions
+      await tx.productQuestion.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete product images records (not the actual files)
+      await tx.productImage.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete product variants (this will also cascade to variant warehouse stock)
       await tx.productVariant.deleteMany({
         where: { productId: { in: allProductIds } },
       });
 
-      // Delete inventory movements
-      await tx.inventoryMovement.deleteMany({
+      // Delete inventory logs
+      await tx.inventoryLog.deleteMany({
         where: { productId: { in: allProductIds } },
       });
 
-      // Delete inventory alerts
-      await tx.inventoryAlert.deleteMany({
+      // Delete stock notifications
+      await tx.stockNotification.deleteMany({
         where: { productId: { in: allProductIds } },
+      });
+
+      // Delete warehouse stock records for these products
+      await tx.warehouseStock.deleteMany({
+        where: { productId: { in: allProductIds } },
+      });
+
+      // Delete variant warehouse stock
+      await tx.variantWarehouseStock.deleteMany({
+        where: {
+          variant: { productId: { in: allProductIds } },
+        },
       });
 
       // Note: We're NOT deleting images from storage if keepImages is true
