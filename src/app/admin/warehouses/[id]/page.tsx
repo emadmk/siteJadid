@@ -11,6 +11,8 @@ import {
   Search,
   Edit,
   ShieldCheck,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -57,6 +59,9 @@ export default function WarehouseDetailPage({ params }: { params: { id: string }
   const [warehouse, setWarehouse] = useState<Warehouse | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [keepImages, setKeepImages] = useState(true);
 
   useEffect(() => {
     fetchWarehouse();
@@ -78,6 +83,30 @@ export default function WarehouseDetailPage({ params }: { params: { id: string }
       console.error('Error fetching warehouse:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteProducts = async () => {
+    setDeleting(true);
+    try {
+      const response = await fetch(
+        `/api/admin/warehouses/${params.id}/delete-products?keepImages=${keepImages}`,
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete products');
+      }
+
+      const data = await response.json();
+      alert(data.message);
+      setShowDeleteModal(false);
+      fetchWarehouse(); // Refresh the page
+    } catch (error: any) {
+      alert(error.message || 'Failed to delete products');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -180,14 +209,94 @@ export default function WarehouseDetailPage({ params }: { params: { id: string }
             </div>
           </div>
 
-          <Link href={`/admin/warehouses/${warehouse.id}/edit`}>
-            <Button variant="outline">
-              <Edit className="w-4 h-4 mr-2" />
-              Edit Warehouse
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="border-red-500 text-red-500 hover:bg-red-50"
+              onClick={() => setShowDeleteModal(true)}
+              disabled={allProducts.length === 0}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete All Products ({allProducts.length})
             </Button>
-          </Link>
+            <Link href={`/admin/warehouses/${warehouse.id}/edit`}>
+              <Button variant="outline">
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Warehouse
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-black">Delete All Products</h3>
+                <p className="text-sm text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-yellow-800">
+                <strong>Warning:</strong> You are about to delete{' '}
+                <span className="font-bold">{allProducts.length}</span> products from warehouse "{warehouse.name}".
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={keepImages}
+                  onChange={(e) => setKeepImages(e.target.checked)}
+                  className="w-5 h-5 text-safety-green-600 rounded focus:ring-safety-green-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-black">Keep images in storage</span>
+                  <p className="text-xs text-gray-500">
+                    Images will remain in storage for re-import (recommended)
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleDeleteProducts}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Products
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
