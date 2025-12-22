@@ -91,11 +91,17 @@ interface ParsedPipRow {
   lowestHeight: number | null;
   lowestWeight: number | null;
   // Pricing
-  costPrice: number | null;       // PRICE PER UM.1 - قیمت خرید
+  costPrice: number | null;       // PRICE PER UM - قیمت خرید
   websitePrice: number | null;    // Website 22% - قیمت سایت
   minSellQty: number | null;      // MIN SELL QTY - حداقل سفارش
-  stockType: string;              // STOCK TYPE
+  stockType: string;              // STATUS
   rowNumber: number;
+  // Additional fields for description
+  linerMaterial: string;
+  coatingMaterial: string;
+  upc: string;
+  caseQty: string;
+  um: string;
 }
 
 interface ImageMapping {
@@ -126,6 +132,12 @@ interface VariantGroup {
   websitePrice: number | null;
   minSellQty: number | null;
   stockType: string;
+  // Additional details
+  linerMaterial: string;
+  coatingMaterial: string;
+  countryOfOrigin: string;
+  caseQty: string;
+  um: string;
   rows: ParsedPipRow[];
 }
 
@@ -320,12 +332,18 @@ export class PipImportService {
         lowestWidth: getNumericValue('LOWEST_WIDTH'),
         lowestHeight: getNumericValue('LOWEST_HEIGHT'),
         lowestWeight: getNumericValue('LOWEST_WEIGHT'),
-        // Pricing
-        costPrice: getNumericValue('PRICE PER UM.1'),      // قیمت خرید
+        // Pricing - try both column name formats
+        costPrice: getNumericValue('PRICE PER UM') || getNumericValue('PRICE PER UM.1'),      // قیمت خرید
         websitePrice: getNumericValue('WEBSITE 22%'),       // قیمت سایت
         minSellQty: getNumericValue('MIN SELL QTY'),
-        stockType: getValue('STOCK TYPE'),
+        stockType: getValue('STATUS') || getValue('STOCK TYPE'),
         rowNumber: i + 1,
+        // Additional fields
+        linerMaterial: getValue('LINER_MATERIAL') || getValue('liner_material'),
+        coatingMaterial: getValue('COATING_MATERIAL') || getValue('coating_material'),
+        upc: getValue('UPC'),
+        caseQty: getValue('CASE QTY') || getValue('CASE_QTY'),
+        um: getValue('UM'),
       });
     }
 
@@ -379,6 +397,12 @@ export class PipImportService {
         websitePrice: firstRow.websitePrice,
         minSellQty: firstRow.minSellQty,
         stockType: firstRow.stockType,
+        // Additional details
+        linerMaterial: firstRow.linerMaterial,
+        coatingMaterial: firstRow.coatingMaterial,
+        countryOfOrigin: firstRow.countryOfOrigin,
+        caseQty: firstRow.caseQty,
+        um: firstRow.um,
         rows: groupRows,
       });
     }
@@ -607,7 +631,52 @@ export class PipImportService {
   }
 
   /**
-   * Find or create category (parent/child) - with race condition handling
+   * Find or create the root parent category "NEW PRODUCTS RECEIVED INACTIVE"
+   */
+  private async getOrCreateRootCategory(): Promise<string> {
+    const rootName = 'NEW PRODUCTS RECEIVED INACTIVE';
+    const rootSlug = 'new-products-received-inactive';
+
+    // Check cache
+    if (this.categoryCache.has('ROOT')) {
+      return this.categoryCache.get('ROOT')!;
+    }
+
+    try {
+      const root = await prisma.category.upsert({
+        where: { slug: rootSlug },
+        update: {},
+        create: {
+          name: rootName,
+          slug: rootSlug,
+          isActive: false, // Inactive until reviewed
+          description: 'New imported products pending review and categorization',
+        },
+      });
+
+      this.categoryCache.set('ROOT', root.id);
+
+      if (!this.createdCategories.includes(rootName)) {
+        this.createdCategories.push(rootName);
+        console.log(`Created root category: ${rootName}`);
+      }
+
+      return root.id;
+    } catch (error) {
+      const existing = await prisma.category.findFirst({
+        where: { slug: rootSlug },
+      });
+      if (existing) {
+        this.categoryCache.set('ROOT', existing.id);
+        return existing.id;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Find or create category (hierarchical under ROOT)
+   * Structure: ROOT > SELECT CODE > COMMODITY CODE
    */
   private async findOrCreateCategory(
     parentName: string,
@@ -623,85 +692,85 @@ export class PipImportService {
       return this.categoryCache.get(cacheKey)!;
     }
 
-    // Create or find parent first
-    let parentId: string | null = null;
+    // Get or create root category first
+    const rootId = await this.getOrCreateRootCategory();
+
+    // Create SELECT CODE category under ROOT
+    let selectCodeId: string | null = null;
     if (parentName) {
-      const parentSlug = parentName
+      const selectCodeSlug = `new-${parentName
         .toLowerCase()
         .replace(/\s+/g, '-')
-        .replace(/[^\w\-]+/g, '');
+        .replace(/[^\w\-]+/g, '')}`;
 
       try {
-        // Use upsert to handle race condition
-        const parent = await prisma.category.upsert({
-          where: { slug: parentSlug },
-          update: {}, // Don't update if exists
+        const selectCode = await prisma.category.upsert({
+          where: { slug: selectCodeSlug },
+          update: {},
           create: {
             name: parentName,
-            slug: parentSlug,
-            isActive: true,
-            description: `${parentName} products`,
+            slug: selectCodeSlug,
+            isActive: false,
+            description: `${parentName} products - pending review`,
+            parentId: rootId,
           },
         });
-        parentId = parent.id;
+        selectCodeId = selectCode.id;
 
         if (!this.createdCategories.includes(parentName)) {
           this.createdCategories.push(parentName);
-          console.log(`Created parent category: ${parentName}`);
+          console.log(`Created SELECT CODE category: ${parentName} under ROOT`);
         }
       } catch (error) {
-        // If upsert fails, try to find existing
         const existing = await prisma.category.findFirst({
-          where: { slug: parentSlug },
+          where: { slug: selectCodeSlug },
         });
         if (existing) {
-          parentId = existing.id;
+          selectCodeId = existing.id;
         } else {
           throw error;
         }
       }
     }
 
-    // If no child, return parent
+    // If no COMMODITY CODE, return SELECT CODE category
     if (!childName || childName === parentName) {
-      if (parentId) {
-        this.categoryCache.set(cacheKey, parentId);
+      if (selectCodeId) {
+        this.categoryCache.set(cacheKey, selectCodeId);
       }
-      return parentId;
+      return selectCodeId;
     }
 
-    // Create or find child category
-    const childSlug = childName
+    // Create COMMODITY CODE category under SELECT CODE
+    const commoditySlug = `new-${childName
       .toLowerCase()
       .replace(/\s+/g, '-')
-      .replace(/[^\w\-]+/g, '');
+      .replace(/[^\w\-]+/g, '')}`;
 
     try {
-      // Use upsert to handle race condition
-      const child = await prisma.category.upsert({
-        where: { slug: childSlug },
-        update: {}, // Don't update if exists
+      const commodity = await prisma.category.upsert({
+        where: { slug: commoditySlug },
+        update: {},
         create: {
           name: childName,
-          slug: childSlug,
-          isActive: true,
-          description: `${childName} products`,
-          parentId,
+          slug: commoditySlug,
+          isActive: false,
+          description: `${childName} products - pending review`,
+          parentId: selectCodeId || rootId,
         },
       });
 
-      this.categoryCache.set(cacheKey, child.id);
+      this.categoryCache.set(cacheKey, commodity.id);
 
       if (!this.createdCategories.includes(childName)) {
         this.createdCategories.push(childName);
-        console.log(`Created child category: ${childName} under ${parentName}`);
+        console.log(`Created COMMODITY CODE category: ${childName} under ${parentName}`);
       }
 
-      return child.id;
+      return commodity.id;
     } catch (error) {
-      // If upsert fails, try to find existing
       const existing = await prisma.category.findFirst({
-        where: { slug: childSlug },
+        where: { slug: commoditySlug },
       });
       if (existing) {
         this.categoryCache.set(cacheKey, existing.id);
@@ -744,6 +813,57 @@ export class PipImportService {
       }
     }
 
+    // Product Details Table
+    const details: string[] = [];
+    if (group.linerMaterial) {
+      const cleanLiner = group.linerMaterial.replace(/--/g, ', ').replace(/^, |, $/g, '');
+      if (cleanLiner) details.push(`<tr><td><strong>Liner Material:</strong></td><td>${cleanLiner}</td></tr>`);
+    }
+    if (group.coatingMaterial) {
+      const cleanCoating = group.coatingMaterial.replace(/--/g, ', ').replace(/^, |, $/g, '');
+      if (cleanCoating) details.push(`<tr><td><strong>Coating Material:</strong></td><td>${cleanCoating}</td></tr>`);
+    }
+    if (group.countryOfOrigin) {
+      details.push(`<tr><td><strong>Country of Origin:</strong></td><td>${group.countryOfOrigin}</td></tr>`);
+    }
+    if (group.um) {
+      details.push(`<tr><td><strong>Unit of Measure:</strong></td><td>${group.um}</td></tr>`);
+    }
+    if (group.caseQty) {
+      details.push(`<tr><td><strong>Case Quantity:</strong></td><td>${group.caseQty}</td></tr>`);
+    }
+    if (group.lowestLength || group.lowestWidth || group.lowestHeight) {
+      const dims = [group.lowestLength, group.lowestWidth, group.lowestHeight]
+        .filter(Boolean)
+        .map(d => d?.toFixed(2))
+        .join(' x ');
+      if (dims) details.push(`<tr><td><strong>Dimensions (LxWxH):</strong></td><td>${dims} cm</td></tr>`);
+    }
+    if (group.lowestWeight) {
+      details.push(`<tr><td><strong>Weight:</strong></td><td>${group.lowestWeight.toFixed(2)} kg</td></tr>`);
+    }
+
+    if (details.length > 0) {
+      parts.push(`<h3>Product Details</h3>`);
+      parts.push(`<table class="product-details-table">${details.join('')}</table>`);
+    }
+
+    // Available Sizes/Colors
+    if (group.rows.length > 1) {
+      const colors = [...new Set(group.rows.map(r => r.color).filter(Boolean))];
+      const sizes = [...new Set(group.rows.map(r => r.size).filter(Boolean))];
+
+      if (colors.length > 0 || sizes.length > 0) {
+        parts.push(`<h3>Available Options</h3>`);
+        if (colors.length > 0) {
+          parts.push(`<p><strong>Colors:</strong> ${colors.join(', ')}</p>`);
+        }
+        if (sizes.length > 0) {
+          parts.push(`<p><strong>Sizes:</strong> ${sizes.join(', ')}</p>`);
+        }
+      }
+    }
+
     // Applications
     if (group.applications) {
       parts.push(`<h3>Applications</h3>`);
@@ -760,7 +880,7 @@ export class PipImportService {
 
     // Spec sheet link
     if (group.specsheetLink) {
-      parts.push(`<p><a href="${group.specsheetLink}" target="_blank">View Specification Sheet</a></p>`);
+      parts.push(`<p><a href="${group.specsheetLink}" target="_blank" class="btn">View Specification Sheet</a></p>`);
     }
 
     return parts.join('\n') || `<p>${group.productName}</p>`;
@@ -1062,17 +1182,25 @@ export class PipImportService {
       });
     }
 
-    // Import images only for NEW products (skip for updates to save time)
-    if (importImages && savedProduct && !isUpdate) {
-      const images = this.getGroupImageNames(group, imageBasePath);
-      if (images.length > 0) {
-        await this.processProductImages(
-          savedProduct.id,
-          group.style,
-          images,
-          imageBasePath,
-          false
-        );
+    // Import images only for NEW products without images (skip for updates to preserve existing)
+    if (importImages && savedProduct) {
+      // Check if product already has images
+      const existingImages = await prisma.productImage.count({
+        where: { productId: savedProduct.id },
+      });
+
+      // Only process images for new products or products without images
+      if (existingImages === 0) {
+        const images = this.getGroupImageNames(group, imageBasePath);
+        if (images.length > 0) {
+          await this.processProductImages(
+            savedProduct.id,
+            group.style,
+            images,
+            imageBasePath,
+            false
+          );
+        }
       }
     }
 
