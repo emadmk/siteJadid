@@ -31,9 +31,12 @@ export default function CategoriesManager({ categories, tree }: CategoriesManage
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [targetCategoryId, setTargetCategoryId] = useState<string | null>(null);
   const [isMerging, setIsMerging] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const toggleCategory = (categoryId: string) => {
+  const toggleCategory = (e: React.MouseEvent, categoryId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
     const newSelected = new Set(selectedCategories);
     if (newSelected.has(categoryId)) {
       newSelected.delete(categoryId);
@@ -46,8 +49,35 @@ export default function CategoriesManager({ categories, tree }: CategoriesManage
     setSelectedCategories(newSelected);
   };
 
-  const setAsTarget = (categoryId: string) => {
+  const setAsTarget = (e: React.MouseEvent, categoryId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
     setTargetCategoryId(categoryId);
+  };
+
+  const handleDelete = async (categoryId: string) => {
+    if (!confirm('Are you sure you want to delete this category?')) {
+      return;
+    }
+
+    setIsDeleting(categoryId);
+    try {
+      const response = await fetch(`/api/admin/categories/${categoryId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete category');
+      }
+
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete category');
+    } finally {
+      setIsDeleting(null);
+    }
   };
 
   const cancelMerge = () => {
@@ -113,12 +143,13 @@ export default function CategoriesManager({ categories, tree }: CategoriesManage
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={() => toggleCategory(category.id)}
-                  className="w-4 h-4 rounded border-gray-300 text-safety-green-600 focus:ring-safety-green-500"
+                  onClick={(e) => toggleCategory(e, category.id)}
+                  onChange={() => {}} // Controlled by onClick to prevent scroll
+                  className="w-4 h-4 rounded border-gray-300 text-safety-green-600 focus:ring-safety-green-500 cursor-pointer"
                 />
                 {isSelected && (
                   <button
-                    onClick={() => setAsTarget(category.id)}
+                    onClick={(e) => setAsTarget(e, category.id)}
                     className={`text-xs px-2 py-1 rounded ${
                       isTarget
                         ? 'bg-green-600 text-white'
@@ -170,17 +201,20 @@ export default function CategoriesManager({ categories, tree }: CategoriesManage
                   </Button>
                 </Link>
                 {category._count.products === 0 && category._count.children === 0 && (
-                  <form action={`/admin/categories/${category.id}/delete`} method="POST">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-gray-300 hover:border-red-600 hover:text-red-600"
-                      type="submit"
-                    >
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-gray-300 hover:border-red-600 hover:text-red-600"
+                    onClick={() => handleDelete(category.id)}
+                    disabled={isDeleting === category.id}
+                  >
+                    {isDeleting === category.id ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
                       <Trash2 className="w-4 h-4 mr-1" />
-                      Delete
-                    </Button>
-                  </form>
+                    )}
+                    Delete
+                  </Button>
                 )}
               </div>
             )}
