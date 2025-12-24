@@ -92,6 +92,7 @@ export default function BulkEditPage() {
   const [filterBrand, setFilterBrand] = useState('');
   const [filterWarehouse, setFilterWarehouse] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterImage, setFilterImage] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
   // Loading states
@@ -171,6 +172,7 @@ export default function BulkEditPage() {
       if (filterBrand) params.set('brand', filterBrand);
       if (filterWarehouse) params.set('warehouse', filterWarehouse);
       if (filterStatus) params.set('status', filterStatus);
+      if (filterImage) params.set('hasImage', filterImage);
       params.set('limit', String(ITEMS_PER_PAGE));
       params.set('page', '1');
 
@@ -184,7 +186,7 @@ export default function BulkEditPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, filterCategory, filterBrand, filterWarehouse, filterStatus]);
+  }, [debouncedSearch, filterCategory, filterBrand, filterWarehouse, filterStatus, filterImage]);
 
   // Load more products
   const loadMoreProducts = async () => {
@@ -199,6 +201,7 @@ export default function BulkEditPage() {
       if (filterBrand) params.set('brand', filterBrand);
       if (filterWarehouse) params.set('warehouse', filterWarehouse);
       if (filterStatus) params.set('status', filterStatus);
+      if (filterImage) params.set('hasImage', filterImage);
       params.set('limit', String(ITEMS_PER_PAGE));
       params.set('page', String(nextPage));
 
@@ -548,6 +551,19 @@ export default function BulkEditPage() {
             </select>
           </div>
 
+          {/* Image Filter */}
+          <div className="flex-1 max-w-xs">
+            <select
+              value={filterImage}
+              onChange={(e) => setFilterImage(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+            >
+              <option value="">All Products</option>
+              <option value="yes">With Images</option>
+              <option value="no">Without Images</option>
+            </select>
+          </div>
+
           <Button
             variant="outline"
             className="border-gray-300"
@@ -557,6 +573,7 @@ export default function BulkEditPage() {
               setFilterBrand('');
               setFilterWarehouse('');
               setFilterStatus('');
+              setFilterImage('');
             }}
           >
             <RefreshCw className="w-4 h-4 mr-2" />

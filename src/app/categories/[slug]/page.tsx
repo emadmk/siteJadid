@@ -34,6 +34,11 @@ interface Category {
     name: string;
     slug: string;
   } | null;
+  hierarchy: {
+    id: string;
+    name: string;
+    slug: string;
+  }[];
   children: {
     id: string;
     name: string;
@@ -360,17 +365,17 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
             <Link href="/categories" className="text-gray-600 hover:text-safety-green-600">
               Categories
             </Link>
-            {category.parent && (
-              <>
+            {category.hierarchy && category.hierarchy.map((ancestor) => (
+              <span key={ancestor.id} className="flex items-center gap-2">
                 <ChevronRight className="w-4 h-4 text-gray-400" />
                 <Link
-                  href={`/categories/${category.parent.slug}`}
+                  href={`/categories/${ancestor.slug}`}
                   className="text-gray-600 hover:text-safety-green-600"
                 >
-                  {category.parent.name}
+                  {ancestor.name}
                 </Link>
-              </>
-            )}
+              </span>
+            ))}
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <span className="text-black font-medium">{category.name}</span>
           </div>

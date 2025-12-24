@@ -313,8 +313,8 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
               Home
             </Link>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-            <Link href="/products" className="text-gray-600 hover:text-safety-green-600">
-              Products
+            <Link href="/categories" className="text-gray-600 hover:text-safety-green-600">
+              Categories
             </Link>
             {/* Show full category hierarchy */}
             {product.categoryHierarchy && product.categoryHierarchy.map((cat) => (

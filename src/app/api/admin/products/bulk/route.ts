@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const brand = searchParams.get('brand');
     const warehouse = searchParams.get('warehouse');
     const status = searchParams.get('status');
+    const hasImage = searchParams.get('hasImage');
     const limit = parseInt(searchParams.get('limit') || '100');
     const page = parseInt(searchParams.get('page') || '1');
     const skip = (page - 1) * limit;
@@ -44,6 +45,13 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       where.status = status;
+    }
+
+    // Filter by image presence
+    if (hasImage === 'yes') {
+      where.NOT = { images: { equals: [] } };
+    } else if (hasImage === 'no') {
+      where.images = { equals: [] };
     }
 
     // Get total count for pagination

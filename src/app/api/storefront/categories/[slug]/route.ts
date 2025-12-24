@@ -183,6 +183,26 @@ function extractSmartFilters(products: { name: string; description: string | nul
   return result;
 }
 
+// Recursive function to get full category hierarchy (ancestors)
+async function getCategoryHierarchy(categoryId: string | null): Promise<{ id: string; name: string; slug: string }[]> {
+  if (!categoryId) return [];
+
+  const category = await db.category.findUnique({
+    where: { id: categoryId },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      parentId: true,
+    },
+  });
+
+  if (!category) return [];
+
+  const ancestors = await getCategoryHierarchy(category.parentId);
+  return [...ancestors, { id: category.id, name: category.name, slug: category.slug }];
+}
+
 // Recursive function to get all descendant category IDs
 async function getAllDescendantCategoryIds(categoryId: string): Promise<string[]> {
   const children = await db.category.findMany({
@@ -244,6 +264,7 @@ export async function GET(
         slug: true,
         description: true,
         image: true,
+        parentId: true,
         parent: {
           select: {
             id: true,
@@ -531,10 +552,14 @@ export async function GET(
       },
     });
 
-    // Build category response with updated children counts
+    // Get full hierarchy (all ancestors)
+    const hierarchy = await getCategoryHierarchy(category.parentId);
+
+    // Build category response with updated children counts and full hierarchy
     const categoryResponse = {
       ...category,
       children: childrenWithTotals.map(({ children, ...rest }) => rest), // Remove nested children from response
+      hierarchy, // Full path from root to parent (not including current category)
     };
 
     return NextResponse.json({
