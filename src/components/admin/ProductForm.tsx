@@ -674,6 +674,7 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
             >
               <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
               <option value="DRAFT">Draft</option>
               <option value="OUT_OF_STOCK">Out of Stock</option>
               <option value="DISCONTINUED">Discontinued</option>

@@ -95,23 +95,26 @@ export function EditableProductRow({ product: initialProduct, categories, brands
     setError(null);
   };
 
-  const saveEdit = async () => {
+  const saveEdit = async (valueOverride?: string) => {
     if (!editingField || saving) return;
+
+    // Use override value if provided (for select onChange), otherwise use state
+    const valueToSave = valueOverride !== undefined ? valueOverride : editValue;
 
     // Check if value actually changed
     let hasChanged = false;
     switch (editingField) {
       case 'name':
-        hasChanged = editValue !== product.name;
+        hasChanged = valueToSave !== product.name;
         break;
       case 'category':
-        hasChanged = editValue !== (product.category?.id || '');
+        hasChanged = valueToSave !== (product.category?.id || '');
         break;
       case 'brand':
-        hasChanged = editValue !== (product.brand?.id || '');
+        hasChanged = valueToSave !== (product.brand?.id || '');
         break;
       case 'status':
-        hasChanged = editValue !== product.status;
+        hasChanged = valueToSave !== product.status;
         break;
     }
 
@@ -128,21 +131,21 @@ export function EditableProductRow({ product: initialProduct, categories, brands
 
       switch (editingField) {
         case 'name':
-          if (!editValue.trim()) {
+          if (!valueToSave.trim()) {
             setError('Name is required');
             setSaving(false);
             return;
           }
-          updateData.name = editValue.trim();
+          updateData.name = valueToSave.trim();
           break;
         case 'category':
-          updateData.categoryId = editValue || null;
+          updateData.categoryId = valueToSave || null;
           break;
         case 'brand':
-          updateData.brandId = editValue || null;
+          updateData.brandId = valueToSave || null;
           break;
         case 'status':
-          updateData.status = editValue;
+          updateData.status = valueToSave;
           break;
       }
 
@@ -254,12 +257,12 @@ export function EditableProductRow({ product: initialProduct, categories, brands
               ref={selectRef}
               value={editValue}
               onChange={(e) => {
-                setEditValue(e.target.value);
-                // Auto-save on selection change
-                setTimeout(() => saveEdit(), 100);
+                const newValue = e.target.value;
+                setEditValue(newValue);
+                // Auto-save on selection change - pass value directly
+                saveEdit(newValue);
               }}
               onKeyDown={handleKeyDown}
-              onBlur={saveEdit}
               className="w-full px-2 py-1 text-sm border border-safety-green-500 rounded focus:outline-none focus:ring-2 focus:ring-safety-green-500"
               disabled={saving}
             >
@@ -294,11 +297,11 @@ export function EditableProductRow({ product: initialProduct, categories, brands
               ref={selectRef}
               value={editValue}
               onChange={(e) => {
-                setEditValue(e.target.value);
-                setTimeout(() => saveEdit(), 100);
+                const newValue = e.target.value;
+                setEditValue(newValue);
+                saveEdit(newValue);
               }}
               onKeyDown={handleKeyDown}
-              onBlur={saveEdit}
               className="w-full px-2 py-1 text-sm border border-safety-green-500 rounded focus:outline-none focus:ring-2 focus:ring-safety-green-500"
               disabled={saving}
             >
@@ -368,11 +371,11 @@ export function EditableProductRow({ product: initialProduct, categories, brands
               ref={selectRef}
               value={editValue}
               onChange={(e) => {
-                setEditValue(e.target.value);
-                setTimeout(() => saveEdit(), 100);
+                const newValue = e.target.value;
+                setEditValue(newValue);
+                saveEdit(newValue);
               }}
               onKeyDown={handleKeyDown}
-              onBlur={saveEdit}
               className="w-full px-2 py-1 text-sm border border-safety-green-500 rounded focus:outline-none focus:ring-2 focus:ring-safety-green-500"
               disabled={saving}
             >
