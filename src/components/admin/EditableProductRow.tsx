@@ -218,7 +218,7 @@ export function EditableProductRow({ product: initialProduct, categories, brands
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  onBlur={saveEdit}
+                  onBlur={() => saveEdit()}
                   className="w-full px-2 py-1 text-sm border border-safety-green-500 rounded focus:outline-none focus:ring-2 focus:ring-safety-green-500"
                   disabled={saving}
                 />
