@@ -23,12 +23,15 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where: any = {};
+    const andConditions: any[] = [];
 
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-      ];
+      andConditions.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { sku: { contains: search, mode: 'insensitive' } },
+        ],
+      });
     }
 
     if (category) {
@@ -49,17 +52,16 @@ export async function GET(request: NextRequest) {
 
     // Filter by image presence
     if (hasImage === 'yes') {
-      // Has images: not empty array
-      where.AND = [
-        ...(where.AND || []),
-        { images: { isEmpty: false } },
-      ];
+      // Has images: array is not empty
+      andConditions.push({ images: { isEmpty: false } });
     } else if (hasImage === 'no') {
       // No images: empty array
-      where.AND = [
-        ...(where.AND || []),
-        { images: { isEmpty: true } },
-      ];
+      andConditions.push({ images: { equals: [] } });
+    }
+
+    // Apply AND conditions
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     // Get total count for pagination
