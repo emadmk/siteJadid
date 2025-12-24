@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Eye, Package, Search, Upload, Pencil, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Package, Search, Upload, Pencil, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db } from '@/lib/db';
+import { ProductsTable } from '@/components/admin/ProductsTable';
 
 interface SearchParams {
   status?: string;
@@ -120,11 +121,38 @@ async function getProducts(searchParams: SearchParams) {
 }
 
 async function getCategories() {
-  return await db.category.findMany({
-    where: { isActive: true },
-    select: { id: true, name: true },
-    orderBy: { name: 'asc' },
+  // Get all categories with parent info for hierarchical display
+  const allCategories = await db.category.findMany({
+    select: {
+      id: true,
+      name: true,
+      parentId: true,
+      parent: { select: { name: true } },
+    },
+    orderBy: [{ parentId: 'asc' }, { name: 'asc' }],
   });
+
+  // Build hierarchical list for dropdown
+  const roots = allCategories.filter(c => !c.parentId);
+  const children = allCategories.filter(c => c.parentId);
+
+  const result: { id: string; name: string; level: number }[] = [];
+
+  // Helper function to add category and its children recursively
+  const addWithChildren = (category: typeof allCategories[0], level: number) => {
+    result.push({ id: category.id, name: category.name, level });
+    const categoryChildren = children.filter(c => c.parentId === category.id);
+    for (const child of categoryChildren) {
+      addWithChildren(child, level + 1);
+    }
+  };
+
+  // Process all root categories
+  for (const root of roots) {
+    addWithChildren(root, 0);
+  }
+
+  return result;
 }
 
 async function getBrands() {
@@ -459,6 +487,7 @@ export default async function ProductsPage({
             >
               <option value="">All Status</option>
               <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
               <option value="DRAFT">Draft</option>
               <option value="OUT_OF_STOCK">Out of Stock</option>
               <option value="DISCONTINUED">Discontinued</option>
@@ -478,7 +507,7 @@ export default async function ProductsPage({
               <option value="">All Categories</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.name}
+                  {'—'.repeat(cat.level)} {cat.name}
                 </option>
               ))}
             </select>
@@ -624,116 +653,11 @@ export default async function ProductsPage({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {products.map((product: any) => {
-                    const images = product.images as string[];
-                    const statusColors: Record<string, string> = {
-                      ACTIVE: 'bg-safety-green-100 text-safety-green-800',
-                      DRAFT: 'bg-gray-100 text-gray-800',
-                      OUT_OF_STOCK: 'bg-red-100 text-red-800',
-                      DISCONTINUED: 'bg-yellow-100 text-yellow-800',
-                    };
-
-                    return (
-                      <tr key={product.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-gray-100 rounded flex-shrink-0">
-                              {images && images.length > 0 ? (
-                                <img
-                                  src={images[0]}
-                                  alt={product.name}
-                                  className="w-full h-full object-cover rounded"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Package className="w-5 h-5 text-gray-300" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-medium text-black line-clamp-1">
-                                {product.name}
-                              </div>
-                              <div className="text-xs text-gray-600 line-clamp-1">
-                                {product.shortDescription}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-mono text-gray-700">
-                          {product.sku}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700">
-                          {product.category?.name || '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700">
-                          {product.brand?.name || '-'}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm">
-                            {product.salePrice ? (
-                              <div>
-                                <div className="font-semibold text-safety-green-600">
-                                  ${Number(product.salePrice).toFixed(2)}
-                                </div>
-                                <div className="text-xs text-gray-400 line-through">
-                                  ${Number(product.basePrice).toFixed(2)}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="font-semibold text-black">
-                                ${Number(product.basePrice).toFixed(2)}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              product.stockQuantity === 0
-                                ? 'bg-red-100 text-red-800'
-                                : product.stockQuantity <= 10
-                                ? 'bg-orange-100 text-orange-800'
-                                : 'bg-safety-green-100 text-safety-green-800'
-                            }`}
-                          >
-                            {product.stockQuantity}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[product.status]}`}
-                          >
-                            {product.status.replace('_', ' ')}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link href={`/products/${product.slug}`} target="_blank">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-gray-300 hover:border-blue-600 hover:text-blue-600"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </Link>
-                            <Link href={`/admin/products/${product.id}/edit`}>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-gray-300 hover:border-safety-green-600 hover:text-safety-green-600"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
+                <ProductsTable
+                  products={products as any}
+                  categories={categories}
+                  brands={brands}
+                />
               </table>
 
               {/* Pagination */}
