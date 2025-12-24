@@ -49,9 +49,17 @@ export async function GET(request: NextRequest) {
 
     // Filter by image presence
     if (hasImage === 'yes') {
-      where.NOT = { images: { equals: [] } };
+      // Has images: not empty array
+      where.AND = [
+        ...(where.AND || []),
+        { images: { isEmpty: false } },
+      ];
     } else if (hasImage === 'no') {
-      where.images = { equals: [] };
+      // No images: empty array
+      where.AND = [
+        ...(where.AND || []),
+        { images: { isEmpty: true } },
+      ];
     }
 
     // Get total count for pagination
