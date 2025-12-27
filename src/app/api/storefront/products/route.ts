@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const maxPrice = searchParams.get('maxPrice');
     const sort = searchParams.get('sort') || 'newest';
     const featured = searchParams.get('featured');
+    const taaApproved = searchParams.get('taaApproved') === 'true';
 
     const skip = (page - 1) * limit;
 
@@ -64,6 +65,11 @@ export async function GET(request: NextRequest) {
 
     if (featured === 'true') {
       where.isFeatured = true;
+    }
+
+    // TAA/BAA Approved filter (products with GSA price)
+    if (taaApproved) {
+      where.gsaPrice = { not: null };
     }
 
     // Build order by

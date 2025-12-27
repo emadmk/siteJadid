@@ -120,6 +120,7 @@ export function ProductsListing({
   });
   const [sortBy, setSortBy] = useState(initialFilters.sort || 'newest');
   const [featured, setFeatured] = useState(initialFilters.featured === 'true');
+  const [taaApproved, setTaaApproved] = useState(false);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -214,6 +215,7 @@ export function ProductsListing({
       if (priceRange.max) params.set('maxPrice', priceRange.max);
       if (sortBy) params.set('sort', sortBy);
       if (featured) params.set('featured', 'true');
+      if (taaApproved) params.set('taaApproved', 'true');
 
       const response = await fetch(`/api/storefront/products?${params}`);
       const data = await response.json();
@@ -234,7 +236,7 @@ export function ProductsListing({
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, featured]);
+  }, [searchQuery, selectedCategory, selectedBrand, priceRange, sortBy, featured, taaApproved]);
 
   // Infinite scroll for pages 1-5
   useEffect(() => {
@@ -360,6 +362,7 @@ export function ProductsListing({
     setPriceRange({ min: '', max: '' });
     setSortBy('newest');
     setFeatured(false);
+    setTaaApproved(false);
     setCurrentPage(1);
     router.push('/products');
     setTimeout(() => fetchProducts(1, true), 0);
@@ -380,7 +383,7 @@ export function ProductsListing({
     await toggleWishlist(productId);
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory || selectedBrand || priceRange.min || priceRange.max || featured;
+  const hasActiveFilters = searchQuery || selectedCategory || selectedBrand || priceRange.min || priceRange.max || featured || taaApproved;
 
   const activeCategory = categories.find(c => c.slug === selectedCategory);
 
@@ -536,7 +539,7 @@ export function ProductsListing({
               {/* Quick Filters */}
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-black mb-3">Quick Filters</h3>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer mb-3">
                   <input
                     type="checkbox"
                     checked={featured}
@@ -547,6 +550,25 @@ export function ProductsListing({
                     className="w-4 h-4 text-safety-green-600 rounded focus:ring-safety-green-500"
                   />
                   <span className="text-sm text-gray-700">Featured Products Only</span>
+                </label>
+              </div>
+
+              {/* TAA/BAA Approved Filter */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={taaApproved}
+                    onChange={(e) => {
+                      setTaaApproved(e.target.checked);
+                      setTimeout(applyFilters, 0);
+                    }}
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <div className="font-semibold text-blue-800">TAA/BAA Approved</div>
+                    <div className="text-xs text-blue-600">Government compliant products</div>
+                  </div>
                 </label>
               </div>
 
