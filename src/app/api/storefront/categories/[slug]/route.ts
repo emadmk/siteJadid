@@ -250,6 +250,7 @@ export async function GET(
     const maxPrice = searchParams.get('maxPrice');
     const search = searchParams.get('search');
     const brand = searchParams.get('brand');
+    const taaApproved = searchParams.get('taaApproved') === 'true';
     const smartFilters = searchParams.get('filters'); // JSON string of active smart filters
 
     // Find the category
@@ -369,6 +370,11 @@ export async function GET(
       if (brandData) {
         where.brandId = brandData.id;
       }
+    }
+
+    // Add TAA/BAA filter (products with GSA price)
+    if (taaApproved) {
+      where.gsaPrice = { not: null };
     }
 
     // Add smart filters

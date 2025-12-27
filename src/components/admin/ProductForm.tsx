@@ -43,6 +43,10 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
     lowStockThreshold: product?.lowStockThreshold?.toString() || '10',
     minimumOrderQty: product?.minimumOrderQty?.toString() || '1',
 
+    // Unit Pricing
+    priceUnit: product?.priceUnit || 'ea',
+    qtyPerPack: product?.qtyPerPack?.toString() || '1',
+
     // Category, Brand & Status
     categoryId: product?.categoryId || '',
     brandId: product?.brandId || '',
@@ -237,6 +241,8 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
           stockQuantity: parseInt(formData.stockQuantity) || 0,
           lowStockThreshold: parseInt(formData.lowStockThreshold) || 10,
           minimumOrderQty: parseInt(formData.minimumOrderQty) || 1,
+          priceUnit: formData.priceUnit || 'ea',
+          qtyPerPack: parseInt(formData.qtyPerPack) || 1,
           weight: formData.weight ? parseFloat(formData.weight) : null,
           length: formData.length ? parseFloat(formData.length) : null,
           width: formData.width ? parseFloat(formData.width) : null,
@@ -662,6 +668,39 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
               min="1"
             />
             <p className="text-xs text-gray-500 mt-1">Minimum quantity customer must order</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Price Unit
+            </label>
+            <select
+              value={formData.priceUnit}
+              onChange={(e) => setFormData(prev => ({ ...prev, priceUnit: e.target.value }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+            >
+              <option value="ea">Each (ea)</option>
+              <option value="pr">Pair (pr)</option>
+              <option value="pk">Pack (pk)</option>
+              <option value="dz">Dozen (dz)</option>
+              <option value="bx">Box (bx)</option>
+              <option value="cs">Case (cs)</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Unit type for pricing display</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Qty Per Pack
+            </label>
+            <input
+              type="number"
+              value={formData.qtyPerPack}
+              onChange={(e) => setFormData(prev => ({ ...prev, qtyPerPack: e.target.value }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+              min="1"
+            />
+            <p className="text-xs text-gray-500 mt-1">Quantity per pack/unit</p>
           </div>
 
           <div>

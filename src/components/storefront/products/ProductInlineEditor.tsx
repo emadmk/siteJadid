@@ -46,6 +46,9 @@ interface ProductData {
   wholesalePrice: number | null;
   gsaPrice: number | null;
   costPrice: number | null;
+  priceUnit?: string;
+  qtyPerPack?: number;
+  minimumOrderQty?: number;
   images: string[];
   isFeatured: boolean;
   isBestSeller: boolean;
@@ -117,6 +120,9 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
     wholesalePrice: product.wholesalePrice?.toString() || '',
     gsaPrice: product.gsaPrice?.toString() || '',
     costPrice: product.costPrice?.toString() || '',
+    priceUnit: product.priceUnit || 'ea',
+    qtyPerPack: product.qtyPerPack?.toString() || '1',
+    minimumOrderQty: product.minimumOrderQty?.toString() || '1',
     stockQuantity: product.stockQuantity?.toString() || '0',
     lowStockThreshold: product.lowStockThreshold?.toString() || '10',
     categoryId: product.categoryId || '',
@@ -177,6 +183,9 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
       wholesalePrice: product.wholesalePrice?.toString() || '',
       gsaPrice: product.gsaPrice?.toString() || '',
       costPrice: product.costPrice?.toString() || '',
+      priceUnit: product.priceUnit || 'ea',
+      qtyPerPack: product.qtyPerPack?.toString() || '1',
+      minimumOrderQty: product.minimumOrderQty?.toString() || '1',
       stockQuantity: product.stockQuantity?.toString() || '0',
       lowStockThreshold: product.lowStockThreshold?.toString() || '10',
       categoryId: product.categoryId || '',
@@ -277,6 +286,9 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
           costPrice: formData.costPrice ? parseFloat(formData.costPrice) : null,
           stockQuantity: parseInt(formData.stockQuantity) || 0,
           lowStockThreshold: parseInt(formData.lowStockThreshold) || 10,
+          priceUnit: formData.priceUnit || 'ea',
+          qtyPerPack: parseInt(formData.qtyPerPack) || 1,
+          minimumOrderQty: parseInt(formData.minimumOrderQty) || 1,
           weight: formData.weight ? parseFloat(formData.weight) : null,
           length: formData.length ? parseFloat(formData.length) : null,
           width: formData.width ? parseFloat(formData.width) : null,
@@ -685,6 +697,57 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
                 <p className="text-xs text-gray-500 mt-1">
                   Your cost (not shown to customers)
                 </p>
+              </div>
+
+              {/* Unit Pricing */}
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Price Unit
+                  </label>
+                  <select
+                    value={formData.priceUnit}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, priceUnit: e.target.value }))
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                  >
+                    <option value="ea">Each (ea)</option>
+                    <option value="pr">Pair (pr)</option>
+                    <option value="pk">Pack (pk)</option>
+                    <option value="dz">Dozen (dz)</option>
+                    <option value="bx">Box (bx)</option>
+                    <option value="cs">Case (cs)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Qty Per Pack
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.qtyPerPack}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, qtyPerPack: e.target.value }))
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Min Order Qty
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.minimumOrderQty}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, minimumOrderQty: e.target.value }))
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                    min="1"
+                  />
+                </div>
               </div>
 
               {/* Price Summary */}

@@ -118,6 +118,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
   const [selectedBrand, setSelectedBrand] = useState('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [sortBy, setSortBy] = useState('newest');
+  const [taaApproved, setTaaApproved] = useState(false);
   const [activeSmartFilters, setActiveSmartFilters] = useState<Record<string, string[]>>({});
   const [expandedFilterSections, setExpandedFilterSections] = useState<Record<string, boolean>>({});
 
@@ -164,6 +165,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       if (selectedBrand) queryParams.set('brand', selectedBrand);
       if (priceRange.min) queryParams.set('minPrice', priceRange.min);
       if (priceRange.max) queryParams.set('maxPrice', priceRange.max);
+      if (taaApproved) queryParams.set('taaApproved', 'true');
 
       // Add smart filters
       const hasSmartFilters = Object.values(activeSmartFilters).some(arr => arr.length > 0);
@@ -205,7 +207,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [params.slug, sortBy, searchQuery, selectedBrand, priceRange, activeSmartFilters, router]);
+  }, [params.slug, sortBy, searchQuery, selectedBrand, priceRange, taaApproved, activeSmartFilters, router]);
 
   // Initial fetch - use page from URL if available (for back button support)
   useEffect(() => {
@@ -287,6 +289,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     setSelectedBrand('');
     setPriceRange({ min: '', max: '' });
     setSortBy('newest');
+    setTaaApproved(false);
     setActiveSmartFilters({});
     setCurrentPage(1);
     fetchData(1, true);
@@ -318,7 +321,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     }));
   };
 
-  const hasActiveFilters = searchQuery || selectedBrand || priceRange.min || priceRange.max ||
+  const hasActiveFilters = searchQuery || selectedBrand || priceRange.min || priceRange.max || taaApproved ||
     Object.values(activeSmartFilters).some(arr => arr.length > 0);
 
   if (loading) {
@@ -539,6 +542,25 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                 </div>
               </div>
 
+              {/* TAA/BAA Approved Filter */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={taaApproved}
+                    onChange={(e) => {
+                      setTaaApproved(e.target.checked);
+                      setTimeout(() => fetchData(1, true), 0);
+                    }}
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <div className="font-semibold text-blue-800">TAA/BAA Approved</div>
+                    <div className="text-xs text-blue-600">Government compliant products</div>
+                  </div>
+                </label>
+              </div>
+
               {/* Smart Filters */}
               {Object.entries(smartFilters || {}).map(([filterKey, values]) => (
                 <div key={filterKey} className="mb-4 border-t pt-4">
@@ -699,6 +721,20 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                       className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500"
                     />
                   </div>
+
+                  {/* TAA/BAA Approved Filter (Mobile) */}
+                  <label className="flex items-center gap-3 cursor-pointer p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                    <input
+                      type="checkbox"
+                      checked={taaApproved}
+                      onChange={(e) => setTaaApproved(e.target.checked)}
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="font-semibold text-blue-800 text-sm">TAA/BAA Approved</div>
+                      <div className="text-xs text-blue-600">Government compliant</div>
+                    </div>
+                  </label>
 
                   {/* Smart Filters (Mobile) */}
                   {Object.entries(smartFilters || {}).slice(0, 3).map(([filterKey, values]) => (
