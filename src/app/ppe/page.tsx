@@ -17,7 +17,7 @@ const PPE_CATEGORY_SLUGS = [
   'electrical-safety-gear',
   'contamination-control',
   'heat-stress',
-  'cold-stress',
+  'cold-stress-accessories',
   'traffic-safety',
 ];
 
@@ -39,7 +39,7 @@ const PPE_CATEGORY_NAMES = [
   'electrical safety',
   'contamination control',
   'heat stress',
-  'cold stress',
+  'cold stress accessories',
   'traffic safety',
 ];
 
