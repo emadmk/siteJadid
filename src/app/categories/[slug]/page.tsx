@@ -117,7 +117,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState('price-desc');
   const [taaApproved, setTaaApproved] = useState(false);
   const [activeSmartFilters, setActiveSmartFilters] = useState<Record<string, string[]>>({});
   const [expandedFilterSections, setExpandedFilterSections] = useState<Record<string, boolean>>({});
