@@ -23,7 +23,7 @@ const heroBanners = [
     title: 'Personal Protective Equipment',
     subtitle: 'Stay safe with quality PPE gear',
     image: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=800&q=80',
-    link: '/categories/ppe',
+    link: '/ppe',
     bgColor: 'from-gray-800 to-gray-900',
   },
   {
