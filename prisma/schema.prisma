@@ -410,6 +410,10 @@ model Product {
   // Tier Pricing (JSON)
   tierPricing     Json?         // Array of {minQuantity, maxQuantity, price, accountType}
 
+  // Unit Pricing
+  priceUnit       String        @default("ea")  // ea=each, pk=pack, pr=pair, DZ=dozen
+  qtyPerPack      Int           @default(1)     // Quantity per pack/unit
+
   // Inventory
   stockQuantity   Int           @default(0)
   lowStockThreshold Int         @default(10)
@@ -509,6 +513,10 @@ model ProductVariant {
   wholesalePrice  Decimal?  @db.Decimal(12, 2)  // B2B price
   gsaPrice        Decimal?  @db.Decimal(12, 2)
   costPrice       Decimal?  @db.Decimal(12, 2)
+
+  // Unit Pricing
+  priceUnit       String    @default("ea")  // ea=each, pk=pack, pr=pair, DZ=dozen
+  qtyPerPack      Int       @default(1)     // Quantity per pack/unit
 
   stockQuantity   Int       @default(0)
   images          String[]

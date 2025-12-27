@@ -76,6 +76,8 @@ interface Variant {
   salePrice?: number | null;
   wholesalePrice?: number | null;
   gsaPrice?: number | null;
+  priceUnit?: string;
+  qtyPerPack?: number;
   stockQuantity: number;
   isActive: boolean;
   images: string[];
@@ -101,6 +103,8 @@ interface ProductDetailProps {
     wholesalePrice: number | null;
     gsaPrice: number | null;
     costPrice: number | null;
+    priceUnit?: string;
+    qtyPerPack?: number;
     images: string[];
     isFeatured: boolean;
     isBestSeller: boolean;
@@ -171,6 +175,22 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
   const currentSku = selectedVariant ? selectedVariant.sku : product.sku;
   const currentWholesalePrice = selectedVariant?.wholesalePrice || product.wholesalePrice;
   const currentGsaPrice = selectedVariant?.gsaPrice || product.gsaPrice;
+  const currentPriceUnit = selectedVariant?.priceUnit || product.priceUnit || 'ea';
+  const currentQtyPerPack = selectedVariant?.qtyPerPack || product.qtyPerPack || 1;
+
+  // Map unit codes to full labels
+  const unitLabels: Record<string, string> = {
+    'ea': 'each',
+    'pk': 'pack',
+    'pr': 'pair',
+    'dz': 'dozen',
+    'DZ': 'dozen',
+    'bx': 'box',
+    'BX': 'box',
+    'cs': 'case',
+    'CS': 'case',
+  };
+  const unitLabel = unitLabels[currentPriceUnit] || currentPriceUnit;
 
   // Track product view
   useEffect(() => {
@@ -599,6 +619,24 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                   </p>
                 </div>
               )}
+
+              {/* Price Per Unit Display */}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-center gap-2 bg-gradient-to-r from-safety-green-50 to-safety-green-100 border border-safety-green-200 px-4 py-3 rounded-lg">
+                  <Package className="w-5 h-5 text-safety-green-600" />
+                  <div>
+                    <div className="text-lg font-bold text-safety-green-700">
+                      ${Number(currentPrice).toFixed(2)} <span className="text-sm font-normal">per {unitLabel}</span>
+                    </div>
+                    {currentQtyPerPack > 1 && (
+                      <div className="text-xs text-safety-green-600">
+                        Qty Per {unitLabel === 'pack' ? 'Pack' : unitLabel === 'box' ? 'Box' : unitLabel === 'case' ? 'Case' : 'Unit'}: {currentQtyPerPack}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <AddToCartButton
                 productId={product.id}
                 variantId={selectedVariant?.id}
