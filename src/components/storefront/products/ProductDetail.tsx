@@ -531,9 +531,15 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                     </div>
                   )}
                   {currentGsaPrice && (
-                    <div className="flex items-center gap-2 text-sm bg-purple-50 text-purple-700 px-3 py-1 rounded-full">
-                      <FileText className="w-4 h-4" />
-                      GSA: ${Number(currentGsaPrice).toFixed(2)}
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 text-sm bg-purple-50 text-purple-700 px-3 py-1 rounded-full">
+                        <FileText className="w-4 h-4" />
+                        GSA: ${Number(currentGsaPrice).toFixed(2)}
+                      </div>
+                      <div className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg shadow-md">
+                        <ShieldCheck className="w-5 h-5" />
+                        <span className="font-semibold text-base">TAA/BAA Approved</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -649,7 +655,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
             </Button>
 
             {/* Trust Badges */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
               <div className="flex items-start gap-3">
                 <Truck className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
                 <div>
@@ -669,6 +675,13 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                 <div>
                   <div className="text-sm font-medium text-black">Easy Returns</div>
                   <div className="text-xs text-gray-600">30-day policy</div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Award className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <div className="text-sm font-medium text-black">TAA/BAA Approved</div>
+                  <div className="text-xs text-gray-600">Government compliant</div>
                 </div>
               </div>
             </div>
