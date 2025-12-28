@@ -532,7 +532,6 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                 {/* Per Unit Label Box */}
                 <div className="px-3 py-1 border border-gray-300 rounded text-sm text-gray-600">
                   per <span className="font-semibold text-safety-green-600 capitalize">{unitLabel}</span>
-                  <span className="text-xs text-gray-400 ml-1">(i.e. pair, box, dozen)</span>
                 </div>
                 {hasDiscount && (
                   <span className="text-xl text-gray-500 line-through">
