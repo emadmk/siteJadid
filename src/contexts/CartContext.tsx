@@ -20,6 +20,7 @@ interface CartItem {
     gsaPrice: number | null;
     images: string[];
     stockQuantity: number;
+    minimumOrderQty: number;
     category?: {
       name: string;
     };

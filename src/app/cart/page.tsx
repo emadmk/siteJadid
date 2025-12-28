@@ -26,6 +26,7 @@ async function getCart(userId: string) {
               gsaPrice: true,
               images: true,
               stockQuantity: true,
+              minimumOrderQty: true,
               weight: true,
               category: {
                 select: {
@@ -102,6 +103,7 @@ export default async function CartPage() {
               {cart.items.map((item: any, index: number) => {
                 const price = Number(item.product.salePrice || item.product.basePrice);
                 const images = (item.product.images as string[]) || [];
+                const minOrderQty = item.product.minimumOrderQty || 1;
 
                 return (
                   <div
@@ -151,7 +153,7 @@ export default async function CartPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-10 w-10 hover:bg-gray-100"
-                                disabled={item.quantity <= 1}
+                                disabled={item.quantity <= minOrderQty}
                               >
                                 <Minus className="w-4 h-4" />
                               </Button>
@@ -162,11 +164,14 @@ export default async function CartPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-10 w-10 hover:bg-gray-100"
-                                disabled={item.quantity >= item.product.stockQuantity}
+                                disabled={item.quantity + minOrderQty > item.product.stockQuantity}
                               >
                                 <Plus className="w-4 h-4" />
                               </Button>
                             </div>
+                            {minOrderQty > 1 && (
+                              <span className="text-xs text-gray-500">Min: {minOrderQty}</span>
+                            )}
                           </div>
 
                           {/* Remove Button */}

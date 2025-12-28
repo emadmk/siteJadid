@@ -48,15 +48,33 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Enrich items with minimumOrderQty from product
+    const enrichedItems = await Promise.all(
+      cart.items.map(async (item: any) => {
+        const product = await db.product.findUnique({
+          where: { id: item.productId },
+          select: { minimumOrderQty: true },
+        });
+        return {
+          ...item,
+          product: {
+            ...item.product,
+            minimumOrderQty: product?.minimumOrderQty || 1,
+          },
+        };
+      })
+    );
+
     // Calculate totals
-    const subtotal = cart.items.reduce((sum: number, item: any) => {
+    const subtotal = enrichedItems.reduce((sum: number, item: any) => {
       return sum + parseFloat(item.price.toString()) * item.quantity;
     }, 0);
 
     const result = {
       ...cart,
+      items: enrichedItems,
       subtotal,
-      itemCount: cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0),
+      itemCount: enrichedItems.reduce((sum: number, item: any) => sum + item.quantity, 0),
     };
 
     return NextResponse.json(result);
@@ -211,15 +229,33 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Enrich items with minimumOrderQty from product
+    const enrichedItems = await Promise.all(
+      (updatedCart?.items || []).map(async (item: any) => {
+        const productData = await db.product.findUnique({
+          where: { id: item.productId },
+          select: { minimumOrderQty: true },
+        });
+        return {
+          ...item,
+          product: {
+            ...item.product,
+            minimumOrderQty: productData?.minimumOrderQty || 1,
+          },
+        };
+      })
+    );
+
     // Calculate totals
-    const subtotal = updatedCart?.items.reduce((sum: number, item: any) => {
+    const subtotal = enrichedItems.reduce((sum: number, item: any) => {
       return sum + parseFloat(item.price.toString()) * item.quantity;
-    }, 0) || 0;
+    }, 0);
 
     const result = {
       ...updatedCart,
+      items: enrichedItems,
       subtotal,
-      itemCount: updatedCart?.items.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
+      itemCount: enrichedItems.reduce((sum: number, item: any) => sum + item.quantity, 0),
     };
 
     return NextResponse.json(result);

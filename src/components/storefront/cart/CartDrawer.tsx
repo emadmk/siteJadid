@@ -257,25 +257,30 @@ export function CartDrawer() {
 
                         <div className="flex items-center justify-between mt-2">
                           {/* Quantity Controls */}
-                          <div className="flex items-center border border-gray-200 rounded-lg">
-                            <button
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                              disabled={item.quantity <= 1 || isUpdating}
-                              className="p-1.5 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                              <Minus className="w-3 h-3" />
-                            </button>
-                            <span className="w-8 text-center text-sm font-medium">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                              disabled={item.quantity >= stockQuantity || isUpdating}
-                              className="p-1.5 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </div>
+                          {(() => {
+                            const minOrderQty = item.product.minimumOrderQty || 1;
+                            return (
+                              <div className="flex items-center border border-gray-200 rounded-lg">
+                                <button
+                                  onClick={() => handleUpdateQuantity(item.id, item.quantity - minOrderQty)}
+                                  disabled={item.quantity <= minOrderQty || isUpdating}
+                                  className="p-1.5 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <span className="w-8 text-center text-sm font-medium">
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  onClick={() => handleUpdateQuantity(item.id, item.quantity + minOrderQty)}
+                                  disabled={item.quantity + minOrderQty > stockQuantity || isUpdating}
+                                  className="p-1.5 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            );
+                          })()}
 
                           {/* Price & Remove */}
                           <div className="flex items-center gap-3">
