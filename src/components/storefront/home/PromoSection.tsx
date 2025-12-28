@@ -68,7 +68,7 @@ export function PromoSection() {
               {/* Image Container */}
               <div className="absolute inset-0 lg:inset-y-8 lg:right-8 lg:left-12 overflow-hidden rounded-xl lg:rounded-2xl shadow-2xl">
                 <Image
-                  src="/images/imagesite/gsa.jpg"
+                  src="/images/imagesite/gsaplane.jpg"
                   alt="Military Aircraft - GSA Government Solutions"
                   fill
                   className="object-cover"
