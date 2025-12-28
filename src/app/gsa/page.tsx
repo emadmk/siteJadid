@@ -366,7 +366,7 @@ export default function GSAContractPage() {
               </Button>
             </Link>
             <Link href="/contact">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-gray-900 px-8">
+              <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100 font-bold px-8">
                 Request a Quote
               </Button>
             </Link>
