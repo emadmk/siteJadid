@@ -234,10 +234,10 @@ export default function ContactPage() {
                   <Phone className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium text-black">Phone</div>
-                    <a href="tel:1-800-SAFETY-1" className="text-sm text-gray-600 hover:text-safety-green-600">
-                      1-800-SAFETY-1
+                    <a href="tel:478-329-8896" className="text-sm text-gray-600 hover:text-safety-green-600">
+                      478-329-8896
                     </a>
-                    <div className="text-sm text-gray-600">(1-800-723-3891)</div>
+                    <div className="text-sm text-gray-500">Mon-Fri 8AM-6PM EST</div>
                   </div>
                 </div>
 
@@ -245,8 +245,8 @@ export default function ContactPage() {
                   <Mail className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium text-black">Email</div>
-                    <a href="mailto:info@safetypro.com" className="text-sm text-gray-600 hover:text-safety-green-600">
-                      info@safetypro.com
+                    <a href="mailto:info@adasupply.com" className="text-sm text-gray-600 hover:text-safety-green-600">
+                      info@adasupply.com
                     </a>
                   </div>
                 </div>
@@ -254,11 +254,10 @@ export default function ContactPage() {
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-medium text-black">Address</div>
+                    <div className="font-medium text-black">Headquarters</div>
                     <div className="text-sm text-gray-600">
-                      1234 Safety Boulevard<br />
-                      Suite 500<br />
-                      Industrial Park, CA 90210
+                      Warner Robins, GA<br />
+                      United States
                     </div>
                   </div>
                 </div>
@@ -268,8 +267,8 @@ export default function ContactPage() {
                   <div>
                     <div className="font-medium text-black">Business Hours</div>
                     <div className="text-sm text-gray-600">
-                      Monday - Friday: 8:00 AM - 6:00 PM<br />
-                      Saturday: 9:00 AM - 4:00 PM<br />
+                      Monday - Friday: 8:00 AM - 6:00 PM EST<br />
+                      Saturday: 9:00 AM - 2:00 PM EST<br />
                       Sunday: Closed
                     </div>
                   </div>
@@ -284,29 +283,29 @@ export default function ContactPage() {
               <div className="space-y-3">
                 <div className="pb-3 border-b border-gray-200">
                   <div className="font-medium text-black text-sm">Sales Team</div>
-                  <a href="mailto:sales@safetypro.com" className="text-sm text-safety-green-600 hover:text-safety-green-700">
-                    sales@safetypro.com
+                  <a href="mailto:sales@adasupply.com" className="text-sm text-safety-green-600 hover:text-safety-green-700">
+                    sales@adasupply.com
                   </a>
                 </div>
 
                 <div className="pb-3 border-b border-gray-200">
                   <div className="font-medium text-black text-sm">Customer Support</div>
-                  <a href="mailto:support@safetypro.com" className="text-sm text-safety-green-600 hover:text-safety-green-700">
-                    support@safetypro.com
+                  <a href="mailto:support@adasupply.com" className="text-sm text-safety-green-600 hover:text-safety-green-700">
+                    support@adasupply.com
                   </a>
                 </div>
 
                 <div className="pb-3 border-b border-gray-200">
                   <div className="font-medium text-black text-sm">B2B Partnerships</div>
-                  <a href="mailto:b2b@safetypro.com" className="text-sm text-safety-green-600 hover:text-safety-green-700">
-                    b2b@safetypro.com
+                  <a href="mailto:b2b@adasupply.com" className="text-sm text-safety-green-600 hover:text-safety-green-700">
+                    b2b@adasupply.com
                   </a>
                 </div>
 
                 <div>
                   <div className="font-medium text-black text-sm">GSA Contracts</div>
-                  <a href="mailto:gsa@safetypro.com" className="text-sm text-safety-green-600 hover:text-safety-green-700">
-                    gsa@safetypro.com
+                  <a href="mailto:gsa@adasupply.com" className="text-sm text-safety-green-600 hover:text-safety-green-700">
+                    gsa@adasupply.com
                   </a>
                 </div>
               </div>

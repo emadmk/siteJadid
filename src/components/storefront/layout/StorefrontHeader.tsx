@@ -295,25 +295,25 @@ export function StorefrontHeader() {
 
             {/* Navigation Links */}
             <Link
-              href="/categories/ppe"
+              href="/ppe"
               className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
             >
               PPE
             </Link>
             <Link
-              href="/categories/fall-protection"
+              href="/categories/Fall%20Protection"
               className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
             >
               Fall Protection
             </Link>
             <Link
-              href="/categories/protective-clothing"
+              href="/categories/Protective%20Clothing"
               className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
             >
               Protective Clothing
             </Link>
             <Link
-              href="/categories/safety-footwear"
+              href="/categories/Footwear"
               className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
             >
               Safety Footwear
@@ -413,28 +413,28 @@ export function StorefrontHeader() {
                   Categories
                 </Link>
                 <Link
-                  href="/categories/ppe"
+                  href="/ppe"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg pl-10"
                 >
                   PPE
                 </Link>
                 <Link
-                  href="/categories/fall-protection"
+                  href="/categories/Fall%20Protection"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg pl-10"
                 >
                   Fall Protection
                 </Link>
                 <Link
-                  href="/categories/protective-clothing"
+                  href="/categories/Protective%20Clothing"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg pl-10"
                 >
                   Protective Clothing
                 </Link>
                 <Link
-                  href="/categories/safety-footwear"
+                  href="/categories/Footwear"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg pl-10"
                 >

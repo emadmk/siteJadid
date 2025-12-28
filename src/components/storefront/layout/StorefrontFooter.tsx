@@ -188,21 +188,25 @@ export function StorefrontFooter() {
             </Link>
             <p className="text-gray-400 mb-6 max-w-sm">
               Your trusted source for professional safety equipment. ANSI certified products for industrial,
-              construction, and workplace safety needs.
+              construction, and workplace safety needs. GSA Schedule Contract Holder.
             </p>
             <div className="space-y-3">
-              <a href="tel:1-800-ADA-SAFE" className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
+              <a href="tel:478-329-8896" className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
                 <Phone className="w-5 h-5 text-safety-green-400" />
-                1-800-ADA-SAFE
+                478-329-8896
               </a>
-              <a href="mailto:support@adasupply.com" className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
+              <a href="mailto:info@adasupply.com" className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
                 <Mail className="w-5 h-5 text-safety-green-400" />
-                support@adasupply.com
+                info@adasupply.com
               </a>
               <div className="flex items-start gap-3 text-gray-400">
                 <MapPin className="w-5 h-5 text-safety-green-400 flex-shrink-0 mt-0.5" />
-                <span>123 Safety Lane<br />Los Angeles, CA 90001</span>
+                <span>Warner Robins, GA<br />United States</span>
               </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <p className="text-xs text-gray-500">GSA Contract: GS-21F-0086U</p>
+              <p className="text-xs text-gray-500">CAGE Code: 1J2Y1</p>
             </div>
           </div>
 
