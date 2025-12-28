@@ -17,6 +17,7 @@ interface Product {
   images: string[];
   isFeatured: boolean;
   stockQuantity: number;
+  minimumOrderQty: number;
   hasVariants?: boolean;
   _count?: {
     variants: number;
@@ -52,11 +53,11 @@ export function FeaturedProducts() {
     fetchProducts();
   }, []);
 
-  const handleAddToCart = async (productId: string, e: React.MouseEvent) => {
+  const handleAddToCart = async (product: Product, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setAddingToCart(productId);
-    await addToCart(productId, 1);
+    setAddingToCart(product.id);
+    await addToCart(product.id, product.minimumOrderQty || 1);
     setAddingToCart(null);
   };
 
@@ -171,7 +172,7 @@ export function FeaturedProducts() {
                       </span>
                     ) : (
                       <button
-                        onClick={(e) => handleAddToCart(product.id, e)}
+                        onClick={(e) => handleAddToCart(product, e)}
                         disabled={addingToCart === product.id || product.stockQuantity === 0}
                         className="w-full py-2 bg-white text-black rounded-lg font-medium hover:bg-safety-green-600 hover:text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                       >

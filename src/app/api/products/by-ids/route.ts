@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
         salePrice: true,
         images: true,
         stockQuantity: true,
+        minimumOrderQty: true,
         category: {
           select: {
             name: true,
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
       salePrice: product.salePrice ? Number(product.salePrice) : null,
       images: product.images as string[],
       stockQuantity: product.stockQuantity,
+      minimumOrderQty: product.minimumOrderQty,
       category: product.category,
     }));
 

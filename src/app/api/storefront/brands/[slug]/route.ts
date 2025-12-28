@@ -336,6 +336,7 @@ export async function GET(
           images: true,
           isFeatured: true,
           stockQuantity: true,
+          minimumOrderQty: true,
           category: {
             select: {
               name: true,
@@ -385,6 +386,7 @@ export async function GET(
       images: product.images as string[],
       isFeatured: product.isFeatured,
       stockQuantity: product.stockQuantity,
+      minimumOrderQty: product.minimumOrderQty,
       category: product.category,
       averageRating: ratingMap.get(product.id) || 0,
       reviewCount: product._count.reviews,

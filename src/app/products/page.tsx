@@ -204,6 +204,7 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
     images: product.images as string[],
     isFeatured: product.isFeatured,
     stockQuantity: product.stockQuantity,
+    minimumOrderQty: product.minimumOrderQty,
     category: product.category || undefined,
     brand: product.brand || undefined,
     averageRating: ratingMap.get(product.id) || 0,

@@ -167,6 +167,7 @@ export async function GET(request: NextRequest) {
       images: product.images as string[],
       isFeatured: product.isFeatured,
       stockQuantity: product.stockQuantity,
+      minimumOrderQty: product.minimumOrderQty,
       category: product.category,
       brand: product.brand,
       averageRating: ratingMap.get(product.id) || 0,

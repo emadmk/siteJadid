@@ -50,6 +50,7 @@ interface Product {
   images: string[];
   isFeatured: boolean;
   stockQuantity: number;
+  minimumOrderQty: number;
   averageRating: number;
   reviewCount: number;
   category?: {
@@ -197,7 +198,7 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
     e.preventDefault();
     e.stopPropagation();
     setAddingToCart(product.id);
-    await addToCart(product.id, 1);
+    await addToCart(product.id, product.minimumOrderQty || 1);
     setAddingToCart(null);
   };
 
