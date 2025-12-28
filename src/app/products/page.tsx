@@ -99,6 +99,7 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
         images: true,
         isFeatured: true,
         stockQuantity: true,
+        minimumOrderQty: true,
         category: {
           select: {
             name: true,
