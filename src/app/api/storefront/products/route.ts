@@ -107,6 +107,7 @@ export async function GET(request: NextRequest) {
           images: true,
           isFeatured: true,
           stockQuantity: true,
+          minimumOrderQty: true,
           category: {
             select: {
               name: true,

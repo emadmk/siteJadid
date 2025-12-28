@@ -66,6 +66,7 @@ interface Product {
   stockQuantity: number;
   averageRating: number;
   reviewCount: number;
+  minimumOrderQty: number;
   brand?: {
     id: string;
     name: string;
@@ -268,7 +269,8 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     e.preventDefault();
     e.stopPropagation();
     setAddingToCart(product.id);
-    await addToCart(product.id, 1);
+    // Use minimumOrderQty instead of 1
+    await addToCart(product.id, product.minimumOrderQty || 1);
     setAddingToCart(null);
   };
 

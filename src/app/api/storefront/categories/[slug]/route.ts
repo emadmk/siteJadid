@@ -444,6 +444,7 @@ export async function GET(
           images: true,
           isFeatured: true,
           stockQuantity: true,
+          minimumOrderQty: true,
           brand: {
             select: {
               id: true,

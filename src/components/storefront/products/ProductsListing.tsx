@@ -53,6 +53,7 @@ interface Product {
   stockQuantity: number;
   averageRating: number;
   reviewCount: number;
+  minimumOrderQty: number;
   hasVariants?: boolean;
   _count?: {
     variants: number;
@@ -373,7 +374,8 @@ export function ProductsListing({
     e.preventDefault();
     e.stopPropagation();
     setAddingToCart(product.id);
-    await addToCart(product.id, 1);
+    // Use minimumOrderQty instead of 1
+    await addToCart(product.id, product.minimumOrderQty || 1);
     setAddingToCart(null);
   };
 

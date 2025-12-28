@@ -70,11 +70,17 @@ export function AddToCartButton({
     }
   }, [minimumQuantity, quantity]);
 
+  // Calculate total units and price FIRST (before using in handlers)
+  const unitLabel = unitLabels[priceUnit] || priceUnit;
+  const totalUnits = minOrderQty * quantity;
+  const totalPrice = unitPrice ? unitPrice * totalUnits : 0;
+
   const handleAddToCart = async () => {
     setIsAdding(true);
 
     try {
-      await addToCart(productId, quantity, variantId);
+      // Add totalUnits (minOrderQty * quantity) to cart
+      await addToCart(productId, totalUnits, variantId);
       setJustAdded(true);
       setTimeout(() => {
         setJustAdded(false);
@@ -99,11 +105,6 @@ export function AddToCartButton({
   };
 
   const isDisabled = disabled || stockQuantity === 0 || isAdding;
-
-  // Calculate total price
-  const unitLabel = unitLabels[priceUnit] || priceUnit;
-  const totalPrice = unitPrice ? unitPrice * minOrderQty * quantity : 0;
-  const totalUnits = minOrderQty * quantity;
 
   if (justAdded) {
     return (
