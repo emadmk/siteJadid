@@ -36,7 +36,7 @@ const heroBanners = [
   },
   {
     id: 3,
-    title: 'Federal Buyers Click Here',
+    title: 'Federal and Government Buyers',
     subtitle: 'GSA Contract Holder - Government approved',
     image: '/images/imagesite/gsa.jpg',
     link: '/gsa',
