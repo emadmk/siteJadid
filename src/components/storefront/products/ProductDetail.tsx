@@ -523,47 +523,47 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
               </div>
             )}
 
-            {/* Price */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-3xl md:text-4xl font-bold text-black">
+            {/* Price Section - Clean & Professional */}
+            <div className="space-y-4">
+              {/* Main Price */}
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className="text-4xl font-bold text-gray-900">
                   ${Number(currentPrice).toFixed(2)}
                 </span>
-                {/* Per Unit Label Box */}
-                <div className="px-3 py-1 border border-gray-300 rounded text-sm text-gray-600">
-                  per <span className="font-semibold text-safety-green-600 capitalize">{unitLabel}</span>
-                </div>
+                <span className="text-lg text-gray-500 font-medium">
+                  per {unitLabel}
+                </span>
                 {hasDiscount && (
-                  <span className="text-xl text-gray-500 line-through">
-                    ${Number(currentBasePrice).toFixed(2)}
-                  </span>
-                )}
-                {hasDiscount && (
-                  <span className="bg-red-100 text-red-700 text-sm font-semibold px-2 py-1 rounded">
-                    Save ${(currentBasePrice - currentPrice).toFixed(2)}
-                  </span>
+                  <>
+                    <span className="text-lg text-gray-400 line-through">
+                      ${Number(currentBasePrice).toFixed(2)}
+                    </span>
+                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                      SAVE {discountPercent}%
+                    </span>
+                  </>
                 )}
               </div>
 
-              {/* B2B Pricing */}
+              {/* GSA & B2B Pricing - Compact Inline */}
               {(currentWholesalePrice || currentGsaPrice) && (
-                <div className="flex flex-wrap gap-4 pt-2">
+                <div className="flex flex-wrap items-center gap-3">
+                  {currentGsaPrice && (
+                    <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-medium">
+                      <FileText className="w-4 h-4" />
+                      GSA Price: ${Number(currentGsaPrice).toFixed(2)}
+                    </div>
+                  )}
                   {currentWholesalePrice && (
-                    <div className="flex items-center gap-2 text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
+                    <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium">
                       <Building2 className="w-4 h-4" />
                       B2B: ${Number(currentWholesalePrice).toFixed(2)}
                     </div>
                   )}
                   {currentGsaPrice && (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-sm bg-purple-50 text-purple-700 px-3 py-1 rounded-full">
-                        <FileText className="w-4 h-4" />
-                        GSA: ${Number(currentGsaPrice).toFixed(2)}
-                      </div>
-                      <div className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg shadow-md">
-                        <ShieldCheck className="w-5 h-5" />
-                        <span className="font-semibold text-base">TAA/BAA Approved</span>
-                      </div>
+                    <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">
+                      <ShieldCheck className="w-4 h-4" />
+                      TAA/BAA Approved
                     </div>
                   )}
                 </div>
@@ -571,16 +571,16 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
 
               {/* Tiered Pricing */}
               {product.tieredPrices.length > 0 && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="text-sm font-semibold text-black mb-2">Volume Discounts</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Volume Discounts</h3>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
                     {product.tieredPrices.map((tier) => (
-                      <div key={tier.id} className="bg-white rounded px-3 py-2 text-center">
-                        <div className="font-medium text-black">
-                          {tier.minQuantity}{tier.maxQuantity ? `-${tier.maxQuantity}` : '+'}
+                      <div key={tier.id} className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-center">
+                        <div className="font-medium text-gray-700 text-xs">
+                          {tier.minQuantity}{tier.maxQuantity ? `-${tier.maxQuantity}` : '+'} units
                         </div>
-                        <div className="text-safety-green-600 font-semibold">
-                          ${Number(tier.price).toFixed(2)}/ea
+                        <div className="text-safety-green-600 font-bold">
+                          ${Number(tier.price).toFixed(2)}
                         </div>
                       </div>
                     ))}

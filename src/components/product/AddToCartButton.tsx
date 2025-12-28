@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, CheckCircle, Loader2, Minus, Plus } from 'lucide-react';
+import { ShoppingCart, CheckCircle, Loader2, Minus, Plus, Package } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 
 interface AddToCartButtonProps {
@@ -39,12 +39,11 @@ const unitLabels: Record<string, string> = {
 // Pluralize unit labels
 const pluralizeUnit = (unit: string, qty: number): string => {
   const label = unitLabels[unit] || unit;
-  if (qty === 1) return label;
+  if (qty === 1) return label.toLowerCase();
   // Simple pluralization
-  if (label.endsWith('x')) return label + 'es'; // Box -> Boxes
-  if (label.endsWith('ch')) return label + 'es'; // Each -> Eaches (though we'd say "units")
-  if (label === 'Each') return 'Units';
-  return label + 's';
+  if (label.endsWith('x')) return (label + 'es').toLowerCase(); // Box -> Boxes
+  if (label === 'Each') return 'units';
+  return (label + 's').toLowerCase();
 };
 
 export function AddToCartButton({
@@ -70,7 +69,7 @@ export function AddToCartButton({
     }
   }, [minimumQuantity, quantity]);
 
-  // Calculate total units and price FIRST (before using in handlers)
+  // Calculate total units and price
   const unitLabel = unitLabels[priceUnit] || priceUnit;
   const totalUnits = minOrderQty * quantity;
   const totalPrice = unitPrice ? unitPrice * totalUnits : 0;
@@ -79,7 +78,6 @@ export function AddToCartButton({
     setIsAdding(true);
 
     try {
-      // Add totalUnits (minOrderQty * quantity) to cart
       await addToCart(productId, totalUnits, variantId);
       setJustAdded(true);
       setTimeout(() => {
@@ -110,7 +108,7 @@ export function AddToCartButton({
     return (
       <Button
         size="lg"
-        className="w-full bg-safety-green-600 hover:bg-safety-green-700 text-lg"
+        className="w-full bg-safety-green-600 hover:bg-safety-green-700 text-lg h-14"
         disabled
       >
         <CheckCircle className="w-5 h-5 mr-2" />
@@ -120,79 +118,83 @@ export function AddToCartButton({
   }
 
   return (
-    <div className="space-y-3">
-      {/* Unit Price Display - Top Black */}
-      {unitPrice && (
-        <div className="text-2xl font-bold text-black">
-          ${Number(unitPrice).toFixed(2)} <span className="text-lg font-normal text-gray-600">per {unitLabel}</span>
-        </div>
-      )}
-
-      {/* Minimum Order Notice */}
-      {minOrderQty > 1 && (
-        <div className="text-sm text-gray-500">
-          Minimum Order: {minOrderQty} {pluralizeUnit(priceUnit, minOrderQty).toLowerCase()}
-        </div>
-      )}
-
-      {/* Green Price Calculator Box */}
-      {unitPrice && (
-        <div className="bg-safety-green-600 text-white rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl font-bold">
-                ${totalPrice.toFixed(2)} <span className="text-sm font-normal opacity-90">per {priceUnit === 'pr' || priceUnit === 'pair' ? 'pair' : priceUnit}</span>
-              </div>
-              <div className="text-sm opacity-90">
-                for <span className="font-semibold">{quantity}</span> Pack of <span className="font-semibold">{minOrderQty}</span> {pluralizeUnit(priceUnit, minOrderQty)}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Quantity Selector */}
+    <div className="space-y-4">
+      {/* Quantity Selector - Clean Design */}
       {showQuantitySelector && stockQuantity > 0 && (
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-black">Quantity:</span>
-          <div className="flex items-center border border-gray-300 rounded-lg">
-            <button
-              onClick={decrementQuantity}
-              disabled={quantity <= minimumQuantity}
-              className="p-2 hover:bg-gray-100 rounded-l-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <input
-              type="number"
-              min={minimumQuantity}
-              max={stockQuantity}
-              value={quantity}
-              onChange={(e) => {
-                const val = parseInt(e.target.value) || minimumQuantity;
-                setQuantity(Math.min(Math.max(minimumQuantity, val), stockQuantity));
-              }}
-              className="w-16 text-center border-x border-gray-300 py-2 focus:outline-none"
-            />
-            <button
-              onClick={incrementQuantity}
-              disabled={quantity >= stockQuantity}
-              className="p-2 hover:bg-gray-100 rounded-r-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-700">Quantity</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center bg-gray-100 rounded-lg">
+              <button
+                onClick={decrementQuantity}
+                disabled={quantity <= minimumQuantity}
+                className="w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-l-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <input
+                type="number"
+                min={minimumQuantity}
+                max={stockQuantity}
+                value={quantity}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || minimumQuantity;
+                  setQuantity(Math.min(Math.max(minimumQuantity, val), stockQuantity));
+                }}
+                className="w-14 h-10 text-center bg-transparent font-semibold focus:outline-none"
+              />
+              <button
+                onClick={incrementQuantity}
+                disabled={quantity >= stockQuantity}
+                className="w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-r-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            {stockQuantity < 20 && (
+              <span className="text-sm text-orange-600 font-medium">
+                {stockQuantity} left
+              </span>
+            )}
           </div>
-          {stockQuantity < 20 && (
-            <span className="text-sm text-orange-600">
-              {stockQuantity} available
-            </span>
-          )}
         </div>
       )}
 
+      {/* Order Summary - Clean Card */}
+      {unitPrice && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-gray-500 uppercase tracking-wide font-medium">Order Summary</span>
+            {minOrderQty > 1 && (
+              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                Min. {minOrderQty} {pluralizeUnit(priceUnit, minOrderQty)}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between py-2 border-b border-gray-200">
+            <div className="flex items-center gap-2 text-gray-700">
+              <Package className="w-4 h-4" />
+              <span>{totalUnits} {pluralizeUnit(priceUnit, totalUnits)}</span>
+            </div>
+            <span className="text-gray-500">
+              {totalUnits} × ${Number(unitPrice).toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between pt-3">
+            <span className="text-lg font-semibold text-gray-900">Total</span>
+            <span className="text-2xl font-bold text-safety-green-600">
+              ${totalPrice.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Add to Cart Button */}
       <Button
         size="lg"
-        className="w-full bg-safety-green-600 hover:bg-safety-green-700 text-lg"
+        className="w-full bg-safety-green-600 hover:bg-safety-green-700 text-lg h-14 font-semibold"
         onClick={handleAddToCart}
         disabled={isDisabled}
       >
@@ -204,7 +206,7 @@ export function AddToCartButton({
         ) : (
           <>
             <ShoppingCart className="w-5 h-5 mr-2" />
-            {stockQuantity === 0 ? 'Out of Stock' : `Add to Cart (${totalUnits})`}
+            {stockQuantity === 0 ? 'Out of Stock' : `Add to Cart`}
           </>
         )}
       </Button>
