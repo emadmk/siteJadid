@@ -87,7 +87,7 @@ export default function GSAContractPage() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=1200&q=80"
+            src="/images/imagesite/gsa.jpg"
             alt="Military Personnel"
             fill
             className="object-cover opacity-40"
