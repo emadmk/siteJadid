@@ -12,7 +12,40 @@ interface AddToCartButtonProps {
   disabled?: boolean;
   showQuantitySelector?: boolean;
   minimumQuantity?: number;
+  unitPrice?: number;
+  priceUnit?: string;
+  minOrderQty?: number;
 }
+
+// Map unit codes to full labels
+const unitLabels: Record<string, string> = {
+  'ea': 'Each',
+  'pk': 'Pack',
+  'pr': 'Pair',
+  'dz': 'Dozen',
+  'DZ': 'Dozen',
+  'bx': 'Box',
+  'BX': 'Box',
+  'cs': 'Case',
+  'CS': 'Case',
+  'each': 'Each',
+  'pack': 'Pack',
+  'pair': 'Pair',
+  'dozen': 'Dozen',
+  'box': 'Box',
+  'case': 'Case',
+};
+
+// Pluralize unit labels
+const pluralizeUnit = (unit: string, qty: number): string => {
+  const label = unitLabels[unit] || unit;
+  if (qty === 1) return label;
+  // Simple pluralization
+  if (label.endsWith('x')) return label + 'es'; // Box -> Boxes
+  if (label.endsWith('ch')) return label + 'es'; // Each -> Eaches (though we'd say "units")
+  if (label === 'Each') return 'Units';
+  return label + 's';
+};
 
 export function AddToCartButton({
   productId,
@@ -21,6 +54,9 @@ export function AddToCartButton({
   disabled = false,
   showQuantitySelector = true,
   minimumQuantity = 1,
+  unitPrice,
+  priceUnit = 'ea',
+  minOrderQty = 1,
 }: AddToCartButtonProps) {
   const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
@@ -64,6 +100,11 @@ export function AddToCartButton({
 
   const isDisabled = disabled || stockQuantity === 0 || isAdding;
 
+  // Calculate total price
+  const unitLabel = unitLabels[priceUnit] || priceUnit;
+  const totalPrice = unitPrice ? unitPrice * minOrderQty * quantity : 0;
+  const totalUnits = minOrderQty * quantity;
+
   if (justAdded) {
     return (
       <Button
@@ -79,6 +120,37 @@ export function AddToCartButton({
 
   return (
     <div className="space-y-3">
+      {/* Unit Price Display - Top Black */}
+      {unitPrice && (
+        <div className="text-2xl font-bold text-black">
+          ${Number(unitPrice).toFixed(2)} <span className="text-lg font-normal text-gray-600">per {unitLabel}</span>
+        </div>
+      )}
+
+      {/* Minimum Order Notice */}
+      {minOrderQty > 1 && (
+        <div className="text-sm text-gray-500">
+          Minimum Order: {minOrderQty} {pluralizeUnit(priceUnit, minOrderQty).toLowerCase()}
+        </div>
+      )}
+
+      {/* Green Price Calculator Box */}
+      {unitPrice && (
+        <div className="bg-safety-green-600 text-white rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold">
+                ${totalPrice.toFixed(2)} <span className="text-sm font-normal opacity-90">per {priceUnit === 'pr' || priceUnit === 'pair' ? 'pair' : priceUnit}</span>
+              </div>
+              <div className="text-sm opacity-90">
+                for <span className="font-semibold">{quantity}</span> Pack of <span className="font-semibold">{minOrderQty}</span> {pluralizeUnit(priceUnit, minOrderQty)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quantity Selector */}
       {showQuantitySelector && stockQuantity > 0 && (
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium text-black">Quantity:</span>
@@ -131,7 +203,7 @@ export function AddToCartButton({
         ) : (
           <>
             <ShoppingCart className="w-5 h-5 mr-2" />
-            {stockQuantity === 0 ? 'Out of Stock' : `Add to Cart${quantity > 1 ? ` (${quantity})` : ''}`}
+            {stockQuantity === 0 ? 'Out of Stock' : `Add to Cart (${totalUnits})`}
           </>
         )}
       </Button>

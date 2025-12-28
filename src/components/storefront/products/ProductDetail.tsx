@@ -525,10 +525,15 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
 
             {/* Price */}
             <div className="space-y-2">
-              <div className="flex items-baseline gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-3xl md:text-4xl font-bold text-black">
                   ${Number(currentPrice).toFixed(2)}
                 </span>
+                {/* Per Unit Label Box */}
+                <div className="px-3 py-1 border border-gray-300 rounded text-sm text-gray-600">
+                  per <span className="font-semibold text-safety-green-600 capitalize">{unitLabel}</span>
+                  <span className="text-xs text-gray-400 ml-1">(i.e. pair, box, dozen)</span>
+                </div>
                 {hasDiscount && (
                   <span className="text-xl text-gray-500 line-through">
                     ${Number(currentBasePrice).toFixed(2)}
@@ -612,38 +617,16 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
 
             {/* Add to Cart */}
             <div className="pt-4 border-t">
-              {product.minimumOrderQty > 1 && (
-                <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-sm text-amber-800">
-                    <strong>Minimum Order:</strong> {product.minimumOrderQty} units
-                  </p>
-                </div>
-              )}
-
-              {/* Price Per Unit Display */}
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex items-center gap-2 bg-gradient-to-r from-safety-green-50 to-safety-green-100 border border-safety-green-200 px-4 py-3 rounded-lg">
-                  <Package className="w-5 h-5 text-safety-green-600" />
-                  <div>
-                    <div className="text-lg font-bold text-safety-green-700">
-                      ${Number(currentPrice).toFixed(2)} <span className="text-sm font-normal">per {unitLabel}</span>
-                    </div>
-                    {currentQtyPerPack > 1 && (
-                      <div className="text-xs text-safety-green-600">
-                        Qty Per {unitLabel === 'pack' ? 'Pack' : unitLabel === 'box' ? 'Box' : unitLabel === 'case' ? 'Case' : 'Unit'}: {currentQtyPerPack}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               <AddToCartButton
                 productId={product.id}
                 variantId={selectedVariant?.id}
                 stockQuantity={currentStock}
                 showQuantitySelector={true}
                 disabled={hasVariants && !selectedVariant}
-                minimumQuantity={product.minimumOrderQty || 1}
+                minimumQuantity={1}
+                unitPrice={currentPrice}
+                priceUnit={currentPriceUnit}
+                minOrderQty={product.minimumOrderQty || 1}
               />
               {hasVariants && !selectedVariant && (
                 <p className="text-sm text-amber-600 mt-2">
