@@ -254,17 +254,17 @@ export default function AboutPage() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/products">
-              <Button size="lg" className="bg-white text-safety-green-700 hover:bg-gray-100">
+              <Button size="lg" className="bg-white text-safety-green-700 hover:bg-gray-100 font-semibold">
                 Browse Products
               </Button>
             </Link>
             <Link href="/contact">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+              <Button size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-safety-green-700 font-semibold">
                 Contact Us
               </Button>
             </Link>
             <Link href="/gsa">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+              <Button size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-safety-green-700 font-semibold">
                 GSA Ordering
               </Button>
             </Link>
