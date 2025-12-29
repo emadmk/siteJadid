@@ -7,6 +7,7 @@ import { db } from '@/lib/db';
 const INDUSTRIAL_CATEGORY_SLUGS = [
   'tools',
   'traffic-safety',
+  'fall-protection',
 ];
 
 // Alternative names to search for (in case slugs are different)
@@ -15,6 +16,7 @@ const INDUSTRIAL_CATEGORY_NAMES = [
   'hand tools',
   'power tools',
   'traffic safety',
+  'fall protection',
 ];
 
 interface CategoryWithCount {
