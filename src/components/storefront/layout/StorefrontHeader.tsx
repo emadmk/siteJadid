@@ -290,6 +290,14 @@ export function StorefrontHeader() {
               <ChevronDown className={`w-4 h-4 transition-transform ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
+            {/* Brands Link */}
+            <Link
+              href="/brands"
+              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
+            >
+              Brands
+            </Link>
+
             {/* Separator */}
             <div className="w-px h-6 bg-gray-200 mx-2"></div>
 
@@ -387,6 +395,13 @@ export function StorefrontHeader() {
                 >
                   <LayoutGrid className="w-5 h-5" />
                   Categories
+                </Link>
+                <Link
+                  href="/brands"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  Brands
                 </Link>
                 <Link
                   href="/about"
