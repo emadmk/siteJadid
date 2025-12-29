@@ -361,6 +361,90 @@ export function ProductsListing({
     setShowFilters(false);
   };
 
+  // Handler for TAA filter - auto-apply with new value
+  const handleTaaChange = (checked: boolean) => {
+    setTaaApproved(checked);
+    setCurrentPage(1);
+
+    // Build params with the NEW value
+    const params = new URLSearchParams();
+    params.set('page', '1');
+    params.set('limit', '20');
+    if (searchQuery) params.set('search', searchQuery);
+    if (selectedCategory) params.set('category', selectedCategory);
+    if (selectedBrand) params.set('brand', selectedBrand);
+    if (priceRange.min) params.set('minPrice', priceRange.min);
+    if (priceRange.max) params.set('maxPrice', priceRange.max);
+    if (sortBy) params.set('sort', sortBy);
+    if (featured) params.set('featured', 'true');
+    if (checked) params.set('taaApproved', 'true');
+
+    setLoading(true);
+    fetch(`/api/storefront/products?${params}`)
+      .then(res => res.json())
+      .then(data => {
+        setProducts(data.products);
+        setTotal(data.total);
+        setPages(data.pages);
+        setCurrentPage(data.currentPage);
+        setHasMore(data.currentPage < data.pages);
+      })
+      .finally(() => setLoading(false));
+
+    updateURL({
+      search: searchQuery,
+      category: selectedCategory,
+      brand: selectedBrand,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      sort: sortBy,
+      featured: featured ? 'true' : '',
+      taaApproved: checked ? 'true' : '',
+    });
+  };
+
+  // Handler for Featured filter - auto-apply with new value
+  const handleFeaturedChange = (checked: boolean) => {
+    setFeatured(checked);
+    setCurrentPage(1);
+
+    // Build params with the NEW value
+    const params = new URLSearchParams();
+    params.set('page', '1');
+    params.set('limit', '20');
+    if (searchQuery) params.set('search', searchQuery);
+    if (selectedCategory) params.set('category', selectedCategory);
+    if (selectedBrand) params.set('brand', selectedBrand);
+    if (priceRange.min) params.set('minPrice', priceRange.min);
+    if (priceRange.max) params.set('maxPrice', priceRange.max);
+    if (sortBy) params.set('sort', sortBy);
+    if (checked) params.set('featured', 'true');
+    if (taaApproved) params.set('taaApproved', 'true');
+
+    setLoading(true);
+    fetch(`/api/storefront/products?${params}`)
+      .then(res => res.json())
+      .then(data => {
+        setProducts(data.products);
+        setTotal(data.total);
+        setPages(data.pages);
+        setCurrentPage(data.currentPage);
+        setHasMore(data.currentPage < data.pages);
+      })
+      .finally(() => setLoading(false));
+
+    updateURL({
+      search: searchQuery,
+      category: selectedCategory,
+      brand: selectedBrand,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      sort: sortBy,
+      featured: checked ? 'true' : '',
+      taaApproved: taaApproved ? 'true' : '',
+    });
+  };
+
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategory('');
@@ -550,10 +634,7 @@ export function ProductsListing({
                   <input
                     type="checkbox"
                     checked={featured}
-                    onChange={(e) => {
-                      setFeatured(e.target.checked);
-                      setTimeout(applyFilters, 0);
-                    }}
+                    onChange={(e) => handleFeaturedChange(e.target.checked)}
                     className="w-4 h-4 text-safety-green-600 rounded focus:ring-safety-green-500"
                   />
                   <span className="text-sm text-gray-700">Featured Products Only</span>
@@ -566,10 +647,7 @@ export function ProductsListing({
                   <input
                     type="checkbox"
                     checked={taaApproved}
-                    onChange={(e) => {
-                      setTaaApproved(e.target.checked);
-                      setTimeout(applyFilters, 0);
-                    }}
+                    onChange={(e) => handleTaaChange(e.target.checked)}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                   />
                   <div>
