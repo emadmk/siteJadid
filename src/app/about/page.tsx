@@ -31,14 +31,14 @@ export default function AboutPage() {
 
       {/* Main Content - Our Business Section */}
       <div className="container mx-auto px-4 py-16">
-        {/* Our Business - Matching Screenshot Layout */}
-        <div className="bg-white rounded-2xl shadow-sm p-8 md:p-12 mb-12">
+        {/* Our Business */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 mb-12">
           <div className="grid md:grid-cols-2 gap-12 items-start">
             {/* Left - Warehouse Image */}
             <div className="relative">
-              <div className="rounded-xl overflow-hidden shadow-lg">
+              <div className="rounded-xl overflow-hidden shadow-xl">
                 <Image
-                  src="/images/imagesite/warehouse.jpg"
+                  src="/images/imagesite/adawarehouse.jpg"
                   alt="ADA Supply Warehouse"
                   width={600}
                   height={450}
@@ -59,55 +59,56 @@ export default function AboutPage() {
 
             {/* Right - Content */}
             <div>
-              <h2 className="text-4xl font-bold text-safety-green-600 mb-8 text-center uppercase tracking-wider">
+              <h2 className="text-4xl font-bold text-safety-green-600 mb-8 text-center">
                 Our Business
               </h2>
 
-              <div className="space-y-4 text-gray-700 text-center">
-                <p className="leading-relaxed">
-                  ADA SUPPLIES, INC. WAS ESTABLISHED IN 1999. A LOCAL COMPANY WITH A NATIONAL REACH. ADA
-                  SUPPLIES HAS STRATEGIC PARTNERSHIPS WITH THE VERY BEST MANUFACTURERS AND SERVES
-                  NUMEROUS INDUSTRIES SUPPLYING A BROAD ARRAY OF QUALITY PRODUCTS TO FEDERAL, STATE, AND
-                  LOCAL GOVERNMENTS AS WELL AS COMMERCIAL AND WALK-IN CUSTOMERS. WE PRIDE OURSELVES IN
-                  GOING ABOVE AND BEYOND WHATEVER SIZE OF CUSTOMER YOU ARE.
+              <div className="space-y-5 text-gray-700 text-justify leading-relaxed">
+                <p>
+                  ADA Supplies, Inc. was established in 1999 as a local company with a national reach.
+                  We have built strategic partnerships with the very best manufacturers and proudly serve
+                  numerous industries, supplying a broad array of quality products to federal, state, and
+                  local governments, as well as commercial and walk-in customers. We pride ourselves in
+                  going above and beyond for every customer, regardless of size.
                 </p>
 
-                <p className="text-2xl font-bold text-safety-green-600 py-4 uppercase">
-                  Your Safety is Our Business!
+                <div className="bg-gradient-to-r from-safety-green-50 to-safety-green-100 rounded-xl p-6 my-6">
+                  <p className="text-2xl font-bold text-safety-green-600 text-center">
+                    Your Safety is Our Business!
+                  </p>
+                </div>
+
+                <p>
+                  The internal team at ADA has over 100 years of combined experience in providing safety
+                  and industrial supplies and equipment to both public and private sectors. We are responsive,
+                  responsible, and have an excellent past performance record. We are a solutions provider
+                  with a personal approach.
                 </p>
 
-                <p className="leading-relaxed">
-                  THE INTERNAL TEAM AT ADA HAVE OVER 100 YEARS COMBINED EXPERIENCE IN PROVIDING SAFETY &
-                  INDUSTRIAL SUPPLIES AND EQUIPMENT TO THE PUBLIC AND PRIVATE SECTORS. WE ARE RESPONSIVE,
-                  RESPONSIBLE AND HAVE AN EXCELLENT PAST PERFORMANCE RECORD. WE ARE A SOLUTIONS
-                  PROVIDER AND WITH A PERSONAL APPROACH.
+                <p>
+                  ADA Supplies has significant experience working with federal, state, and local contracts
+                  and acquisition regulations. We maintain strict internal controls to ensure compliance
+                  with all regulations.
                 </p>
 
-                <p className="leading-relaxed">
-                  ADA SUPPLIES HAS SIGNIFICANT EXPERIENCE IN WORKING WITH FEDERAL, STATE, AND LOCAL
-                  CONTRACTS AND ACQUISITION REGULATIONS. WE HAVE STRICT INTERNAL CONTROLS TO ENSURE
-                  COMPLIANCE WITH ALL THE REGULATIONS.
+                <p>
+                  With a significant portion of our business supplying the armed forces, ADA Supplies
+                  recognizes the importance of giving back to those who serve and protect our communities.
+                  That's why we have partnered with Tunnel to Towers to support their various programs
+                  and initiatives. We contribute by donating a portion of our proceeds to the charity,
+                  ensuring they have the resources needed to continue their vital work.
                 </p>
 
-                <p className="leading-relaxed">
-                  WITH A SIGNIFICANT AMOUNT OF OUR BUSINESS SUPPLYING THE ARMED FORCES, ADA SUPPLIES,
-                  RECOGNIZE THE IMPORTANCE OF GIVING BACK TO THOSE WHO SERVE AND PROTECT OUR
-                  COMMUNITIES. THAT'S WHY WE HAVE PARTNERED WITH TUNNELS TO TOWERS TO SUPPORT THEIR
-                  VARIOUS PROGRAMS AND INITIATIVES. ONE OF THE WAYS WE CONTRIBUTE IS BY DONATING A PORTION
-                  OF OUR PROCEEDS TO THE CHARITY, ENSURING THAT THEY HAVE THE RESOURCES THEY NEED TO
-                  CONTINUE THEIR VITAL WORK.
-                </p>
-
-                <p className="leading-relaxed">
-                  WE INVITE YOU TO VISIT OUR NEWLY REFURBISHED RETAIL STORE TO GET A GLIMPSE OF ALL WE OFFER.
-                  AND REMEMBER, IF WE DON'T HAVE IT IN STOCK, WE WILL SOURCE IT FOR YOU AND DELIVER QUICKLY.
+                <p>
+                  We invite you to visit our newly refurbished retail store to get a glimpse of all we offer.
+                  And remember, if we don't have it in stock, we will source it for you and deliver quickly.
                 </p>
               </div>
 
               {/* Tunnel to Towers Logo */}
-              <div className="mt-8 flex justify-center">
+              <div className="mt-8 pt-6 border-t border-gray-200">
                 <div className="text-center">
-                  <p className="text-sm text-gray-500 mb-2 uppercase tracking-wider">Proud Supporter of the</p>
+                  <p className="text-sm text-gray-500 mb-3 font-medium">Proud Supporter of the</p>
                   <Image
                     src="/images/imagesite/t2t.jpg"
                     alt="Tunnel to Towers Foundation"

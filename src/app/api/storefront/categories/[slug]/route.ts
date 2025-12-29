@@ -394,9 +394,9 @@ export async function GET(
       }
     }
 
-    // Add TAA/BAA filter (products with GSA price)
+    // Add TAA/BAA filter (products with GSA price > 0)
     if (taaApproved) {
-      where.gsaPrice = { not: null };
+      where.gsaPrice = { gt: 0 };
     }
 
     // Add smart filters

@@ -25,7 +25,7 @@ const heroBanners = [
     image: '/images/imagesite/ppenewphoto.jpg',
     link: '/categories/ppe',
     bgColor: 'from-safety-green-700 to-safety-green-900',
-    imageClass: 'object-cover',
+    imageClass: 'object-cover object-top',
   },
   {
     id: 2,
@@ -40,10 +40,10 @@ const heroBanners = [
     id: 3,
     title: 'GSA Contract Holder',
     subtitle: 'Federal buyers welcome',
-    image: '/images/imagesite/gsaplane.jpg',
+    image: '/images/imagesite/gsa.jpg',
     link: '/gsa',
     bgColor: 'from-blue-700 to-blue-900',
-    imageClass: 'object-cover scale-110',
+    imageClass: 'object-cover scale-125',
   },
 ];
 

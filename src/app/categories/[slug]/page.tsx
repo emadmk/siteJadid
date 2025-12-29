@@ -422,9 +422,9 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       {/* Subcategories */}
       {category.children.length > 0 && (
         <div className="bg-white border-b">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-black">Subcategories</h2>
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-black">Subcategories</h2>
               <Link
                 href={`/brands?category=${params.slug}`}
                 className="text-sm text-safety-green-600 hover:text-safety-green-700 font-medium flex items-center gap-1"
@@ -433,15 +433,15 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {category.children.map((child) => (
-                <div key={child.id} className="bg-gray-50 rounded-lg border border-gray-200 hover:border-safety-green-300 transition-all overflow-hidden">
+                <div key={child.id} className="bg-gray-50 rounded-lg border border-gray-200 hover:border-safety-green-300 hover:shadow-md transition-all overflow-hidden group">
                   <Link
                     href={`/categories/${child.slug}`}
-                    className="block p-4 hover:bg-safety-green-50 transition-colors"
+                    className="block p-3 hover:bg-safety-green-50 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 bg-white rounded-lg overflow-hidden shadow-sm flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 bg-white rounded-lg overflow-hidden shadow-sm flex-shrink-0">
                         {child.image ? (
                           <img
                             src={child.image}
@@ -450,43 +450,58 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <ShieldCheck className="w-7 h-7 text-gray-300" />
+                            <ShieldCheck className="w-5 h-5 text-gray-300" />
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-black group-hover:text-safety-green-600 transition-colors truncate">
+                        <h3 className="text-sm font-medium text-black group-hover:text-safety-green-600 transition-colors truncate">
                           {child.name}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs text-gray-500">
                           {child._count.products.toLocaleString()} items
                         </p>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 group-hover:text-safety-green-600" />
                     </div>
                   </Link>
-                  {/* Nested subcategories */}
+                  {/* Nested subcategories with images */}
                   {child.children && child.children.length > 0 && (
-                    <div className="border-t border-gray-200 bg-white px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
+                    <div className="border-t border-gray-200 bg-white p-2">
+                      <div className="grid grid-cols-2 gap-1">
                         {child.children.slice(0, 4).map((subChild) => (
                           <Link
                             key={subChild.id}
                             href={`/categories/${subChild.slug}`}
-                            className="text-xs px-2 py-1 bg-gray-100 hover:bg-safety-green-100 hover:text-safety-green-700 rounded-full transition-colors"
+                            className="flex items-center gap-1.5 p-1.5 rounded hover:bg-safety-green-50 transition-colors group/sub"
                           >
-                            {subChild.name}
+                            <div className="w-6 h-6 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                              {subChild.image ? (
+                                <img
+                                  src={subChild.image}
+                                  alt={subChild.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <ShieldCheck className="w-3 h-3 text-gray-300" />
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-600 group-hover/sub:text-safety-green-700 truncate">
+                              {subChild.name}
+                            </span>
                           </Link>
                         ))}
-                        {child.children.length > 4 && (
-                          <Link
-                            href={`/categories/${child.slug}`}
-                            className="text-xs px-2 py-1 text-safety-green-600 hover:text-safety-green-700 font-medium"
-                          >
-                            +{child.children.length - 4} more
-                          </Link>
-                        )}
                       </div>
+                      {child.children.length > 4 && (
+                        <Link
+                          href={`/categories/${child.slug}`}
+                          className="block text-center text-xs text-safety-green-600 hover:text-safety-green-700 font-medium mt-1 py-1"
+                        >
+                          +{child.children.length - 4} more
+                        </Link>
+                      )}
                     </div>
                   )}
                 </div>

@@ -104,57 +104,60 @@ export default function GSAContractPage() {
                 GSA Contract Holder
               </div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-2 tracking-tight">
-                <span className="text-safety-green-400">GSA MAS</span>
-                <br />
-                CONTRACTOR
-              </h1>
-
-              {/* Tagline with Badge */}
-              <div className="flex items-center gap-4 mb-8">
-                <p className="text-xl md:text-2xl text-gray-300 font-light italic">
-                  Serving the government for over 25 years
-                </p>
+              {/* Title with Badge */}
+              <div className="flex items-start gap-6 mb-4">
                 <Image
                   src="/images/imagesite/badge.jpg"
                   alt="25 Years Badge"
-                  width={80}
-                  height={80}
-                  className="object-contain"
+                  width={100}
+                  height={100}
+                  className="object-contain rounded-lg"
                 />
+                <div>
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight">
+                    <span className="text-safety-green-400">GSA MAS</span>
+                    <br />
+                    CONTRACTOR
+                  </h1>
+                </div>
               </div>
 
-              {/* Partner Badges - Updated logos from left to right */}
-              <div className="grid grid-cols-3 gap-3 mt-6">
+              {/* Tagline */}
+              <p className="text-xl md:text-2xl text-gray-300 font-light italic mb-8">
+                Serving the government for over 25 years
+              </p>
+
+              {/* Partner Badges - Larger and more attractive */}
+              <div className="flex flex-wrap gap-4 mt-6">
                 {/* US Small Business */}
-                <div className="bg-white rounded-xl p-3 border border-white/20 flex items-center justify-center hover:shadow-lg transition-shadow">
+                <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[140px] h-[90px]">
                   <Image
                     src="/images/imagesite/ussmall.png"
                     alt="US Small Business"
-                    width={100}
-                    height={60}
+                    width={130}
+                    height={80}
                     className="object-contain"
                   />
                 </div>
 
                 {/* Partner Image 2 */}
-                <div className="bg-white rounded-xl p-3 border border-white/20 flex items-center justify-center hover:shadow-lg transition-shadow">
+                <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[140px] h-[90px]">
                   <Image
                     src="/images/imagesite/2.jpeg"
                     alt="Partner Certification"
-                    width={100}
-                    height={60}
+                    width={130}
+                    height={80}
                     className="object-contain"
                   />
                 </div>
 
                 {/* Tunnel to Towers */}
-                <div className="bg-white rounded-xl p-3 border border-white/20 flex items-center justify-center hover:shadow-lg transition-shadow">
+                <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[140px] h-[90px]">
                   <Image
                     src="/images/imagesite/t2t.jpg"
                     alt="Tunnel to Towers Foundation"
-                    width={100}
-                    height={60}
+                    width={130}
+                    height={80}
                     className="object-contain"
                   />
                 </div>
