@@ -21,26 +21,29 @@ const heroBanners = [
   {
     id: 1,
     title: 'Personal Protective Equipment',
-    subtitle: 'Stay safe with quality PPE gear',
-    image: '/images/imagesite/ppe.jpg',
-    link: '/ppe',
-    bgColor: 'from-gray-800 to-gray-900',
+    subtitle: 'Head to Toe Safety Products',
+    image: '/images/imagesite/ppenewphoto.jpg',
+    link: '/categories/ppe',
+    bgColor: 'from-safety-green-700 to-safety-green-900',
+    imageClass: 'object-cover',
   },
   {
     id: 2,
-    title: 'Industrial Products & Tools',
-    subtitle: 'Generators, equipment & more',
-    image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&q=80',
+    title: 'Safety, Industrial Products & Tools',
+    subtitle: 'Professional equipment for every job',
+    image: '/images/imagesite/cones.jpg',
     link: '/categories/industrial',
-    bgColor: 'from-safety-green-700 to-safety-green-900',
+    bgColor: 'from-orange-600 to-orange-800',
+    imageClass: 'object-cover',
   },
   {
     id: 3,
-    title: 'Federal and Government Buyers',
-    subtitle: 'GSA Contract Holder - Government approved',
-    image: '/images/imagesite/gsa.jpg',
+    title: 'GSA Contract Holder',
+    subtitle: 'Federal buyers welcome',
+    image: '/images/imagesite/gsaplane.jpg',
     link: '/gsa',
     bgColor: 'from-blue-700 to-blue-900',
+    imageClass: 'object-cover scale-110',
   },
 ];
 
@@ -99,7 +102,7 @@ export function HeroSection() {
                         src={banner.image}
                         alt={banner.title}
                         fill
-                        className="object-cover opacity-40"
+                        className={`${banner.imageClass || 'object-cover'} opacity-40`}
                         quality={100}
                         unoptimized
                       />
@@ -145,7 +148,7 @@ export function HeroSection() {
                     src={banner.image}
                     alt={banner.title}
                     fill
-                    className="object-cover opacity-40 group-hover:scale-105 transition-transform duration-500"
+                    className={`${banner.imageClass || 'object-cover'} opacity-40 group-hover:scale-105 transition-transform duration-500`}
                     quality={100}
                     unoptimized
                   />
@@ -170,7 +173,7 @@ export function HeroSection() {
         {/* Section Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg lg:text-xl font-bold text-gray-900">
-            The One Item You Need + 1.5 Million More
+            The One Item You Need Much More
           </h2>
           <Link
             href="/categories"

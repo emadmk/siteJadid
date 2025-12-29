@@ -276,6 +276,7 @@ export async function GET(
         children: {
           where: {
             isActive: true,
+            NOT: { slug: 'traffic-safety' },
           },
           select: {
             id: true,
@@ -283,8 +284,26 @@ export async function GET(
             slug: true,
             image: true,
             children: {
-              where: { isActive: true },
-              select: { id: true },
+              where: {
+                isActive: true,
+                NOT: { slug: 'traffic-safety' },
+              },
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                image: true,
+                _count: {
+                  select: {
+                    products: {
+                      where: {
+                        status: 'ACTIVE',
+                        stockQuantity: { gt: 0 },
+                      },
+                    },
+                  },
+                },
+              },
             },
             _count: {
               select: {
@@ -338,6 +357,9 @@ export async function GET(
         };
       })
     );
+
+    // Sort children by product count (most products first)
+    childrenWithTotals.sort((a, b) => b._count.products - a._count.products);
 
     // Build product filter
     const where: any = {
@@ -563,10 +585,10 @@ export async function GET(
     // Get full hierarchy (all ancestors)
     const hierarchy = await getCategoryHierarchy(category.parentId);
 
-    // Build category response with updated children counts and full hierarchy
+    // Build category response with updated children counts, nested children, and full hierarchy
     const categoryResponse = {
       ...category,
-      children: childrenWithTotals.map(({ children, ...rest }) => rest), // Remove nested children from response
+      children: childrenWithTotals, // Include nested children for subcategory display
       hierarchy, // Full path from root to parent (not including current category)
     };
 

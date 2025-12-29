@@ -4,8 +4,8 @@ import { db } from '@/lib/db';
 import { ChevronRight, Building2 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Brands | AdaSupply',
-  description: 'Browse all brands available at AdaSupply. Professional safety equipment and industrial supplies from top manufacturers.',
+  title: 'Brands | ADA Supply',
+  description: 'Browse all brands available at ADA Supply. Professional safety equipment and industrial supplies from top manufacturers.',
 };
 
 async function getBrands() {

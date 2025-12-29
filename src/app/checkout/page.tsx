@@ -252,6 +252,6 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 }
 
 export const metadata = {
-  title: 'Checkout | AdaSupply',
+  title: 'Checkout | ADA Supply',
   description: 'Complete your order for professional safety equipment.',
 };

@@ -47,6 +47,15 @@ interface Category {
     _count: {
       products: number;
     };
+    children?: {
+      id: string;
+      name: string;
+      slug: string;
+      image: string | null;
+      _count: {
+        products: number;
+      };
+    }[];
   }[];
   _count: {
     products: number;
@@ -414,36 +423,73 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       {category.children.length > 0 && (
         <div className="bg-white border-b">
           <div className="container mx-auto px-4 py-6">
-            <h2 className="text-lg font-semibold text-black mb-4">Subcategories</h2>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-black">Subcategories</h2>
+              <Link
+                href={`/brands?category=${params.slug}`}
+                className="text-sm text-safety-green-600 hover:text-safety-green-700 font-medium flex items-center gap-1"
+              >
+                Shop by Brand
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {category.children.map((child) => (
-                <Link
-                  key={child.id}
-                  href={`/categories/${child.slug}`}
-                  className="flex-shrink-0 group"
-                >
-                  <div className="w-32 bg-gray-50 rounded-lg p-4 hover:bg-safety-green-50 border border-gray-200 hover:border-safety-green-300 transition-all text-center">
-                    <div className="w-12 h-12 bg-white rounded-lg mx-auto mb-2 overflow-hidden shadow-sm">
-                      {child.image ? (
-                        <img
-                          src={child.image}
-                          alt={child.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ShieldCheck className="w-6 h-6 text-gray-300" />
-                        </div>
-                      )}
+                <div key={child.id} className="bg-gray-50 rounded-lg border border-gray-200 hover:border-safety-green-300 transition-all overflow-hidden">
+                  <Link
+                    href={`/categories/${child.slug}`}
+                    className="block p-4 hover:bg-safety-green-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 bg-white rounded-lg overflow-hidden shadow-sm flex-shrink-0">
+                        {child.image ? (
+                          <img
+                            src={child.image}
+                            alt={child.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ShieldCheck className="w-7 h-7 text-gray-300" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-black group-hover:text-safety-green-600 transition-colors truncate">
+                          {child.name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {child._count.products.toLocaleString()} items
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     </div>
-                    <h3 className="text-sm font-medium text-black group-hover:text-safety-green-600 transition-colors line-clamp-2">
-                      {child.name}
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {child._count.products} items
-                    </p>
-                  </div>
-                </Link>
+                  </Link>
+                  {/* Nested subcategories */}
+                  {child.children && child.children.length > 0 && (
+                    <div className="border-t border-gray-200 bg-white px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        {child.children.slice(0, 4).map((subChild) => (
+                          <Link
+                            key={subChild.id}
+                            href={`/categories/${subChild.slug}`}
+                            className="text-xs px-2 py-1 bg-gray-100 hover:bg-safety-green-100 hover:text-safety-green-700 rounded-full transition-colors"
+                          >
+                            {subChild.name}
+                          </Link>
+                        ))}
+                        {child.children.length > 4 && (
+                          <Link
+                            href={`/categories/${child.slug}`}
+                            className="text-xs px-2 py-1 text-safety-green-600 hover:text-safety-green-700 font-medium"
+                          >
+                            +{child.children.length - 4} more
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>

@@ -239,16 +239,16 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
   if (!product) {
     return {
-      title: 'Product Not Found | AdaSupply',
+      title: 'Product Not Found | ADA Supply',
     };
   }
 
   return {
-    title: product.metaTitle || `${product.name} | AdaSupply`,
+    title: product.metaTitle || `${product.name} | ADA Supply`,
     description:
       product.metaDescription ||
       product.description ||
-      `Buy ${product.name} from AdaSupply. Professional safety equipment and industrial supplies.`,
+      `Buy ${product.name} from ADA Supply. Professional safety equipment and industrial supplies.`,
     openGraph: {
       title: product.name,
       description: product.description || undefined,

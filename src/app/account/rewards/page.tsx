@@ -205,6 +205,6 @@ export default async function RewardsPage() {
 }
 
 export const metadata = {
-  title: 'Rewards | AdaSupply',
+  title: 'Rewards | ADA Supply',
   description: 'Track your loyalty points and unlock exclusive rewards.',
 };

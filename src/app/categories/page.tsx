@@ -319,6 +319,6 @@ export default async function CategoriesPage() {
 }
 
 export const metadata = {
-  title: 'All Categories | AdaSupply',
+  title: 'All Categories | ADA Supply',
   description: 'Browse our complete catalog of professional safety equipment and industrial supplies by category.',
 };

@@ -271,6 +271,6 @@ export default async function AccountPage() {
 }
 
 export const metadata = {
-  title: 'My Account | AdaSupply',
-  description: 'Manage your AdaSupply account, orders, and preferences.',
+  title: 'My Account | ADA Supply',
+  description: 'Manage your ADA Supply account, orders, and preferences.',
 };
