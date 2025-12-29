@@ -29,43 +29,115 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Our Business Section */}
       <div className="container mx-auto px-4 py-16">
-        {/* Mission Statement */}
+        {/* Our Business - Matching Screenshot Layout */}
         <div className="bg-white rounded-2xl shadow-sm p-8 md:p-12 mb-12">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid md:grid-cols-2 gap-12 items-start">
+            {/* Left - Warehouse Image */}
+            <div className="relative">
+              <div className="rounded-xl overflow-hidden shadow-lg">
+                <Image
+                  src="/images/imagesite/warehouse.jpg"
+                  alt="ADA Supply Warehouse"
+                  width={600}
+                  height={450}
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+              {/* ADA Logo overlay */}
+              <div className="absolute bottom-4 right-4 bg-white rounded-full p-3 shadow-lg">
+                <Image
+                  src="/images/imagesite/logo.png"
+                  alt="ADA Supplies Logo"
+                  width={80}
+                  height={80}
+                  className="w-20 h-20 object-contain"
+                />
+              </div>
+            </div>
+
+            {/* Right - Content */}
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
-              <p className="text-lg text-gray-700 leading-relaxed mb-4">
-                At ADA Supply, we are committed to protecting workers and creating safer work environments
-                across America. We believe that every person deserves access to quality safety equipment
-                that meets the highest industry standards.
-              </p>
-              <p className="text-lg text-gray-700 leading-relaxed">
-                We specialize in providing comprehensive safety solutions to federal, state, and local
-                government agencies, as well as commercial and industrial customers. Our extensive product
-                catalog includes PPE, fall protection equipment, protective clothing, safety footwear,
-                and much more.
-              </p>
+              <h2 className="text-4xl font-bold text-safety-green-600 mb-8 text-center uppercase tracking-wider">
+                Our Business
+              </h2>
+
+              <div className="space-y-4 text-gray-700 text-center">
+                <p className="leading-relaxed">
+                  ADA SUPPLIES, INC. WAS ESTABLISHED IN 1999. A LOCAL COMPANY WITH A NATIONAL REACH. ADA
+                  SUPPLIES HAS STRATEGIC PARTNERSHIPS WITH THE VERY BEST MANUFACTURERS AND SERVES
+                  NUMEROUS INDUSTRIES SUPPLYING A BROAD ARRAY OF QUALITY PRODUCTS TO FEDERAL, STATE, AND
+                  LOCAL GOVERNMENTS AS WELL AS COMMERCIAL AND WALK-IN CUSTOMERS. WE PRIDE OURSELVES IN
+                  GOING ABOVE AND BEYOND WHATEVER SIZE OF CUSTOMER YOU ARE.
+                </p>
+
+                <p className="text-2xl font-bold text-safety-green-600 py-4 uppercase">
+                  Your Safety is Our Business!
+                </p>
+
+                <p className="leading-relaxed">
+                  THE INTERNAL TEAM AT ADA HAVE OVER 100 YEARS COMBINED EXPERIENCE IN PROVIDING SAFETY &
+                  INDUSTRIAL SUPPLIES AND EQUIPMENT TO THE PUBLIC AND PRIVATE SECTORS. WE ARE RESPONSIVE,
+                  RESPONSIBLE AND HAVE AN EXCELLENT PAST PERFORMANCE RECORD. WE ARE A SOLUTIONS
+                  PROVIDER AND WITH A PERSONAL APPROACH.
+                </p>
+
+                <p className="leading-relaxed">
+                  ADA SUPPLIES HAS SIGNIFICANT EXPERIENCE IN WORKING WITH FEDERAL, STATE, AND LOCAL
+                  CONTRACTS AND ACQUISITION REGULATIONS. WE HAVE STRICT INTERNAL CONTROLS TO ENSURE
+                  COMPLIANCE WITH ALL THE REGULATIONS.
+                </p>
+
+                <p className="leading-relaxed">
+                  WITH A SIGNIFICANT AMOUNT OF OUR BUSINESS SUPPLYING THE ARMED FORCES, ADA SUPPLIES,
+                  RECOGNIZE THE IMPORTANCE OF GIVING BACK TO THOSE WHO SERVE AND PROTECT OUR
+                  COMMUNITIES. THAT'S WHY WE HAVE PARTNERED WITH TUNNELS TO TOWERS TO SUPPORT THEIR
+                  VARIOUS PROGRAMS AND INITIATIVES. ONE OF THE WAYS WE CONTRIBUTE IS BY DONATING A PORTION
+                  OF OUR PROCEEDS TO THE CHARITY, ENSURING THAT THEY HAVE THE RESOURCES THEY NEED TO
+                  CONTINUE THEIR VITAL WORK.
+                </p>
+
+                <p className="leading-relaxed">
+                  WE INVITE YOU TO VISIT OUR NEWLY REFURBISHED RETAIL STORE TO GET A GLIMPSE OF ALL WE OFFER.
+                  AND REMEMBER, IF WE DON'T HAVE IT IN STOCK, WE WILL SOURCE IT FOR YOU AND DELIVER QUICKLY.
+                </p>
+              </div>
+
+              {/* Tunnel to Towers Logo */}
+              <div className="mt-8 flex justify-center">
+                <div className="text-center">
+                  <p className="text-sm text-gray-500 mb-2 uppercase tracking-wider">Proud Supporter of the</p>
+                  <Image
+                    src="/images/imagesite/t2t.jpg"
+                    alt="Tunnel to Towers Foundation"
+                    width={280}
+                    height={100}
+                    className="mx-auto object-contain"
+                  />
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-safety-green-50 rounded-xl p-6 text-center">
-                <div className="text-4xl font-bold text-safety-green-600 mb-2">15K+</div>
-                <div className="text-gray-600">Products Available</div>
-              </div>
-              <div className="bg-safety-green-50 rounded-xl p-6 text-center">
-                <div className="text-4xl font-bold text-safety-green-600 mb-2">50+</div>
-                <div className="text-gray-600">Brand Partners</div>
-              </div>
-              <div className="bg-safety-green-50 rounded-xl p-6 text-center">
-                <div className="text-4xl font-bold text-safety-green-600 mb-2">GSA</div>
-                <div className="text-gray-600">Contract Holder</div>
-              </div>
-              <div className="bg-safety-green-50 rounded-xl p-6 text-center">
-                <div className="text-4xl font-bold text-safety-green-600 mb-2">USA</div>
-                <div className="text-gray-600">Nationwide Shipping</div>
-              </div>
-            </div>
+          </div>
+        </div>
+
+        {/* Stats Section */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+          <div className="bg-safety-green-50 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-safety-green-600 mb-2">1999</div>
+            <div className="text-gray-600">Established</div>
+          </div>
+          <div className="bg-safety-green-50 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-safety-green-600 mb-2">100+</div>
+            <div className="text-gray-600">Years Combined Experience</div>
+          </div>
+          <div className="bg-safety-green-50 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-safety-green-600 mb-2">GSA</div>
+            <div className="text-gray-600">Contract Holder</div>
+          </div>
+          <div className="bg-safety-green-50 rounded-xl p-6 text-center">
+            <div className="text-4xl font-bold text-safety-green-600 mb-2">USA</div>
+            <div className="text-gray-600">Nationwide Shipping</div>
           </div>
         </div>
 

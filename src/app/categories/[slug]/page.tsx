@@ -775,7 +775,10 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                     <input
                       type="checkbox"
                       checked={taaApproved}
-                      onChange={(e) => setTaaApproved(e.target.checked)}
+                      onChange={(e) => {
+                        setTaaApproved(e.target.checked);
+                        setTimeout(() => fetchData(1, true), 0);
+                      }}
                       className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                     />
                     <div>

@@ -17,7 +17,6 @@ import {
   Tag,
   Box,
   Hammer,
-  Heart,
 } from 'lucide-react';
 
 export const metadata = {
@@ -111,25 +110,27 @@ export default function GSAContractPage() {
                 CONTRACTOR
               </h1>
 
-              {/* Tagline */}
-              <p className="text-xl md:text-2xl text-gray-300 font-light italic mb-8">
-                Serving the government for over 25 years
-              </p>
+              {/* Tagline with Badge */}
+              <div className="flex items-center gap-4 mb-8">
+                <p className="text-xl md:text-2xl text-gray-300 font-light italic">
+                  Serving the government for over 25 years
+                </p>
+                <Image
+                  src="/images/imagesite/badge.jpg"
+                  alt="25 Years Badge"
+                  width={80}
+                  height={80}
+                  className="object-contain"
+                />
+              </div>
 
-              {/* Partner Badges - Uniform Grid */}
+              {/* Partner Badges - Updated logos from left to right */}
               <div className="grid grid-cols-3 gap-3 mt-6">
-                {/* Tunnel to Towers */}
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 flex flex-col items-center justify-center text-center hover:bg-white/20 transition-colors">
-                  <Heart className="w-8 h-8 text-red-500 mb-2" />
-                  <div className="text-xs font-semibold text-white">Proud Supporter</div>
-                  <div className="text-xs text-safety-green-400 font-bold">T2T.ORG</div>
-                </div>
-
-                {/* Partner Image 1 */}
+                {/* US Small Business */}
                 <div className="bg-white rounded-xl p-3 border border-white/20 flex items-center justify-center hover:shadow-lg transition-shadow">
                   <Image
-                    src="/images/imagesite/1.jpeg"
-                    alt="Partner Certification"
+                    src="/images/imagesite/ussmall.png"
+                    alt="US Small Business"
                     width={100}
                     height={60}
                     className="object-contain"
@@ -141,6 +142,17 @@ export default function GSAContractPage() {
                   <Image
                     src="/images/imagesite/2.jpeg"
                     alt="Partner Certification"
+                    width={100}
+                    height={60}
+                    className="object-contain"
+                  />
+                </div>
+
+                {/* Tunnel to Towers */}
+                <div className="bg-white rounded-xl p-3 border border-white/20 flex items-center justify-center hover:shadow-lg transition-shadow">
+                  <Image
+                    src="/images/imagesite/t2t.jpg"
+                    alt="Tunnel to Towers Foundation"
                     width={100}
                     height={60}
                     className="object-contain"
