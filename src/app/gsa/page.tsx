@@ -230,7 +230,7 @@ export default function GSAContractPage() {
         {/* Shop on GSA Button */}
         <div className="mt-8 flex justify-center">
           <a
-            href="https://www.gsaadvantage.gov/advantage/contractor/search/contractorPriceList.do?contractNumber=GS-21F-0086U"
+            href="https://www.gsaadvantage.gov/advantage/ws/search/advantage_search?q=0:2GS21F0086U&db=0&searchType=1"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-3 bg-gray-600 hover:bg-gray-700 text-white font-bold text-xl px-12 py-4 rounded-lg transition-colors shadow-lg"
