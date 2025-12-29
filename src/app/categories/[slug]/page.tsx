@@ -147,7 +147,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
   }, []);
 
   // Fetch category and products
-  const fetchData = useCallback(async (page: number, reset: boolean = false) => {
+  const fetchData = useCallback(async (page: number, reset: boolean = false, overrideTaaApproved?: boolean) => {
     if (page === 1) {
       setLoading(true);
     } else {
@@ -175,7 +175,9 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
       if (selectedBrand) queryParams.set('brand', selectedBrand);
       if (priceRange.min) queryParams.set('minPrice', priceRange.min);
       if (priceRange.max) queryParams.set('maxPrice', priceRange.max);
-      if (taaApproved) queryParams.set('taaApproved', 'true');
+      // Use override value if provided, otherwise use state
+      const taaValue = overrideTaaApproved !== undefined ? overrideTaaApproved : taaApproved;
+      if (taaValue) queryParams.set('taaApproved', 'true');
 
       // Add smart filters
       const hasSmartFilters = Object.values(activeSmartFilters).some(arr => arr.length > 0);
@@ -612,8 +614,9 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                     type="checkbox"
                     checked={taaApproved}
                     onChange={(e) => {
-                      setTaaApproved(e.target.checked);
-                      setTimeout(() => fetchData(1, true), 0);
+                      const newValue = e.target.checked;
+                      setTaaApproved(newValue);
+                      fetchData(1, true, newValue);
                     }}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                   />
@@ -791,8 +794,9 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                       type="checkbox"
                       checked={taaApproved}
                       onChange={(e) => {
-                        setTaaApproved(e.target.checked);
-                        setTimeout(() => fetchData(1, true), 0);
+                        const newValue = e.target.checked;
+                        setTaaApproved(newValue);
+                        fetchData(1, true, newValue);
                       }}
                       className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                     />
