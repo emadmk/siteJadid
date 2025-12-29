@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Trash2, Plus, Minus, ShoppingCart, ArrowRight, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, ShoppingCart, ArrowRight, ArrowLeft } from 'lucide-react';
+import { CartItemActions } from '@/components/cart/CartItemActions';
 import { db } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -144,46 +145,12 @@ export default async function CartPage() {
                           </div>
                         )}
 
-                        <div className="flex flex-wrap items-center gap-4">
-                          {/* Quantity Controls */}
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-600">Quantity:</span>
-                            <div className="flex items-center border border-gray-300 rounded-md">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-10 w-10 hover:bg-gray-100"
-                                disabled={item.quantity <= minOrderQty}
-                              >
-                                <Minus className="w-4 h-4" />
-                              </Button>
-                              <span className="w-12 text-center font-medium text-black">
-                                {item.quantity}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-10 w-10 hover:bg-gray-100"
-                                disabled={item.quantity + minOrderQty > item.product.stockQuantity}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            {minOrderQty > 1 && (
-                              <span className="text-xs text-gray-500">Min: {minOrderQty}</span>
-                            )}
-                          </div>
-
-                          {/* Remove Button */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Remove
-                          </Button>
-                        </div>
+                        <CartItemActions
+                          itemId={item.id}
+                          quantity={item.quantity}
+                          minOrderQty={minOrderQty}
+                          stockQuantity={item.product.stockQuantity}
+                        />
 
                         {/* Stock Warning */}
                         {item.quantity > item.product.stockQuantity && (

@@ -105,19 +105,46 @@ export default function GSAContractPage() {
                 GSA Contract Holder
               </div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 tracking-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-2 tracking-tight">
                 <span className="text-safety-green-400">GSA MAS</span>
                 <br />
                 CONTRACTOR
               </h1>
 
-              {/* Tunnel to Towers Badge */}
-              <div className="mt-8 inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-3 border border-white/20">
-                <Heart className="w-6 h-6 text-red-500" />
-                <div>
-                  <div className="text-sm font-semibold text-white">Proud Supporter</div>
-                  <div className="text-xs text-gray-300">Tunnel to Towers Foundation</div>
-                  <div className="text-xs text-safety-green-400">T2T.ORG</div>
+              {/* Tagline */}
+              <p className="text-xl md:text-2xl text-gray-300 font-light italic mb-8">
+                Serving the government for over 25 years
+              </p>
+
+              {/* Partner Badges - Uniform Grid */}
+              <div className="grid grid-cols-3 gap-3 mt-6">
+                {/* Tunnel to Towers */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 flex flex-col items-center justify-center text-center hover:bg-white/20 transition-colors">
+                  <Heart className="w-8 h-8 text-red-500 mb-2" />
+                  <div className="text-xs font-semibold text-white">Proud Supporter</div>
+                  <div className="text-xs text-safety-green-400 font-bold">T2T.ORG</div>
+                </div>
+
+                {/* Partner Image 1 */}
+                <div className="bg-white rounded-xl p-3 border border-white/20 flex items-center justify-center hover:shadow-lg transition-shadow">
+                  <Image
+                    src="/images/imagesite/1.jpeg"
+                    alt="Partner Certification"
+                    width={100}
+                    height={60}
+                    className="object-contain"
+                  />
+                </div>
+
+                {/* Partner Image 2 */}
+                <div className="bg-white rounded-xl p-3 border border-white/20 flex items-center justify-center hover:shadow-lg transition-shadow">
+                  <Image
+                    src="/images/imagesite/2.jpeg"
+                    alt="Partner Certification"
+                    width={100}
+                    height={60}
+                    className="object-contain"
+                  />
                 </div>
               </div>
             </div>

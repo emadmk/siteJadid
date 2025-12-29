@@ -121,7 +121,7 @@ export function ProductsListing({
   });
   const [sortBy, setSortBy] = useState(initialFilters.sort || 'newest');
   const [featured, setFeatured] = useState(initialFilters.featured === 'true');
-  const [taaApproved, setTaaApproved] = useState(false);
+  const [taaApproved, setTaaApproved] = useState(searchParams.get('taaApproved') === 'true');
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -287,6 +287,7 @@ export function ProductsListing({
       maxPrice: priceRange.max,
       sort: sortBy,
       featured: featured ? 'true' : '',
+      taaApproved: taaApproved ? 'true' : '',
     });
   };
 
@@ -303,6 +304,7 @@ export function ProductsListing({
         maxPrice: priceRange.max,
         sort: sortBy,
         featured: featured ? 'true' : '',
+        taaApproved: taaApproved ? 'true' : '',
       });
     }, 0);
   };
@@ -320,6 +322,7 @@ export function ProductsListing({
         maxPrice: priceRange.max,
         sort: sortBy,
         featured: featured ? 'true' : '',
+        taaApproved: taaApproved ? 'true' : '',
       });
     }, 0);
   };
@@ -337,6 +340,7 @@ export function ProductsListing({
         maxPrice: priceRange.max,
         sort: value,
         featured: featured ? 'true' : '',
+        taaApproved: taaApproved ? 'true' : '',
       });
     }, 0);
   };
@@ -352,6 +356,7 @@ export function ProductsListing({
       maxPrice: priceRange.max,
       sort: sortBy,
       featured: featured ? 'true' : '',
+      taaApproved: taaApproved ? 'true' : '',
     });
     setShowFilters(false);
   };
