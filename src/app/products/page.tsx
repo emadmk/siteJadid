@@ -1,6 +1,9 @@
 import { db } from '@/lib/db';
 import { ProductsListing } from '@/components/storefront/products/ProductsListing';
 
+// Disable caching - always fetch fresh data
+export const revalidate = 0;
+
 interface ProductsPageProps {
   searchParams: {
     category?: string;

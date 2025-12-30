@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   description: 'Browse all brands available at ADA Supply. Professional safety equipment and industrial supplies from top manufacturers.',
 };
 
+// Disable caching - always fetch fresh data
+export const revalidate = 0;
+
 async function getBrands() {
   return await db.brand.findMany({
     where: { isActive: true },
