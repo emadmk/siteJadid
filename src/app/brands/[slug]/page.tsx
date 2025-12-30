@@ -16,6 +16,7 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
+  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
@@ -89,7 +90,8 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState('price-desc');
+  const [taaFilter, setTaaFilter] = useState(false);
   const [activeSmartFilters, setActiveSmartFilters] = useState<Record<string, string[]>>({});
   const [expandedFilterSections, setExpandedFilterSections] = useState<Record<string, boolean>>({});
 
@@ -115,6 +117,7 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
       if (selectedCategory) queryParams.set('category', selectedCategory);
       if (priceRange.min) queryParams.set('minPrice', priceRange.min);
       if (priceRange.max) queryParams.set('maxPrice', priceRange.max);
+      if (taaFilter) queryParams.set('taaCompliant', 'true');
 
       const hasActiveFilters = Object.values(activeSmartFilters).some(arr => arr.length > 0);
       if (hasActiveFilters) {
@@ -154,7 +157,7 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [params.slug, sortBy, searchQuery, selectedCategory, priceRange, activeSmartFilters, router]);
+  }, [params.slug, sortBy, searchQuery, selectedCategory, priceRange, taaFilter, activeSmartFilters, router]);
 
   useEffect(() => {
     fetchData(1, true);
@@ -218,7 +221,8 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
     setSearchQuery('');
     setSelectedCategory('');
     setPriceRange({ min: '', max: '' });
-    setSortBy('newest');
+    setSortBy('price-desc');
+    setTaaFilter(false);
     setActiveSmartFilters({});
     setCurrentPage(1);
     fetchData(1, true);
@@ -247,7 +251,7 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
     }));
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory || priceRange.min || priceRange.max ||
+  const hasActiveFilters = searchQuery || selectedCategory || priceRange.min || priceRange.max || taaFilter ||
     Object.values(activeSmartFilters).some(arr => arr.length > 0);
 
   if (loading) {
@@ -505,6 +509,23 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
                       <List className="w-4 h-4" />
                     </button>
                   </div>
+
+                  {/* TAA/BAA Filter */}
+                  <button
+                    onClick={() => {
+                      setTaaFilter(!taaFilter);
+                      setTimeout(() => fetchData(1, true), 0);
+                    }}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      taaFilter
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                    }`}
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span className="hidden md:inline">TAA/BAA Approved</span>
+                    <span className="md:hidden">TAA/BAA</span>
+                  </button>
 
                   <div className="text-sm text-gray-600">
                     Showing {products.length} of {data.total}
