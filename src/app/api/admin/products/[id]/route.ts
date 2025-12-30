@@ -200,6 +200,7 @@ export async function PATCH(
     if (data.categoryId !== undefined) updateData.categoryId = data.categoryId || null;
     if (data.brandId !== undefined) updateData.brandId = data.brandId || null;
     if (data.status !== undefined) updateData.status = data.status;
+    if (data.images !== undefined) updateData.images = data.images;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

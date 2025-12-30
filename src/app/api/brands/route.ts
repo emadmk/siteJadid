@@ -17,14 +17,21 @@ export async function GET(request: NextRequest) {
         slug: true,
         logo: true,
         _count: {
-          select: { products: true },
+          select: {
+            products: {
+              where: { status: 'ACTIVE' },
+            },
+          },
         },
       },
-      orderBy: { displayOrder: 'asc' },
-      take: limit,
     });
 
-    return NextResponse.json({ brands });
+    // Sort by product count descending and take limit
+    const sortedBrands = brands
+      .sort((a, b) => b._count.products - a._count.products)
+      .slice(0, limit);
+
+    return NextResponse.json({ brands: sortedBrands });
   } catch (error) {
     console.error('Error fetching brands:', error);
     return NextResponse.json({ error: 'Failed to fetch brands' }, { status: 500 });

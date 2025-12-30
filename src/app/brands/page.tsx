@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export const revalidate = 0;
 
 async function getBrands() {
-  return await db.brand.findMany({
+  const brands = await db.brand.findMany({
     where: { isActive: true },
     select: {
       id: true,
@@ -28,8 +28,10 @@ async function getBrands() {
         },
       },
     },
-    orderBy: { displayOrder: 'asc' },
   });
+
+  // Sort by product count descending
+  return brands.sort((a, b) => b._count.products - a._count.products);
 }
 
 export default async function BrandsPage() {
