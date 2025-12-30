@@ -275,11 +275,9 @@ export async function GET(
       }
     }
 
-    // TAA/BAA compliant filter
+    // TAA/BAA compliant filter (products with GSA price > 0)
     if (taaApproved) {
-      where.complianceCertifications = {
-        hasSome: ['TAA', 'BAA', 'TAA/BAA', 'TAA Compliant', 'BAA Compliant'],
-      };
+      where.gsaPrice = { gt: 0 };
     }
 
     if (smartFilters) {
