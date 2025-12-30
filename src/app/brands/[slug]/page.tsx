@@ -16,7 +16,6 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
-  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
@@ -99,7 +98,7 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Fetch brand and products
-  const fetchData = useCallback(async (page: number, reset: boolean = false) => {
+  const fetchData = useCallback(async (page: number, reset: boolean = false, overrideTaaFilter?: boolean) => {
     if (page === 1) {
       setLoading(true);
     } else {
@@ -117,7 +116,10 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
       if (selectedCategory) queryParams.set('category', selectedCategory);
       if (priceRange.min) queryParams.set('minPrice', priceRange.min);
       if (priceRange.max) queryParams.set('maxPrice', priceRange.max);
-      if (taaFilter) queryParams.set('taaCompliant', 'true');
+
+      // Use override value if provided, otherwise use state
+      const taaValue = overrideTaaFilter !== undefined ? overrideTaaFilter : taaFilter;
+      if (taaValue) queryParams.set('taaApproved', 'true');
 
       const hasActiveFilters = Object.values(activeSmartFilters).some(arr => arr.length > 0);
       if (hasActiveFilters) {
@@ -422,6 +424,26 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
                 </div>
               </div>
 
+              {/* TAA/BAA Approved Filter */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={taaFilter}
+                    onChange={(e) => {
+                      const newValue = e.target.checked;
+                      setTaaFilter(newValue);
+                      fetchData(1, true, newValue);
+                    }}
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <div className="font-semibold text-blue-800">TAA/BAA Approved</div>
+                    <div className="text-xs text-blue-600">Government compliant products</div>
+                  </div>
+                </label>
+              </div>
+
               {/* Smart Filters */}
               {Object.entries(smartFilters || {}).map(([filterKey, values]) => (
                 <div key={filterKey} className="mb-4 border-t pt-4">
@@ -510,23 +532,6 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
                     </button>
                   </div>
 
-                  {/* TAA/BAA Filter */}
-                  <button
-                    onClick={() => {
-                      setTaaFilter(!taaFilter);
-                      setTimeout(() => fetchData(1, true), 0);
-                    }}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      taaFilter
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
-                    }`}
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    <span className="hidden md:inline">TAA/BAA Approved</span>
-                    <span className="md:hidden">TAA/BAA</span>
-                  </button>
-
                   <div className="text-sm text-gray-600">
                     Showing {products.length} of {data.total}
                   </div>
@@ -594,6 +599,24 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
                       className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500"
                     />
                   </div>
+
+                  {/* TAA/BAA Approved Filter (Mobile) */}
+                  <label className="flex items-center gap-3 cursor-pointer p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                    <input
+                      type="checkbox"
+                      checked={taaFilter}
+                      onChange={(e) => {
+                        const newValue = e.target.checked;
+                        setTaaFilter(newValue);
+                        fetchData(1, true, newValue);
+                      }}
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="font-semibold text-blue-800 text-sm">TAA/BAA Approved</div>
+                      <div className="text-xs text-blue-600">Government compliant products</div>
+                    </div>
+                  </label>
 
                   <div className="flex gap-2">
                     <Button onClick={applyFilters} className="flex-1 bg-safety-green-600 hover:bg-safety-green-700">

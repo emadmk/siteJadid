@@ -196,7 +196,7 @@ export async function GET(
     const search = searchParams.get('search');
     const smartFilters = searchParams.get('filters');
     const categorySlug = searchParams.get('category');
-    const taaCompliant = searchParams.get('taaCompliant') === 'true';
+    const taaApproved = searchParams.get('taaApproved') === 'true';
 
     // Find the brand
     const brand = await db.brand.findUnique({
@@ -276,7 +276,7 @@ export async function GET(
     }
 
     // TAA/BAA compliant filter
-    if (taaCompliant) {
+    if (taaApproved) {
       where.complianceCertifications = {
         hasSome: ['TAA', 'BAA', 'TAA/BAA', 'TAA Compliant', 'BAA Compliant'],
       };
