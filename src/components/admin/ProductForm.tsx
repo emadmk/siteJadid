@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Plus, X, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Upload, Image as ImageIcon, Loader2, Star } from 'lucide-react';
 import Link from 'next/link';
 import { ProductVariantsManager } from './ProductVariantsManager';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
@@ -104,6 +104,14 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
 
   const handleRemoveImage = (index: number) => {
     setImages(images.filter((_, i) => i !== index));
+  };
+
+  const handleSetPrimaryImage = (index: number) => {
+    if (index === 0) return; // Already primary
+    const newImages = [...images];
+    const [selectedImage] = newImages.splice(index, 1);
+    newImages.unshift(selectedImage);
+    setImages(newImages);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -577,7 +585,7 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
                   <img
                     src={img}
                     alt={`Product ${index + 1}`}
-                    className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                    className={`w-full h-32 object-cover rounded-lg border-2 ${index === 0 ? 'border-safety-green-500' : 'border-gray-200'}`}
                   />
                   <button
                     type="button"
@@ -586,10 +594,20 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
                   >
                     <X className="w-4 h-4" />
                   </button>
-                  {index === 0 && (
-                    <span className="absolute bottom-2 left-2 px-2 py-1 bg-safety-green-600 text-white text-xs rounded">
+                  {index === 0 ? (
+                    <span className="absolute bottom-2 left-2 px-2 py-1 bg-safety-green-600 text-white text-xs rounded flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-current" />
                       Primary
                     </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSetPrimaryImage(index)}
+                      className="absolute bottom-2 left-2 p-1.5 bg-gray-800/70 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-safety-green-600"
+                      title="Set as primary image"
+                    >
+                      <Star className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
               ))}

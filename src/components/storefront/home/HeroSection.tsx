@@ -173,7 +173,7 @@ export function HeroSection() {
         {/* Section Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg lg:text-xl font-bold text-gray-900">
-            The One Item You Need Much More
+            The One Item You Need Plus Much More
           </h2>
           <Link
             href="/categories"
