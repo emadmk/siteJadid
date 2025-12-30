@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Eye, Edit, Package, Check, X, Loader2 } from 'lucide-react';
+import { Eye, Edit, Package, Check, X, Loader2, Star, Image as ImageIcon } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -55,6 +55,8 @@ export function EditableProductRow({ product: initialProduct, categories, brands
   const [editValue, setEditValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [savingImage, setSavingImage] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
 
@@ -189,6 +191,34 @@ export function EditableProductRow({ product: initialProduct, categories, brands
     }
   };
 
+  const handleSetPrimaryImage = async (index: number) => {
+    if (index === 0 || savingImage) return;
+
+    setSavingImage(true);
+    try {
+      const newImages = [...product.images];
+      const [selectedImage] = newImages.splice(index, 1);
+      newImages.unshift(selectedImage);
+
+      const response = await fetch(`/api/admin/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images: newImages }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update primary image');
+      }
+
+      setProduct(prev => ({ ...prev, images: newImages }));
+      setShowImagePicker(false);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSavingImage(false);
+    }
+  };
+
   const images = product.images as string[];
 
   return (
@@ -196,16 +226,68 @@ export function EditableProductRow({ product: initialProduct, categories, brands
       {/* Product Name - Editable */}
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gray-100 rounded flex-shrink-0">
-            {images && images.length > 0 ? (
-              <img
-                src={images[0]}
-                alt={product.name}
-                className="w-full h-full object-cover rounded"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Package className="w-5 h-5 text-gray-300" />
+          <div className="relative">
+            <div
+              className={`w-12 h-12 bg-gray-100 rounded flex-shrink-0 cursor-pointer ${images && images.length > 1 ? 'hover:ring-2 hover:ring-safety-green-500' : ''}`}
+              onClick={() => images && images.length > 1 && setShowImagePicker(!showImagePicker)}
+              title={images && images.length > 1 ? 'Click to change primary image' : ''}
+            >
+              {images && images.length > 0 ? (
+                <img
+                  src={images[0]}
+                  alt={product.name}
+                  className="w-full h-full object-cover rounded"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="w-5 h-5 text-gray-300" />
+                </div>
+              )}
+              {images && images.length > 1 && (
+                <span className="absolute -bottom-1 -right-1 bg-gray-700 text-white text-xs px-1 rounded">
+                  {images.length}
+                </span>
+              )}
+            </div>
+
+            {/* Image Picker Popup */}
+            {showImagePicker && images && images.length > 1 && (
+              <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-3 min-w-[200px]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-700">Select Primary Image</span>
+                  <button onClick={() => setShowImagePicker(false)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {images.map((img, index) => (
+                    <div
+                      key={index}
+                      className={`relative cursor-pointer rounded overflow-hidden ${index === 0 ? 'ring-2 ring-safety-green-500' : 'hover:ring-2 hover:ring-gray-300'}`}
+                      onClick={() => handleSetPrimaryImage(index)}
+                    >
+                      <img
+                        src={img}
+                        alt={`Product ${index + 1}`}
+                        className="w-14 h-14 object-cover"
+                      />
+                      {index === 0 ? (
+                        <span className="absolute bottom-0 left-0 right-0 bg-safety-green-600 text-white text-[10px] text-center py-0.5">
+                          <Star className="w-3 h-3 inline fill-current" />
+                        </span>
+                      ) : (
+                        <span className="absolute inset-0 bg-black/0 hover:bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                          <Star className="w-4 h-4 text-white drop-shadow" />
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {savingImage && (
+                  <div className="flex items-center justify-center mt-2 text-xs text-gray-500">
+                    <Loader2 className="w-3 h-3 animate-spin mr-1" /> Saving...
+                  </div>
+                )}
               </div>
             )}
           </div>
