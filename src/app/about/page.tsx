@@ -34,25 +34,48 @@ export default function AboutPage() {
         {/* Our Business */}
         <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 mb-12">
           <div className="grid md:grid-cols-2 gap-12 items-start">
-            {/* Left - Warehouse Image */}
+            {/* Left - Warehouse Images Collage */}
             <div className="relative">
-              <div className="rounded-xl overflow-hidden shadow-xl">
-                <Image
-                  src="/images/imagesite/adawarehouse.jpg"
-                  alt="ADA Supply Warehouse"
-                  width={600}
-                  height={450}
-                  className="w-full h-auto object-cover"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                {/* Main large image - spans 2 rows */}
+                <div className="row-span-2 rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/imagesite/warehouse1.jpeg"
+                    alt="ADA Supply Warehouse"
+                    width={300}
+                    height={320}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {/* Top right image */}
+                <div className="rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/imagesite/warehouse2.jpeg"
+                    alt="ADA Supply Facility"
+                    width={280}
+                    height={155}
+                    className="w-full h-[155px] object-cover"
+                  />
+                </div>
+                {/* Bottom right image */}
+                <div className="rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/imagesite/warehouse3.jpeg"
+                    alt="ADA Supply Operations"
+                    width={280}
+                    height={155}
+                    className="w-full h-[155px] object-cover"
+                  />
+                </div>
               </div>
               {/* ADA Logo overlay */}
-              <div className="absolute bottom-4 right-4 bg-white rounded-full p-3 shadow-lg">
+              <div className="absolute -bottom-3 -right-3 bg-white rounded-full p-2 shadow-lg border-2 border-safety-green-500">
                 <Image
                   src="/images/imagesite/logo.png"
                   alt="ADA Supplies Logo"
-                  width={80}
-                  height={80}
-                  className="w-20 h-20 object-contain"
+                  width={60}
+                  height={60}
+                  className="w-14 h-14 object-contain"
                 />
               </div>
             </div>

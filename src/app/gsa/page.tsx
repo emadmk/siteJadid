@@ -130,34 +130,34 @@ export default function GSAContractPage() {
               {/* Partner Badges - Larger and more attractive */}
               <div className="flex flex-wrap gap-4 mt-6">
                 {/* US Small Business */}
-                <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[140px] h-[90px] overflow-hidden">
+                <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[168px] h-[108px] overflow-hidden">
                   <Image
                     src="/images/imagesite/ussmall.png"
                     alt="US Small Business"
-                    width={120}
-                    height={75}
+                    width={144}
+                    height={90}
                     className="object-contain max-w-full max-h-full"
                   />
                 </div>
 
                 {/* Partner Image 2 */}
-                <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[140px] h-[90px] overflow-hidden">
+                <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[168px] h-[108px] overflow-hidden">
                   <Image
                     src="/images/imagesite/2.jpeg"
                     alt="Partner Certification"
-                    width={120}
-                    height={75}
+                    width={144}
+                    height={90}
                     className="object-contain max-w-full max-h-full"
                   />
                 </div>
 
                 {/* Tunnel to Towers */}
-                <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[140px] h-[90px] overflow-hidden">
+                <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[168px] h-[108px] overflow-hidden">
                   <Image
                     src="/images/imagesite/t2t.jpg"
                     alt="Tunnel to Towers Foundation"
-                    width={120}
-                    height={75}
+                    width={144}
+                    height={90}
                     className="object-contain max-w-full max-h-full"
                   />
                 </div>
