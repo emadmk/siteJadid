@@ -15,32 +15,46 @@ export default function AboutPage() {
       {/* Hero Section */}
       <div className="relative bg-gradient-to-r from-safety-green-700 to-safety-green-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative container mx-auto px-4 py-20">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="relative container mx-auto px-4 py-16">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            {/* Left - Text Content */}
             <div className="max-w-xl">
-              <h1 className="text-5xl font-bold mb-6">About ADA Supply</h1>
-              <p className="text-xl text-safety-green-100 mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">About ADA Supply</h1>
+              <p className="text-xl text-safety-green-200 mb-4 font-medium">
                 Safety Done Right
               </p>
-              <p className="text-lg text-white/90 mb-8">
+              <p className="text-base text-white/90 mb-6">
                 Your trusted partner for industrial safety equipment, personal protective equipment (PPE),
                 and comprehensive safety solutions for government agencies and commercial enterprises nationwide.
               </p>
-              <p className="text-3xl md:text-4xl font-light italic text-white/95 leading-relaxed">
+              <p className="text-2xl md:text-3xl font-light italic text-white/95 leading-relaxed">
                 <span className="text-safety-green-300">Small Enough to Care.</span>
                 <br />
                 <span className="text-white">Big Enough to Deliver.</span>
               </p>
             </div>
-            {/* 25 Years Badge */}
-            <div className="flex justify-center md:justify-end">
-              <Image
-                src="/images/imagesite/badge copy.png"
-                alt="Celebrating 25 Years Anniversary"
-                width={280}
-                height={280}
-                className="object-contain drop-shadow-2xl"
-              />
+
+            {/* Right - Badge with Text (like GSA page style) */}
+            <div className="flex flex-col items-center md:items-end">
+              <div className="flex items-center gap-6">
+                <Image
+                  src="/images/imagesite/badge copy.png"
+                  alt="Celebrating 25 Years Anniversary"
+                  width={140}
+                  height={140}
+                  className="object-contain drop-shadow-2xl"
+                />
+                <div>
+                  <h2 className="text-3xl md:text-4xl font-black tracking-tight">
+                    <span className="text-safety-green-300">SERVING</span>
+                    <br />
+                    <span className="text-white">SINCE 1999</span>
+                  </h2>
+                </div>
+              </div>
+              <p className="text-lg md:text-xl text-gray-200 font-light italic mt-4">
+                Over 25 years of excellence
+              </p>
             </div>
           </div>
         </div>
@@ -95,37 +109,6 @@ export default function AboutPage() {
                   className="w-14 h-14 object-contain"
                 />
               </div>
-
-              {/* Certification Logos */}
-              <div className="flex flex-wrap justify-center gap-4 mt-8">
-                <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow">
-                  <Image
-                    src="/images/imagesite/ussmall.png"
-                    alt="US Small Business"
-                    width={180}
-                    height={120}
-                    className="object-contain h-24"
-                  />
-                </div>
-                <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow">
-                  <Image
-                    src="/images/imagesite/2.jpeg"
-                    alt="Partner Certification"
-                    width={180}
-                    height={120}
-                    className="object-contain h-24"
-                  />
-                </div>
-                <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow">
-                  <Image
-                    src="/images/imagesite/t2t.jpg"
-                    alt="Tunnel to Towers Foundation"
-                    width={180}
-                    height={120}
-                    className="object-contain h-24"
-                  />
-                </div>
-              </div>
             </div>
 
             {/* Right - Content */}
@@ -176,6 +159,40 @@ export default function AboutPage() {
                 </p>
               </div>
 
+            </div>
+          </div>
+        </div>
+
+        {/* Certification Logos */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-12">
+          <h3 className="text-2xl font-bold text-gray-900 text-center mb-8">Our Certifications & Partners</h3>
+          <div className="flex flex-wrap justify-center items-center gap-8">
+            <div className="bg-gray-50 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow">
+              <Image
+                src="/images/imagesite/ussmall.png"
+                alt="SBA EDWOSB Certified"
+                width={200}
+                height={140}
+                className="object-contain h-28"
+              />
+            </div>
+            <div className="bg-gray-50 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow">
+              <Image
+                src="/images/imagesite/2.jpeg"
+                alt="HUBZone Certified"
+                width={200}
+                height={140}
+                className="object-contain h-28"
+              />
+            </div>
+            <div className="bg-gray-50 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow">
+              <Image
+                src="/images/imagesite/t2t.jpg"
+                alt="Tunnel to Towers Foundation"
+                width={200}
+                height={140}
+                className="object-contain h-28"
+              />
             </div>
           </div>
         </div>
