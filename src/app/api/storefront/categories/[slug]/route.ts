@@ -149,21 +149,201 @@ const SMART_FILTER_PATTERNS: Record<string, { keywords: Record<string, string>; 
     },
     label: 'Type',
   },
+  // New filters for specific categories
+  nrr: {
+    keywords: {
+      'nrr 19': 'NRR 19',
+      'nrr 20': 'NRR 20',
+      'nrr 21': 'NRR 21',
+      'nrr 22': 'NRR 22',
+      'nrr 23': 'NRR 23',
+      'nrr 24': 'NRR 24',
+      'nrr 25': 'NRR 25',
+      'nrr 26': 'NRR 26',
+      'nrr 27': 'NRR 27',
+      'nrr 28': 'NRR 28',
+      'nrr 29': 'NRR 29',
+      'nrr 30': 'NRR 30',
+      'nrr 31': 'NRR 31',
+      'nrr 32': 'NRR 32',
+      'nrr 33': 'NRR 33',
+      '19db': 'NRR 19',
+      '20db': 'NRR 20',
+      '21db': 'NRR 21',
+      '22db': 'NRR 22',
+      '23db': 'NRR 23',
+      '24db': 'NRR 24',
+      '25db': 'NRR 25',
+      '26db': 'NRR 26',
+      '27db': 'NRR 27',
+      '28db': 'NRR 28',
+      '29db': 'NRR 29',
+      '30db': 'NRR 30',
+      '31db': 'NRR 31',
+      '32db': 'NRR 32',
+      '33db': 'NRR 33',
+    },
+    label: 'NRR (Noise Reduction Rating)',
+  },
+  protectionType: {
+    keywords: {
+      'impact': 'Impact',
+      'splash': 'Splash',
+      'dust': 'Dust',
+      'chemical': 'Chemical',
+      'uv': 'UV Protection',
+      'laser': 'Laser',
+      'welding': 'Welding',
+    },
+    label: 'Protection Type',
+  },
+  antiFog: {
+    keywords: {
+      'anti-fog': 'Anti-Fog',
+      'anti fog': 'Anti-Fog',
+      'antifog': 'Anti-Fog',
+      'fog free': 'Anti-Fog',
+    },
+    label: 'Anti-Fog',
+  },
+  antiScratch: {
+    keywords: {
+      'anti-scratch': 'Anti-Scratch',
+      'anti scratch': 'Anti-Scratch',
+      'scratch resistant': 'Anti-Scratch',
+      'scratch-resistant': 'Anti-Scratch',
+      'hard coat': 'Anti-Scratch',
+    },
+    label: 'Anti-Scratch',
+  },
+  eyewearStyle: {
+    keywords: {
+      'frameless': 'Frameless',
+      'full frame': 'Full Frame',
+      'full-frame': 'Full Frame',
+      'half frame': 'Half Frame',
+      'half-frame': 'Half Frame',
+      'rimless': 'Rimless',
+      'otg': 'OTG (Over The Glass)',
+      'over the glass': 'OTG (Over The Glass)',
+      'over-the-glass': 'OTG (Over The Glass)',
+      'fit over': 'OTG (Over The Glass)',
+      'goggle': 'Goggle',
+      'goggles': 'Goggle',
+      'wrap': 'Wraparound',
+      'wraparound': 'Wraparound',
+      'wrap-around': 'Wraparound',
+    },
+    label: 'Style',
+  },
+  hardHatType: {
+    keywords: {
+      'full brim': 'Full Brim',
+      'full-brim': 'Full Brim',
+      'cap style': 'Cap Style',
+      'cap-style': 'Cap Style',
+      'vented': 'Vented',
+      'non-vented': 'Non-Vented',
+      'non vented': 'Non-Vented',
+      'unvented': 'Non-Vented',
+      'type i': 'Type I',
+      'type ii': 'Type II',
+      'type 1': 'Type I',
+      'type 2': 'Type II',
+    },
+    label: 'Type',
+  },
 };
 
-function extractSmartFilters(products: { name: string; description: string | null }[]): Record<string, string[]> {
+// Category-specific filter configurations
+// Defines which filters to include/exclude for specific category slugs
+const CATEGORY_FILTER_CONFIG: Record<string, {
+  include?: string[];
+  exclude?: string[];
+}> = {
+  // EAR Protection - only NRR filter, no material/size
+  'ear-protection': {
+    include: ['nrr', 'color', 'protection'],
+    exclude: ['material', 'size', 'gender', 'toeType', 'style', 'type', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType'],
+  },
+  'hearing-protection': {
+    include: ['nrr', 'color', 'protection'],
+    exclude: ['material', 'size', 'gender', 'toeType', 'style', 'type', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType'],
+  },
+  // Head Protection - no gender/material, add hardHatType
+  'head-protection': {
+    include: ['hardHatType', 'color', 'protection'],
+    exclude: ['gender', 'material', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'style', 'type'],
+  },
+  'hard-hats': {
+    include: ['hardHatType', 'color', 'protection'],
+    exclude: ['gender', 'material', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'style', 'type'],
+  },
+  // Eye Protection - no gender/material/size, add eyewearStyle, protectionType, antiFog, antiScratch
+  'eye-protection': {
+    include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
+    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type'],
+  },
+  'safety-glasses': {
+    include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
+    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type'],
+  },
+  'safety-goggles': {
+    include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
+    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type'],
+  },
+};
+
+// Check if a category or its ancestors match any filter config
+function getCategoryFilterConfig(categorySlug: string, hierarchy: { slug: string }[]): { include?: string[]; exclude?: string[] } | null {
+  // Check current category first
+  if (CATEGORY_FILTER_CONFIG[categorySlug]) {
+    return CATEGORY_FILTER_CONFIG[categorySlug];
+  }
+
+  // Check ancestors (from nearest to root)
+  for (let i = hierarchy.length - 1; i >= 0; i--) {
+    if (CATEGORY_FILTER_CONFIG[hierarchy[i].slug]) {
+      return CATEGORY_FILTER_CONFIG[hierarchy[i].slug];
+    }
+  }
+
+  return null;
+}
+
+function extractSmartFilters(
+  products: { name: string; description: string | null }[],
+  categoryConfig?: { include?: string[]; exclude?: string[] } | null
+): Record<string, string[]> {
   const filters: Record<string, Set<string>> = {};
+
+  // Determine which filter keys to process
+  let filterKeysToProcess = Object.keys(SMART_FILTER_PATTERNS);
+
+  if (categoryConfig) {
+    if (categoryConfig.include) {
+      // Only include specified filters
+      filterKeysToProcess = categoryConfig.include.filter(key => SMART_FILTER_PATTERNS[key]);
+    }
+    if (categoryConfig.exclude) {
+      // Remove excluded filters
+      filterKeysToProcess = filterKeysToProcess.filter(key => !categoryConfig.exclude!.includes(key));
+    }
+  }
 
   for (const product of products) {
     const text = `${product.name} ${product.description || ''}`.toLowerCase();
 
-    for (const [filterKey, { keywords }] of Object.entries(SMART_FILTER_PATTERNS)) {
+    for (const filterKey of filterKeysToProcess) {
+      const pattern = SMART_FILTER_PATTERNS[filterKey];
+      if (!pattern) continue;
+
       if (!filters[filterKey]) {
         filters[filterKey] = new Set();
       }
 
       // keywords is now a Record<string, string> where key is the search term and value is the normalized display name
-      for (const [searchTerm, displayName] of Object.entries(keywords)) {
+      for (const [searchTerm, displayName] of Object.entries(pattern.keywords)) {
         if (text.includes(searchTerm.toLowerCase())) {
           // Add the normalized display name (this prevents duplicates like Men/Men's)
           filters[filterKey].add(displayName);
@@ -525,6 +705,12 @@ export async function GET(
       brand: product.brand,
     }));
 
+    // Get full hierarchy (all ancestors) - needed for category filter config
+    const hierarchy = await getCategoryHierarchy(category.parentId);
+
+    // Get category-specific filter configuration
+    const categoryFilterConfig = getCategoryFilterConfig(category.slug, hierarchy);
+
     // Get all products for smart filter extraction (without pagination)
     const allProductsForFilters = await db.product.findMany({
       where: {
@@ -538,8 +724,8 @@ export async function GET(
       },
     });
 
-    // Extract smart filters from all products in this category
-    const availableSmartFilters = extractSmartFilters(allProductsForFilters);
+    // Extract smart filters from all products in this category (with category-specific config)
+    const availableSmartFilters = extractSmartFilters(allProductsForFilters, categoryFilterConfig);
 
     // Get filter labels for the response
     const smartFilterLabels: Record<string, string> = {};
@@ -581,9 +767,6 @@ export async function GET(
         name: 'asc',
       },
     });
-
-    // Get full hierarchy (all ancestors)
-    const hierarchy = await getCategoryHierarchy(category.parentId);
 
     // Build category response with updated children counts, nested children, and full hierarchy
     const categoryResponse = {
