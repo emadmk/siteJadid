@@ -120,18 +120,29 @@ export function ProductVariantsManager({ productId, categoryId }: ProductVariant
     const url = `/api/admin/products/${productId}/variants`;
     const method = data.variantId ? 'PUT' : 'POST';
 
-    const response = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+    console.log('ProductVariantsManager: Saving variant', { url, method, data });
 
-    if (!response.ok) {
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      console.log('ProductVariantsManager: Response status:', response.status);
+
       const result = await response.json();
-      throw new Error(result.error || 'Failed to save variant');
-    }
+      console.log('ProductVariantsManager: Response data:', result);
 
-    await fetchData();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save variant');
+      }
+
+      await fetchData();
+    } catch (err: any) {
+      console.error('ProductVariantsManager: Fetch error:', err);
+      throw err;
+    }
   };
 
   const handleUpdateVariant = async (variantId: string, data: Partial<Variant>) => {

@@ -119,25 +119,31 @@ export function VariantEditor({
     setLoading(true);
     setError('');
 
+    const dataToSend = {
+      variantId: variant?.id,
+      sku: formData.sku,
+      name: formData.name || generateName(),
+      color: formData.color || null,
+      size: formData.size || null,
+      material: formData.material || null,
+      basePrice: parseFloat(formData.basePrice) || 0,
+      salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null,
+      wholesalePrice: formData.wholesalePrice ? parseFloat(formData.wholesalePrice) : null,
+      gsaPrice: formData.gsaPrice ? parseFloat(formData.gsaPrice) : null,
+      costPrice: formData.costPrice ? parseFloat(formData.costPrice) : null,
+      stockQuantity: parseInt(formData.stockQuantity) || 0,
+      isActive: formData.isActive,
+      attributeValues: formData.attributeValues.filter(av => av.value),
+    };
+
+    console.log('VariantEditor: Submitting data:', dataToSend);
+
     try {
-      await onSave({
-        variantId: variant?.id,
-        sku: formData.sku,
-        name: formData.name || generateName(),
-        color: formData.color || null,
-        size: formData.size || null,
-        material: formData.material || null,
-        basePrice: parseFloat(formData.basePrice) || 0,
-        salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null,
-        wholesalePrice: formData.wholesalePrice ? parseFloat(formData.wholesalePrice) : null,
-        gsaPrice: formData.gsaPrice ? parseFloat(formData.gsaPrice) : null,
-        costPrice: formData.costPrice ? parseFloat(formData.costPrice) : null,
-        stockQuantity: parseInt(formData.stockQuantity) || 0,
-        isActive: formData.isActive,
-        attributeValues: formData.attributeValues.filter(av => av.value),
-      });
+      await onSave(dataToSend);
+      console.log('VariantEditor: Save successful');
       onClose();
     } catch (err: any) {
+      console.error('VariantEditor: Save failed:', err);
       setError(err.message || 'Failed to save variant');
     } finally {
       setLoading(false);
