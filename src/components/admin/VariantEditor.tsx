@@ -404,13 +404,13 @@ export function VariantEditor({
             >
               Cancel
             </Button>
-            <Button
+            <button
               type="submit"
               disabled={loading}
-              className="bg-safety-green-600 hover:bg-safety-green-700 text-white"
+              className="px-4 py-2 bg-safety-green-600 hover:bg-safety-green-700 text-white rounded-lg disabled:opacity-50"
             >
               {loading ? 'Saving...' : variant ? 'Update Variant' : 'Add Variant'}
-            </Button>
+            </button>
           </div>
         </form>
       </div>
