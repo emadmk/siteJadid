@@ -16,15 +16,32 @@ export default function AboutPage() {
       <div className="relative bg-gradient-to-r from-safety-green-700 to-safety-green-800 text-white overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative container mx-auto px-4 py-20">
-          <div className="max-w-3xl">
-            <h1 className="text-5xl font-bold mb-6">About ADA Supply</h1>
-            <p className="text-xl text-safety-green-100 mb-4">
-              Safety Done Right
-            </p>
-            <p className="text-lg text-white/90">
-              Your trusted partner for industrial safety equipment, personal protective equipment (PPE),
-              and comprehensive safety solutions for government agencies and commercial enterprises nationwide.
-            </p>
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="max-w-xl">
+              <h1 className="text-5xl font-bold mb-6">About ADA Supply</h1>
+              <p className="text-xl text-safety-green-100 mb-4">
+                Safety Done Right
+              </p>
+              <p className="text-lg text-white/90 mb-8">
+                Your trusted partner for industrial safety equipment, personal protective equipment (PPE),
+                and comprehensive safety solutions for government agencies and commercial enterprises nationwide.
+              </p>
+              <p className="text-3xl md:text-4xl font-light italic text-white/95 leading-relaxed">
+                <span className="text-safety-green-300">Small Enough to Care.</span>
+                <br />
+                <span className="text-white">Big Enough to Deliver.</span>
+              </p>
+            </div>
+            {/* 25 Years Badge */}
+            <div className="flex justify-center md:justify-end">
+              <Image
+                src="/images/imagesite/badge copy.png"
+                alt="Celebrating 25 Years Anniversary"
+                width={280}
+                height={280}
+                className="object-contain drop-shadow-2xl"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -78,6 +95,37 @@ export default function AboutPage() {
                   className="w-14 h-14 object-contain"
                 />
               </div>
+
+              {/* Certification Logos */}
+              <div className="flex flex-wrap justify-center gap-4 mt-8">
+                <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow">
+                  <Image
+                    src="/images/imagesite/ussmall.png"
+                    alt="US Small Business"
+                    width={180}
+                    height={120}
+                    className="object-contain h-24"
+                  />
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow">
+                  <Image
+                    src="/images/imagesite/2.jpeg"
+                    alt="Partner Certification"
+                    width={180}
+                    height={120}
+                    className="object-contain h-24"
+                  />
+                </div>
+                <div className="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow">
+                  <Image
+                    src="/images/imagesite/t2t.jpg"
+                    alt="Tunnel to Towers Foundation"
+                    width={180}
+                    height={120}
+                    className="object-contain h-24"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Right - Content */}
@@ -128,19 +176,6 @@ export default function AboutPage() {
                 </p>
               </div>
 
-              {/* Tunnel to Towers Logo */}
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <div className="text-center">
-                  <p className="text-sm text-gray-500 mb-3 font-medium">Proud Supporter of the</p>
-                  <Image
-                    src="/images/imagesite/t2t.jpg"
-                    alt="Tunnel to Towers Foundation"
-                    width={280}
-                    height={100}
-                    className="mx-auto object-contain"
-                  />
-                </div>
-              </div>
             </div>
           </div>
         </div>
