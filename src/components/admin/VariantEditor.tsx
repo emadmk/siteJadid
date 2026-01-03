@@ -117,9 +117,6 @@ export function VariantEditor({
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    console.log('=== VARIANT EDITOR SUBMIT STARTED ===');
-    alert('Submit clicked!'); // این قطعا باید نشون بده
-
     setLoading(true);
     setError('');
 
@@ -140,14 +137,10 @@ export function VariantEditor({
       attributeValues: formData.attributeValues.filter(av => av.value),
     };
 
-    console.log('VariantEditor: Submitting data:', dataToSend);
-
     try {
       await onSave(dataToSend);
-      console.log('VariantEditor: Save successful');
       onClose();
     } catch (err: any) {
-      console.error('VariantEditor: Save failed:', err);
       setError(err.message || 'Failed to save variant');
     } finally {
       setLoading(false);

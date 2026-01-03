@@ -144,13 +144,6 @@ export async function PUT(
 
     // Handle single variant update
     if (body.variantId) {
-      console.log('Updating variant with:', {
-        variantId: body.variantId,
-        color: body.color,
-        size: body.size,
-        material: body.material
-      });
-
       const variant = await db.productVariant.update({
         where: { id: body.variantId },
         data: {
@@ -175,12 +168,6 @@ export async function PUT(
             },
           },
         },
-      });
-
-      console.log('Updated variant result:', {
-        color: variant.color,
-        size: variant.size,
-        material: variant.material
       });
 
       // Update attribute values if provided
