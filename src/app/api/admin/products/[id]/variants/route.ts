@@ -144,14 +144,21 @@ export async function PUT(
 
     // Handle single variant update
     if (body.variantId) {
+      console.log('Updating variant with:', {
+        variantId: body.variantId,
+        color: body.color,
+        size: body.size,
+        material: body.material
+      });
+
       const variant = await db.productVariant.update({
         where: { id: body.variantId },
         data: {
           sku: body.sku,
           name: body.name,
-          color: body.color,
-          size: body.size,
-          material: body.material,
+          color: body.color !== undefined ? body.color : null,
+          size: body.size !== undefined ? body.size : null,
+          material: body.material !== undefined ? body.material : null,
           basePrice: body.basePrice,
           salePrice: body.salePrice,
           wholesalePrice: body.wholesalePrice,
@@ -168,6 +175,12 @@ export async function PUT(
             },
           },
         },
+      });
+
+      console.log('Updated variant result:', {
+        color: variant.color,
+        size: variant.size,
+        material: variant.material
       });
 
       // Update attribute values if provided
