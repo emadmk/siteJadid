@@ -23,9 +23,8 @@ export default function AboutPage() {
               <p className="text-xl text-safety-green-200 mb-4 font-medium">
                 Safety Done Right
               </p>
-              <p className="text-base text-white/90 mb-6">
-                Your trusted partner for industrial safety equipment, personal protective equipment (PPE),
-                and comprehensive safety solutions for government agencies and commercial enterprises nationwide.
+              <p className="text-xl text-white/90 mb-6">
+                Your trusted Industrial &amp; Safety Equipment Supplier!
               </p>
               <p className="text-2xl md:text-3xl font-light italic text-white/95 leading-relaxed">
                 <span className="text-safety-green-300">Small Enough to Care.</span>
