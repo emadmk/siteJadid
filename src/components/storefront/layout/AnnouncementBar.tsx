@@ -11,7 +11,7 @@ export function AnnouncementBar() {
           {/* Left - Welcome Message */}
           <div className="hidden md:flex items-center">
             <span className="text-gray-700">
-              Welcome to <span className="font-semibold text-black">ADA Supply</span> | Industrial & Safety Equipment Supplier
+              Welcome to <span className="font-semibold text-black">ADA Supply</span> | Your trusted Industrial & Safety Equipment Supplier!
             </span>
           </div>
 
