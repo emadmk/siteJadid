@@ -17,6 +17,9 @@ interface Variant {
   id: string;
   sku: string;
   name: string;
+  color?: string | null;
+  size?: string | null;
+  material?: string | null;
   basePrice: number;
   salePrice?: number | null;
   wholesalePrice?: number | null;
@@ -31,18 +34,35 @@ interface VariantSelectorProps {
   variants: Variant[];
   onVariantSelect: (variant: Variant | null) => void;
   selectedVariantId?: string;
+  onColorChange?: (color: string | null) => void;
 }
 
 export function VariantSelector({
   variants,
   onVariantSelect,
   selectedVariantId,
+  onColorChange,
 }: VariantSelectorProps) {
-  // Check if variants have attributeValues
+  // Check if variants have the new color/size/material fields
+  const hasColorSizeMaterial = variants.some(v => v.color || v.size || v.material);
+
+  // Check if variants have legacy attributeValues
   const hasAttributeValues = variants.some(v => v.attributeValues && v.attributeValues.length > 0);
 
   if (variants.length === 0) {
     return null;
+  }
+
+  // Use the new color/size/material selector if any variant has these fields
+  if (hasColorSizeMaterial) {
+    return (
+      <ColorSizeMaterialSelector
+        variants={variants}
+        onVariantSelect={onVariantSelect}
+        selectedVariantId={selectedVariantId}
+        onColorChange={onColorChange}
+      />
+    );
   }
 
   // If variants don't have attributeValues, use simple selection
@@ -56,7 +76,7 @@ export function VariantSelector({
     );
   }
 
-  // Use attribute-based selection
+  // Use legacy attribute-based selection
   return (
     <AttributeVariantSelector
       variants={variants}
@@ -197,6 +217,174 @@ function SimpleVariantSelector({
       {!selectedId && (
         <p className="text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
           Please select an option to add to cart
+        </p>
+      )}
+    </div>
+  );
+}
+
+// New Color/Size/Material selector - uses direct variant fields
+function ColorSizeMaterialSelector({
+  variants,
+  onVariantSelect,
+  selectedVariantId,
+  onColorChange,
+}: VariantSelectorProps) {
+  // Extract unique values for each attribute
+  const colors = Array.from(new Set(variants.map(v => v.color).filter((c): c is string => !!c)));
+  const sizes = Array.from(new Set(variants.map(v => v.size).filter((s): s is string => !!s)));
+  const materials = Array.from(new Set(variants.map(v => v.material).filter((m): m is string => !!m)));
+
+  // Track selected values
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+
+  // Initialize from selected variant
+  useEffect(() => {
+    if (selectedVariantId) {
+      const variant = variants.find(v => v.id === selectedVariantId);
+      if (variant) {
+        setSelectedColor(variant.color || null);
+        setSelectedSize(variant.size || null);
+        setSelectedMaterial(variant.material || null);
+      }
+    }
+  }, [selectedVariantId, variants]);
+
+  // Find matching variant when selections change
+  useEffect(() => {
+    const matchingVariant = variants.find(v => {
+      const colorMatch = !colors.length || !selectedColor || v.color === selectedColor;
+      const sizeMatch = !sizes.length || !selectedSize || v.size === selectedSize;
+      const materialMatch = !materials.length || !selectedMaterial || v.material === selectedMaterial;
+      return colorMatch && sizeMatch && materialMatch && v.isActive && v.stockQuantity > 0;
+    });
+
+    // Determine if all required selections are made
+    const allSelected =
+      (!colors.length || selectedColor) &&
+      (!sizes.length || selectedSize) &&
+      (!materials.length || selectedMaterial);
+
+    if (allSelected && matchingVariant) {
+      onVariantSelect(matchingVariant);
+    } else if (allSelected) {
+      // All selected but no matching variant (likely out of stock combination)
+      const outOfStockVariant = variants.find(v => {
+        const colorMatch = !colors.length || !selectedColor || v.color === selectedColor;
+        const sizeMatch = !sizes.length || !selectedSize || v.size === selectedSize;
+        const materialMatch = !materials.length || !selectedMaterial || v.material === selectedMaterial;
+        return colorMatch && sizeMatch && materialMatch;
+      });
+      onVariantSelect(outOfStockVariant || null);
+    } else {
+      onVariantSelect(null);
+    }
+  }, [selectedColor, selectedSize, selectedMaterial, variants, colors.length, sizes.length, materials.length]);
+
+  // Notify parent when color changes (for image switching)
+  const handleColorChange = (color: string) => {
+    setSelectedColor(color);
+    onColorChange?.(color);
+  };
+
+  // Check if a value is available based on current selections
+  const isValueAvailable = (type: 'color' | 'size' | 'material', value: string) => {
+    return variants.some(v => {
+      const colorMatch = type === 'color' ? v.color === value : (!selectedColor || v.color === selectedColor);
+      const sizeMatch = type === 'size' ? v.size === value : (!selectedSize || v.size === selectedSize);
+      const materialMatch = type === 'material' ? v.material === value : (!selectedMaterial || v.material === selectedMaterial);
+      return colorMatch && sizeMatch && materialMatch && v.isActive && v.stockQuantity > 0;
+    });
+  };
+
+  // Sort sizes intelligently (numeric first, then alphabetic)
+  const sortedSizes = [...sizes].sort((a, b) => {
+    const aNum = parseFloat(a);
+    const bNum = parseFloat(b);
+    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+    if (!isNaN(aNum)) return -1;
+    if (!isNaN(bNum)) return 1;
+    // Sort by standard size order
+    const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
+    const aIdx = sizeOrder.indexOf(a.toUpperCase());
+    const bIdx = sizeOrder.indexOf(b.toUpperCase());
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    return a.localeCompare(b);
+  });
+
+  const renderAttributeSection = (
+    label: string,
+    values: string[],
+    selected: string | null,
+    onSelect: (value: string) => void,
+    type: 'color' | 'size' | 'material'
+  ) => {
+    if (values.length === 0) return null;
+
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-gray-700">{label}</label>
+          {selected && (
+            <span className="text-sm text-gray-500">
+              Selected: <span className="font-medium text-black">{selected}</span>
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {values.map(value => {
+            const isSelected = selected === value;
+            const isAvailable = isValueAvailable(type, value);
+
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onSelect(value)}
+                disabled={!isAvailable}
+                className={`
+                  relative px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all
+                  ${isSelected
+                    ? 'border-safety-green-600 bg-safety-green-50 text-safety-green-700'
+                    : isAvailable
+                      ? 'border-gray-300 hover:border-gray-400 text-gray-700'
+                      : 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50 line-through'
+                  }
+                `}
+              >
+                {value}
+                {isSelected && (
+                  <Check className="w-4 h-4 absolute -top-1 -right-1 bg-safety-green-600 text-white rounded-full p-0.5" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const allRequired =
+    (colors.length > 0 ? 1 : 0) +
+    (sizes.length > 0 ? 1 : 0) +
+    (materials.length > 0 ? 1 : 0);
+
+  const selectedCount =
+    (selectedColor ? 1 : 0) +
+    (selectedSize ? 1 : 0) +
+    (selectedMaterial ? 1 : 0);
+
+  return (
+    <div className="space-y-4">
+      {renderAttributeSection('Color', colors, selectedColor, handleColorChange, 'color')}
+      {renderAttributeSection('Size', sortedSizes, selectedSize, setSelectedSize, 'size')}
+      {renderAttributeSection('Material', materials, selectedMaterial, setSelectedMaterial, 'material')}
+
+      {selectedCount < allRequired && selectedCount > 0 && (
+        <p className="text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+          Please select all options to add to cart
         </p>
       )}
     </div>

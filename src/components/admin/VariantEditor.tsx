@@ -20,6 +20,9 @@ interface Variant {
   id?: string;
   sku: string;
   name: string;
+  color?: string | null;
+  size?: string | null;
+  material?: string | null;
   basePrice: number;
   salePrice?: number | null;
   wholesalePrice?: number | null;
@@ -56,6 +59,9 @@ export function VariantEditor({
   const [formData, setFormData] = useState({
     sku: variant?.sku || '',
     name: variant?.name || '',
+    color: variant?.color || '',
+    size: variant?.size || '',
+    material: variant?.material || '',
     basePrice: variant?.basePrice?.toString() || '',
     salePrice: variant?.salePrice?.toString() || '',
     wholesalePrice: variant?.wholesalePrice?.toString() || '',
@@ -69,17 +75,21 @@ export function VariantEditor({
     })),
   });
 
-  // Auto-generate variant name from attribute values
+  // Auto-generate variant name from color, size, material
   const generateName = () => {
-    const parts = formData.attributeValues
-      .map((av, idx) => {
-        if (av.value) {
-          return `${variantAttributes[idx]?.attributeName}: ${av.value}`;
-        }
-        return null;
-      })
-      .filter(Boolean);
-    return parts.join(', ');
+    const parts: string[] = [];
+    if (formData.color) parts.push(formData.color);
+    if (formData.size) parts.push(formData.size);
+    if (formData.material) parts.push(formData.material);
+
+    // Also include legacy attributeValues if any
+    formData.attributeValues.forEach((av, idx) => {
+      if (av.value) {
+        parts.push(`${variantAttributes[idx]?.attributeName}: ${av.value}`);
+      }
+    });
+
+    return parts.join(' / ') || 'Variant';
   };
 
   const handleAttributeChange = (index: number, value: string) => {
@@ -114,6 +124,9 @@ export function VariantEditor({
         variantId: variant?.id,
         sku: formData.sku,
         name: formData.name || generateName(),
+        color: formData.color || null,
+        size: formData.size || null,
+        material: formData.material || null,
         basePrice: parseFloat(formData.basePrice) || 0,
         salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null,
         wholesalePrice: formData.wholesalePrice ? parseFloat(formData.wholesalePrice) : null,
@@ -168,7 +181,47 @@ export function VariantEditor({
             />
           </div>
 
-          {/* Attribute Selectors */}
+          {/* Color, Size, Material */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Color
+              </label>
+              <input
+                type="text"
+                value={formData.color}
+                onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                placeholder="e.g., Orange, Black"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Size
+              </label>
+              <input
+                type="text"
+                value={formData.size}
+                onChange={(e) => setFormData(prev => ({ ...prev, size: e.target.value }))}
+                placeholder="e.g., S, M, L, XL"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Material
+              </label>
+              <input
+                type="text"
+                value={formData.material}
+                onChange={(e) => setFormData(prev => ({ ...prev, material: e.target.value }))}
+                placeholder="e.g., Leather, Cotton"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+              />
+            </div>
+          </div>
+
+          {/* Legacy Attribute Selectors */}
           {variantAttributes.length > 0 && (
             <div className="grid grid-cols-2 gap-4">
               {variantAttributes.map((attr, idx) => (

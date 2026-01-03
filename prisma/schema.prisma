@@ -427,6 +427,7 @@ model Product {
   // Media
   images          String[]
   videos          String[]
+  colorImages     Json?         // Map of color name to image indices/URLs: {"Orange": [0, 1], "Black": [2, 3]}
 
   // Physical Attributes
   weight          Decimal?      @db.Decimal(8, 2)
@@ -507,6 +508,11 @@ model ProductVariant {
   sku             String    @unique
   name            String
 
+  // Variant Attributes (direct fields for easy filtering)
+  color           String?   // e.g., "Orange", "Black", "Hi-Vis Yellow"
+  size            String?   // e.g., "S", "M", "L", "XL", "13", "14"
+  material        String?   // e.g., "Leather", "Rubber", "Polyester"
+
   // Multiple price types (same as Product)
   basePrice       Decimal   @db.Decimal(12, 2)
   salePrice       Decimal?  @db.Decimal(12, 2)
@@ -534,6 +540,9 @@ model ProductVariant {
 
   @@index([productId])
   @@index([sku])
+  @@index([color])
+  @@index([size])
+  @@index([material])
 }
 
 // Variant-Attribute relationship (links variants to their attribute values)

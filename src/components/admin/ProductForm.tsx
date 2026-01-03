@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Plus, X, Upload, Image as ImageIcon, Loader2, Star } from 'lucide-react';
 import Link from 'next/link';
 import { ProductVariantsManager } from './ProductVariantsManager';
+import { ColorImageMapper } from './ColorImageMapper';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 interface ProductFormProps {
@@ -83,6 +84,22 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
   const [tierPricing, setTierPricing] = useState(
     product?.tierPricing || []
   );
+
+  // Variants and color images for color-image mapping
+  const [variants, setVariants] = useState<{ color?: string | null }[]>([]);
+  const [colorImages, setColorImages] = useState<Record<string, number[]> | null>(
+    product?.colorImages as Record<string, number[]> | null
+  );
+
+  // Fetch variants when product exists
+  useEffect(() => {
+    if (product?.id) {
+      fetch(`/api/admin/products/${product.id}/variants`)
+        .then(res => res.json())
+        .then(data => setVariants(data))
+        .catch(console.error);
+    }
+  }, [product?.id]);
 
   const handleNameChange = (name: string) => {
     setFormData(prev => ({
@@ -275,6 +292,29 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Save color-image mappings
+  const handleSaveColorImages = async (newColorImages: Record<string, number[]>) => {
+    if (!product?.id) return;
+
+    try {
+      const response = await fetch(`/api/admin/products/${product.id}/color-images`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ colorImages: newColorImages }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save color images');
+      }
+
+      setColorImages(newColorImages);
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
     }
   };
 
@@ -846,6 +886,23 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
           <p className="text-gray-500 text-sm">
             Save the product first, then you can add variants.
           </p>
+        </div>
+      )}
+
+      {/* Color-Image Mapping - Only show for existing products with images */}
+      {product?.id && images.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <h2 className="text-xl font-bold text-black mb-4">Color-Image Mapping</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Link product images to color variants. When a customer selects a color, the linked images will be shown.
+          </p>
+          <ColorImageMapper
+            productId={product.id}
+            images={images}
+            variants={variants}
+            colorImages={colorImages}
+            onSave={handleSaveColorImages}
+          />
         </div>
       )}
 

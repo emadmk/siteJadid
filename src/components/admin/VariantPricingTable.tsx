@@ -17,6 +17,9 @@ interface Variant {
   id: string;
   sku: string;
   name: string;
+  color?: string | null;
+  size?: string | null;
+  material?: string | null;
   basePrice: number;
   salePrice?: number | null;
   wholesalePrice?: number | null;
@@ -136,6 +139,22 @@ export function VariantPricingTable({
               <td className="px-4 py-3">
                 <div className="font-mono text-sm text-gray-900">{variant.sku}</div>
                 <div className="flex flex-wrap gap-1 mt-1">
+                  {variant.color && (
+                    <span className="inline-block bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-xs">
+                      Color: {variant.color}
+                    </span>
+                  )}
+                  {variant.size && (
+                    <span className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
+                      Size: {variant.size}
+                    </span>
+                  )}
+                  {variant.material && (
+                    <span className="inline-block bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">
+                      Material: {variant.material}
+                    </span>
+                  )}
+                  {/* Legacy attributeValues */}
                   {variant.attributeValues.map(av => (
                     <span
                       key={av.attribute.id}

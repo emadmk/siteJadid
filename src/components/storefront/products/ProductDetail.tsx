@@ -72,6 +72,9 @@ interface Variant {
   id: string;
   sku: string;
   name: string;
+  color?: string | null;
+  size?: string | null;
+  material?: string | null;
   basePrice: number;
   salePrice?: number | null;
   wholesalePrice?: number | null;
@@ -106,6 +109,7 @@ interface ProductDetailProps {
     priceUnit?: string;
     qtyPerPack?: number;
     images: string[];
+    colorImages?: Record<string, number[]> | null;
     isFeatured: boolean;
     isBestSeller: boolean;
     isNewArrival: boolean;
@@ -159,6 +163,26 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
   const [hoverRating, setHoverRating] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [showEditDrawer, setShowEditDrawer] = useState(false);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+
+  // Handle color change - filter images based on colorImages mapping
+  const handleColorChange = (color: string | null) => {
+    setSelectedColor(color);
+    // Reset to first image when color changes
+    if (color && product.colorImages && product.colorImages[color]) {
+      const colorImageIndices = product.colorImages[color];
+      if (colorImageIndices.length > 0) {
+        setSelectedImage(colorImageIndices[0]);
+      }
+    } else {
+      setSelectedImage(0);
+    }
+  };
+
+  // Get images to display - filtered by color if applicable
+  const displayImages = selectedColor && product.colorImages && product.colorImages[selectedColor]
+    ? product.colorImages[selectedColor].map(idx => product.images[idx]).filter(Boolean)
+    : product.images;
 
   // Check if user is admin
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
@@ -204,7 +228,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
     });
   }, [product.id]);
 
-  const images = product.images || [];
+  const images = displayImages.length > 0 ? displayImages : (product.images || []);
   const averageRating = product.reviews.length > 0
     ? product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length
     : 0;
@@ -519,6 +543,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                   variants={product.variants!}
                   onVariantSelect={setSelectedVariant}
                   selectedVariantId={selectedVariant?.id}
+                  onColorChange={handleColorChange}
                 />
               </div>
             )}
