@@ -114,8 +114,12 @@ export function VariantEditor({
     return parts.join(', ');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    console.log('=== VARIANT EDITOR SUBMIT STARTED ===');
+    alert('Submit clicked!'); // این قطعا باید نشون بده
+
     setLoading(true);
     setError('');
 
@@ -396,17 +400,17 @@ export function VariantEditor({
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button
+            <button
               type="button"
-              variant="outline"
               onClick={onClose}
-              className="border-gray-300"
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
               Cancel
-            </Button>
+            </button>
             <button
-              type="submit"
+              type="button"
               disabled={loading}
+              onClick={() => handleSubmit()}
               className="px-4 py-2 bg-safety-green-600 hover:bg-safety-green-700 text-white rounded-lg disabled:opacity-50"
             >
               {loading ? 'Saving...' : variant ? 'Update Variant' : 'Add Variant'}
