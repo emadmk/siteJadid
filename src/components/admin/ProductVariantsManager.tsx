@@ -26,6 +26,9 @@ interface Variant {
   id: string;
   sku: string;
   name: string;
+  color?: string | null;
+  size?: string | null;
+  material?: string | null;
   basePrice: number;
   salePrice?: number | null;
   wholesalePrice?: number | null;
