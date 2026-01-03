@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 interface AttributeValue {
   attributeId: string;
@@ -119,60 +119,60 @@ function SimpleVariantSelector({
     return name;
   };
 
-  // Detect if these are size variants (common pattern)
-  const isNumericSizes = variants.every(v => {
-    const parsed = parseVariantName(v.name);
-    return !isNaN(parseFloat(parsed));
-  });
+  // Standard size order for sorting
+  const sizeOrder: Record<string, number> = {
+    'XXS': 1, '2XS': 1,
+    'XS': 2,
+    'S': 3, 'SMALL': 3,
+    'M': 4, 'MEDIUM': 4, 'MED': 4,
+    'L': 5, 'LARGE': 5,
+    'XL': 6,
+    'XXL': 7, '2XL': 7,
+    'XXXL': 8, '3XL': 8,
+    'XXXXL': 9, '4XL': 9,
+    'XXXXXL': 10, '5XL': 10,
+    '6XL': 11,
+    '7XL': 12,
+  };
 
-  // Sort by numeric value if sizes
+  // Sort variants by size (small to large)
   const sortedVariants = [...variants].sort((a, b) => {
-    if (isNumericSizes) {
-      return parseFloat(parseVariantName(a.name)) - parseFloat(parseVariantName(b.name));
+    const aName = parseVariantName(a.name).toUpperCase().trim();
+    const bName = parseVariantName(b.name).toUpperCase().trim();
+
+    // Check for standard size names
+    const aOrder = sizeOrder[aName];
+    const bOrder = sizeOrder[bName];
+
+    if (aOrder !== undefined && bOrder !== undefined) {
+      return aOrder - bOrder;
     }
+    if (aOrder !== undefined) return -1;
+    if (bOrder !== undefined) return 1;
+
+    // Handle numeric sizes (shoes, etc.) - sort ascending
+    const aNum = parseFloat(parseVariantName(a.name));
+    const bNum = parseFloat(parseVariantName(b.name));
+    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+    if (!isNaN(aNum)) return -1;
+    if (!isNaN(bNum)) return 1;
+
+    // Fallback to alphabetic
     return a.name.localeCompare(b.name);
   });
 
-  // If more than 10 variants, use dropdown
-  if (variants.length > 10) {
-    return (
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
-          Select Option
-        </label>
-        <div className="relative">
-          <select
-            value={selectedId || ''}
-            onChange={(e) => setSelectedId(e.target.value || null)}
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg appearance-none bg-white focus:border-safety-green-600 focus:ring-2 focus:ring-safety-green-200 transition-colors"
-          >
-            <option value="">Choose an option...</option>
-            {sortedVariants.map(variant => (
-              <option
-                key={variant.id}
-                value={variant.id}
-                disabled={!variant.isActive || variant.stockQuantity === 0}
-              >
-                {variant.name}
-                {variant.stockQuantity === 0 ? ' (Out of Stock)' : ''}
-                {variant.basePrice !== sortedVariants[0].basePrice
-                  ? ` - $${variant.basePrice.toFixed(2)}`
-                  : ''}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-        </div>
-      </div>
-    );
-  }
+  // Detect if these are size variants
+  const isSizeVariants = variants.some(v => {
+    const parsed = parseVariantName(v.name).toUpperCase().trim();
+    return sizeOrder[parsed] !== undefined || !isNaN(parseFloat(parsed));
+  });
 
-  // Use buttons for less than 10 variants
+  // Always use buttons (no dropdown)
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <label className="block text-sm font-medium text-gray-700">
-          {isNumericSizes ? 'Size' : 'Select Option'}
+          {isSizeVariants ? 'Size' : 'Select Option'}
         </label>
         {selectedId && (
           <span className="text-sm text-gray-500">
@@ -299,18 +299,45 @@ function ColorSizeMaterialSelector({
     });
   };
 
-  // Sort sizes intelligently (numeric first, then alphabetic)
+  // Sort sizes intelligently - small to large
   const sortedSizes = [...sizes].sort((a, b) => {
+    // Standard clothing size order (including variations)
+    const sizeOrder: Record<string, number> = {
+      'XXS': 1, '2XS': 1,
+      'XS': 2,
+      'S': 3, 'SMALL': 3,
+      'M': 4, 'MEDIUM': 4, 'MED': 4,
+      'L': 5, 'LARGE': 5,
+      'XL': 6,
+      'XXL': 7, '2XL': 7,
+      'XXXL': 8, '3XL': 8,
+      'XXXXL': 9, '4XL': 9,
+      'XXXXXL': 10, '5XL': 10,
+      '6XL': 11,
+      '7XL': 12,
+    };
+
+    const aUpper = a.toUpperCase().trim();
+    const bUpper = b.toUpperCase().trim();
+
+    // Check for standard size names
+    const aOrder = sizeOrder[aUpper];
+    const bOrder = sizeOrder[bUpper];
+
+    if (aOrder !== undefined && bOrder !== undefined) {
+      return aOrder - bOrder;
+    }
+    if (aOrder !== undefined) return -1;
+    if (bOrder !== undefined) return 1;
+
+    // Handle numeric sizes (shoes, etc.) - sort ascending
     const aNum = parseFloat(a);
     const bNum = parseFloat(b);
     if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
     if (!isNaN(aNum)) return -1;
     if (!isNaN(bNum)) return 1;
-    // Sort by standard size order
-    const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
-    const aIdx = sizeOrder.indexOf(a.toUpperCase());
-    const bIdx = sizeOrder.indexOf(b.toUpperCase());
-    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+
+    // Fallback to alphabetic
     return a.localeCompare(b);
   });
 
