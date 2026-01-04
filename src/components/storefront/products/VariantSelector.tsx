@@ -112,11 +112,34 @@ function SimpleVariantSelector({
 
   // Parse variant name to extract size/attribute info
   const parseVariantName = (name: string): string => {
-    // If name contains "Size:" or similar, extract just the value
+    // Handle "Size: X, Width: Y" format -> "X Y"
+    const sizeWidthMatch = name.match(/Size:\s*([^,]+),?\s*Width:\s*(\w+)/i);
+    if (sizeWidthMatch) {
+      return `${sizeWidthMatch[1].trim()} ${sizeWidthMatch[2].trim()}`;
+    }
+
+    // Handle "Size: X" format
+    const sizeMatch = name.match(/Size:\s*(.+)/i);
+    if (sizeMatch) {
+      return sizeMatch[1].trim();
+    }
+
+    // If name contains ":" but not Size/Width pattern, extract just the value
     if (name.includes(':')) {
       return name.split(':').pop()?.trim() || name;
     }
     return name;
+  };
+
+  // Extract numeric size from variant name for sorting
+  const extractNumericSize = (name: string): number | null => {
+    const parsed = parseVariantName(name);
+    // Try to extract first number from the string (e.g., "8.5 D" -> 8.5)
+    const match = parsed.match(/^(\d+\.?\d*)/);
+    if (match) {
+      return parseFloat(match[1]);
+    }
+    return null;
   };
 
   // Standard size order for sorting
@@ -150,12 +173,16 @@ function SimpleVariantSelector({
     if (aOrder !== undefined) return -1;
     if (bOrder !== undefined) return 1;
 
-    // Handle numeric sizes (shoes, etc.) - sort ascending
-    const aNum = parseFloat(parseVariantName(a.name));
-    const bNum = parseFloat(parseVariantName(b.name));
-    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
-    if (!isNaN(aNum)) return -1;
-    if (!isNaN(bNum)) return 1;
+    // Handle numeric sizes (shoes, etc.) - sort ascending by number first
+    const aNum = extractNumericSize(a.name);
+    const bNum = extractNumericSize(b.name);
+    if (aNum !== null && bNum !== null) {
+      if (aNum !== bNum) return aNum - bNum;
+      // Same size number, sort by width (D before EE)
+      return aName.localeCompare(bName);
+    }
+    if (aNum !== null) return -1;
+    if (bNum !== null) return 1;
 
     // Fallback to alphabetic
     return a.name.localeCompare(b.name);

@@ -435,7 +435,15 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className={`grid gap-3 ${
+              category.children.length === 1
+                ? 'grid-cols-1 max-w-xs'
+                : category.children.length === 2
+                  ? 'grid-cols-2 max-w-lg'
+                  : category.children.length === 3
+                    ? 'grid-cols-2 sm:grid-cols-3 max-w-2xl'
+                    : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+            }`}>
               {category.children.map((child) => (
                 <div key={child.id} className="bg-gray-50 rounded-lg border border-gray-200 hover:border-safety-green-300 hover:shadow-md transition-all overflow-hidden group">
                   <Link
