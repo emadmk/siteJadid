@@ -4,9 +4,30 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
-import { FileText, CheckCircle, XCircle, Clock, DollarSign, Eye } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Clock, DollarSign, Eye, Package, Phone, Mail, Building2 } from 'lucide-react';
+import { BulkOrderActions } from './BulkOrderActions';
 
 type QuoteStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'CONVERTED';
+type QuoteRequestStatus = 'PENDING' | 'CONTACTED' | 'CONVERTED' | 'CLOSED';
+
+async function getBulkOrderRequests() {
+  const requests = await db.quoteRequest.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
+  return requests;
+}
+
+async function getBulkOrderStats() {
+  const [pending, contacted, converted, closed, total] = await Promise.all([
+    db.quoteRequest.count({ where: { status: 'PENDING' } }),
+    db.quoteRequest.count({ where: { status: 'CONTACTED' } }),
+    db.quoteRequest.count({ where: { status: 'CONVERTED' } }),
+    db.quoteRequest.count({ where: { status: 'CLOSED' } }),
+    db.quoteRequest.count(),
+  ]);
+
+  return { pending, contacted, converted, closed, total };
+}
 
 async function getQuotes() {
   const quotes = await db.quote.findMany({
@@ -79,7 +100,12 @@ export default async function QuotesPage() {
     redirect('/account');
   }
 
-  const [quotes, stats] = await Promise.all([getQuotes(), getQuoteStats()]);
+  const [quotes, stats, bulkOrders, bulkOrderStats] = await Promise.all([
+    getQuotes(),
+    getQuoteStats(),
+    getBulkOrderRequests(),
+    getBulkOrderStats(),
+  ]);
 
   const statusColors: Record<QuoteStatus, string> = {
     DRAFT: 'bg-gray-100 text-gray-800',
@@ -89,6 +115,13 @@ export default async function QuotesPage() {
     REJECTED: 'bg-red-100 text-red-800',
     CONVERTED: 'bg-blue-100 text-blue-800',
     EXPIRED: 'bg-gray-100 text-gray-800',
+  };
+
+  const requestStatusColors: Record<QuoteRequestStatus, string> = {
+    PENDING: 'bg-yellow-100 text-yellow-800',
+    CONTACTED: 'bg-blue-100 text-blue-800',
+    CONVERTED: 'bg-green-100 text-green-800',
+    CLOSED: 'bg-gray-100 text-gray-800',
   };
 
   return (
@@ -152,6 +185,119 @@ export default async function QuotesPage() {
           <div className="text-sm text-gray-600">Total Quote Value</div>
         </div>
       </div>
+
+      {/* Bulk Order Requests Section */}
+      {bulkOrderStats.total > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-black flex items-center gap-2">
+                <Package className="w-5 h-5 text-safety-green-600" />
+                Bulk Order Requests
+              </h2>
+              <p className="text-sm text-gray-600">
+                {bulkOrderStats.pending} pending requests need attention
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Company / Contact
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contact Info
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Product Details
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Quantity
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Timeline
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {bulkOrders.map((request: any) => (
+                    <tr key={request.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-start gap-2">
+                          <Building2 className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <div className="text-sm font-medium text-black">{request.companyName}</div>
+                            <div className="text-xs text-gray-500">{request.contactName}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1 text-sm text-gray-600">
+                            <Mail className="w-3 h-3" />
+                            <a href={`mailto:${request.email}`} className="hover:text-safety-green-600">
+                              {request.email}
+                            </a>
+                          </div>
+                          {request.phone && (
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                              <Phone className="w-3 h-3" />
+                              <a href={`tel:${request.phone}`} className="hover:text-safety-green-600">
+                                {request.phone}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-black max-w-xs">
+                          <pre className="whitespace-pre-wrap font-sans text-xs bg-gray-50 p-2 rounded">
+                            {request.products}
+                          </pre>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-black">{request.quantity}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-600">{request.timeline || 'Not specified'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            requestStatusColors[request.status as QuoteRequestStatus]
+                          }`}
+                        >
+                          {request.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <BulkOrderActions requestId={request.id} currentStatus={request.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quotes Table */}
       <div className="bg-white rounded-lg border">

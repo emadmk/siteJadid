@@ -166,6 +166,19 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
   const [showEditDrawer, setShowEditDrawer] = useState(false);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
 
+  // Bulk Order Modal
+  const [showBulkOrderModal, setShowBulkOrderModal] = useState(false);
+  const [bulkOrderForm, setBulkOrderForm] = useState({
+    companyName: '',
+    contactName: '',
+    email: '',
+    phone: '',
+    quantity: '',
+    timeline: '',
+    message: '',
+  });
+  const [isSubmittingBulkOrder, setIsSubmittingBulkOrder] = useState(false);
+
   // Handle color change - filter images based on colorImages mapping
   const handleColorChange = (color: string | null) => {
     setSelectedColor(color);
@@ -305,6 +318,49 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
       toast.error(error.message || 'Failed to submit review');
     } finally {
       setIsSubmittingReview(false);
+    }
+  };
+
+  const handleSubmitBulkOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingBulkOrder(true);
+
+    try {
+      const response = await fetch('/api/storefront/quote-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...bulkOrderForm,
+          productId: product.id,
+          productName: product.name,
+          productSku: currentSku,
+          variantId: selectedVariant?.id,
+          variantName: selectedVariant?.name,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to submit request');
+      }
+
+      toast.success('Bulk order request submitted! We will contact you shortly.');
+      setShowBulkOrderModal(false);
+      setBulkOrderForm({
+        companyName: '',
+        contactName: '',
+        email: '',
+        phone: '',
+        quantity: '',
+        timeline: '',
+        message: '',
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to submit request');
+    } finally {
+      setIsSubmittingBulkOrder(false);
     }
   };
 
@@ -690,14 +746,15 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
               </Link>
             </div>
 
-            {/* Request Quote */}
+            {/* Request Bulk Order */}
             <Button
               variant="outline"
               size="lg"
               className="w-full border-black text-black hover:bg-black hover:text-white"
+              onClick={() => setShowBulkOrderModal(true)}
             >
               <Building2 className="w-5 h-5 mr-2" />
-              Request B2B Quote
+              Request Bulk Order
             </Button>
 
             {/* Trust Badges */}
@@ -1092,6 +1149,175 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                     </>
                   ) : (
                     'Submit Review'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Order Modal */}
+      {showBulkOrderModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowBulkOrderModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-xl font-bold text-black mb-2">Request Bulk Order</h3>
+            <p className="text-gray-600 text-sm mb-4">
+              Fill out the form below and our team will contact you with pricing.
+            </p>
+
+            {/* Product Info */}
+            <div className="bg-gray-50 rounded-lg p-3 mb-4">
+              <div className="flex items-center gap-3">
+                {images[0] && (
+                  <img
+                    src={images[0]}
+                    alt={product.name}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                )}
+                <div>
+                  <div className="font-medium text-black line-clamp-1">{product.name}</div>
+                  <div className="text-sm text-gray-600">SKU: {currentSku}</div>
+                  {selectedVariant && (
+                    <div className="text-sm text-safety-green-600">{selectedVariant.name}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmitBulkOrder} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Company Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={bulkOrderForm.companyName}
+                    onChange={(e) => setBulkOrderForm(prev => ({ ...prev, companyName: e.target.value }))}
+                    placeholder="Your company"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-safety-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Contact Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={bulkOrderForm.contactName}
+                    onChange={(e) => setBulkOrderForm(prev => ({ ...prev, contactName: e.target.value }))}
+                    placeholder="Your name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-safety-green-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={bulkOrderForm.email}
+                    onChange={(e) => setBulkOrderForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="you@company.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-safety-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={bulkOrderForm.phone}
+                    onChange={(e) => setBulkOrderForm(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="(555) 123-4567"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-safety-green-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Quantity Needed *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={bulkOrderForm.quantity}
+                    onChange={(e) => setBulkOrderForm(prev => ({ ...prev, quantity: e.target.value }))}
+                    placeholder="e.g., 100-500 units"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-safety-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-black mb-1">
+                    Timeline
+                  </label>
+                  <select
+                    value={bulkOrderForm.timeline}
+                    onChange={(e) => setBulkOrderForm(prev => ({ ...prev, timeline: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-safety-green-500 focus:border-transparent"
+                  >
+                    <option value="">Select timeline</option>
+                    <option value="ASAP">ASAP</option>
+                    <option value="1-2 weeks">1-2 weeks</option>
+                    <option value="1 month">1 month</option>
+                    <option value="2-3 months">2-3 months</option>
+                    <option value="Flexible">Flexible</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-black mb-1">
+                  Additional Notes
+                </label>
+                <textarea
+                  value={bulkOrderForm.message}
+                  onChange={(e) => setBulkOrderForm(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="Any special requirements, customization needs, or questions..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-safety-green-500 focus:border-transparent resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowBulkOrderModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmittingBulkOrder}
+                  className="flex-1 bg-safety-green-600 hover:bg-safety-green-700"
+                >
+                  {isSubmittingBulkOrder ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Request'
                   )}
                 </Button>
               </div>
