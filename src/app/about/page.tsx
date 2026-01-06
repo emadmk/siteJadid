@@ -247,7 +247,7 @@ export default function AboutPage() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Fast Shipping</h3>
               <p className="text-gray-600">
-                Same-day shipping on orders placed before 2 PM EST. Free shipping on qualifying orders nationwide.
+                Same-day shipping on orders placed before 2 PM EST. Fast and reliable delivery nationwide.
               </p>
             </div>
 

@@ -33,7 +33,7 @@ const faqs: FAQItem[] = [
   {
     category: 'Shipping',
     question: 'How long does shipping take?',
-    answer: 'Standard shipping takes 5-7 business days, express shipping takes 2-3 business days, and overnight shipping delivers the next business day. Free shipping is available on all orders over $99.',
+    answer: 'Standard shipping takes 5-7 business days, express shipping takes 2-3 business days, and overnight shipping delivers the next business day.',
   },
   {
     category: 'Shipping',
@@ -94,7 +94,7 @@ const faqs: FAQItem[] = [
   {
     category: 'Account',
     question: 'How does the loyalty program work?',
-    answer: 'Earn 1 point for every dollar spent. Redeem points for discounts on future purchases. Tier up from Bronze to Silver, Gold, and Platinum for additional benefits like free shipping, early access to sales, and exclusive products.',
+    answer: 'Earn 1 point for every dollar spent. Redeem points for discounts on future purchases. Tier up from Bronze to Silver, Gold, and Platinum for additional benefits like early access to sales and exclusive products.',
   },
 
   // Products

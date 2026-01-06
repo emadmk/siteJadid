@@ -13,7 +13,7 @@ export default function ShippingPolicyPage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-6">Shipping Policy</h1>
 
           <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8">
-            <p className="text-blue-700 font-semibold">Free Shipping on orders over $99!</p>
+            <p className="text-blue-700 font-semibold">Fast and reliable shipping across the nation!</p>
           </div>
 
           <div className="prose prose-gray max-w-none">

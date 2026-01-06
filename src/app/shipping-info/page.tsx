@@ -14,7 +14,7 @@ export default function ShippingInfoPage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-6">Shipping Information</h1>
 
           <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8">
-            <p className="text-blue-700 font-semibold">Free Standard Shipping on all orders over $99!</p>
+            <p className="text-blue-700 font-semibold">Fast and reliable shipping across the nation!</p>
           </div>
 
           {/* Shipping Methods */}
@@ -34,7 +34,7 @@ export default function ShippingInfoPage() {
                   </p>
                   <p className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-gray-500" />
-                    <span>$9.99 (Free over $99)</span>
+                    <span>$9.99</span>
                   </p>
                   <p className="text-sm text-gray-600 mt-3">
                     Perfect for non-urgent orders. Most cost-effective option.

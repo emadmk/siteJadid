@@ -17,13 +17,6 @@ export default function ShippingPage() {
 
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto space-y-8">
-          {/* Free Shipping Banner */}
-          <div className="bg-gradient-to-r from-safety-green-600 to-safety-green-700 text-white rounded-lg p-8 text-center">
-            <Truck className="w-16 h-16 mx-auto mb-4" />
-            <h2 className="text-3xl font-bold mb-2">FREE SHIPPING</h2>
-            <p className="text-xl text-safety-green-100">On all orders over $99</p>
-          </div>
-
           {/* Shipping Rates */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="p-6 border-b border-gray-200">
@@ -50,20 +43,12 @@ export default function ShippingPage() {
                   <div className="text-lg font-bold text-black">$35.00</div>
                 </div>
 
-                <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
                   <div>
                     <div className="font-semibold text-black">Overnight Shipping</div>
                     <div className="text-sm text-gray-600">Next business day</div>
                   </div>
                   <div className="text-lg font-bold text-black">$75.00</div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-safety-green-700">Free Shipping</div>
-                    <div className="text-sm text-gray-600">Orders over $99</div>
-                  </div>
-                  <div className="text-lg font-bold text-safety-green-600">FREE</div>
                 </div>
               </div>
 

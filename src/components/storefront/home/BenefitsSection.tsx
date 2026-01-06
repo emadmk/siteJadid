@@ -5,8 +5,8 @@ import { Truck, ShieldCheck, CreditCard, Headphones, Award, RefreshCcw } from 'l
 const benefits = [
   {
     icon: Truck,
-    title: 'Free Shipping',
-    description: 'On orders over $99. Same-day dispatch before 2PM EST.',
+    title: 'Fast Shipping',
+    description: 'Same-day dispatch before 2PM EST. Reliable delivery nationwide.',
   },
   {
     icon: ShieldCheck,

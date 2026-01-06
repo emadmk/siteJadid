@@ -105,6 +105,29 @@ export function CheckoutForm({
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
+  // Shipping settings from database
+  const [shippingSettings, setShippingSettings] = useState({
+    freeShippingEnabled: false,
+    freeThreshold: 100,
+    standardRate: 15,
+  });
+
+  // Fetch shipping settings
+  useEffect(() => {
+    fetch('/api/storefront/settings/shipping')
+      .then((res) => res.json())
+      .then((data) => {
+        setShippingSettings({
+          freeShippingEnabled: data.freeShippingEnabled ?? false,
+          freeThreshold: data.freeThreshold ?? 100,
+          standardRate: data.standardRate ?? 15,
+        });
+      })
+      .catch(() => {
+        // Keep defaults on error
+      });
+  }, []);
+
   // Card details
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
@@ -141,9 +164,9 @@ export function CheckoutForm({
 
   const shippingCost =
     shippingMethod === 'ground'
-      ? subtotal >= 99
+      ? shippingSettings.freeShippingEnabled && subtotal >= shippingSettings.freeThreshold
         ? 0
-        : 15
+        : shippingSettings.standardRate
       : shippingMethod === 'express'
       ? 29.99
       : 49.99;
