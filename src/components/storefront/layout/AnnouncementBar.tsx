@@ -26,7 +26,7 @@ export function AnnouncementBar() {
             <div className="hidden lg:flex items-center gap-3 text-gray-600 text-xs">
               <span>Support: <a href="tel:478-329-8896" className="hover:text-safety-green-600 transition-colors">478-329-8896</a></span>
               <span className="text-gray-300">|</span>
-              <Link href="/contact" className="hover:text-safety-green-600 transition-colors">Live Chat</Link>
+              <Link href="/contact" className="hover:text-safety-green-600 transition-colors">Contact us</Link>
               <span className="text-gray-300">|</span>
               <Link href="/faq" className="hover:text-safety-green-600 transition-colors">Help</Link>
               <span className="text-gray-300">|</span>

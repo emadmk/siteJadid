@@ -20,6 +20,7 @@ const DEFAULT_SETTINGS = {
   'email.marketingEmails': { value: 'false', type: 'boolean', category: 'email' },
 
   // Shipping settings
+  'shipping.freeShippingEnabled': { value: 'false', type: 'boolean', category: 'shipping' },
   'shipping.freeThreshold': { value: '100', type: 'number', category: 'shipping' },
   'shipping.standardRate': { value: '9.99', type: 'number', category: 'shipping' },
   'shipping.expressRate': { value: '24.99', type: 'number', category: 'shipping' },

@@ -79,7 +79,7 @@ const footerLinks = {
 };
 
 const trustBadges = [
-  { icon: Truck, label: 'Free Shipping', sublabel: 'Orders $99+' },
+  { icon: Truck, label: 'Standard Shipping', sublabel: 'Fast & Reliable' },
   { icon: Clock, label: 'Same Day Ship', sublabel: 'Before 2PM EST' },
   { icon: Shield, label: 'Secure Checkout', sublabel: '256-bit SSL' },
   { icon: CreditCard, label: 'Easy Returns', sublabel: '30-Day Policy' },

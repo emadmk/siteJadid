@@ -31,6 +31,7 @@ interface Settings {
     marketingEmails: boolean;
   };
   shipping: {
+    freeShippingEnabled: boolean;
     freeThreshold: number;
     standardRate: number;
     expressRate: number;
@@ -69,6 +70,7 @@ const defaultSettings: Settings = {
     marketingEmails: false,
   },
   shipping: {
+    freeShippingEnabled: false,
     freeThreshold: 100,
     standardRate: 9.99,
     expressRate: 24.99,
@@ -311,13 +313,21 @@ export default function SettingsPage() {
           onSave={() => saveSettings('shipping')}
         >
           <div className="space-y-4">
-            <Input
-              label="Free Shipping Threshold"
-              type="number"
-              prefix="$"
-              value={settings.shipping.freeThreshold}
-              onChange={(v) => updateSetting('shipping', 'freeThreshold', parseFloat(v) || 0)}
+            <Toggle
+              label="Enable Free Shipping"
+              description="Enable free shipping for orders above threshold"
+              checked={settings.shipping.freeShippingEnabled}
+              onChange={(v) => updateSetting('shipping', 'freeShippingEnabled', v)}
             />
+            {settings.shipping.freeShippingEnabled && (
+              <Input
+                label="Free Shipping Threshold"
+                type="number"
+                prefix="$"
+                value={settings.shipping.freeThreshold}
+                onChange={(v) => updateSetting('shipping', 'freeThreshold', parseFloat(v) || 0)}
+              />
+            )}
             <Input
               label="Standard Shipping Rate"
               type="number"

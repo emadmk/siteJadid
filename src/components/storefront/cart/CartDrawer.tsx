@@ -12,6 +12,7 @@ export function CartDrawer() {
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [freeShippingEnabled, setFreeShippingEnabled] = useState(false);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(100);
 
   // Check if user is GSA approved
@@ -22,9 +23,12 @@ export function CartDrawer() {
 
   // Fetch shipping settings
   useEffect(() => {
-    fetch('/api/settings/shipping')
+    fetch('/api/storefront/settings/shipping')
       .then(res => res.json())
       .then(data => {
+        if (data.freeShippingEnabled !== undefined) {
+          setFreeShippingEnabled(data.freeShippingEnabled);
+        }
         if (data.freeThreshold) {
           setFreeShippingThreshold(data.freeThreshold);
         }
@@ -132,8 +136,8 @@ export function CartDrawer() {
           </div>
         )}
 
-        {/* Free Shipping Progress */}
-        {cart && cart.itemCount > 0 && (
+        {/* Free Shipping Progress - Only show if free shipping is enabled */}
+        {freeShippingEnabled && cart && cart.itemCount > 0 && (
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
             {remainingForFreeShipping > 0 ? (
               <>

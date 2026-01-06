@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Mail, Phone, MapPin, Clock, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Mail, Phone, MapPin, Send, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -258,18 +258,6 @@ export default function ContactPage() {
                     <div className="text-sm text-gray-600">
                       Warner Robins, GA<br />
                       United States
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-medium text-black">Business Hours</div>
-                    <div className="text-sm text-gray-600">
-                      Monday - Friday: 8:00 AM - 6:00 PM EST<br />
-                      Saturday: 9:00 AM - 2:00 PM EST<br />
-                      Sunday: Closed
                     </div>
                   </div>
                 </div>

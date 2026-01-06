@@ -44,6 +44,31 @@ async function getCart(userId: string) {
   return cart;
 }
 
+async function getShippingSettings() {
+  const settings = await db.setting.findMany({
+    where: { category: 'shipping' },
+  });
+
+  const defaults = {
+    freeShippingEnabled: false,
+    freeThreshold: 100,
+    standardRate: 9.99,
+  };
+
+  for (const setting of settings) {
+    const key = setting.key.replace('shipping.', '');
+    if (key === 'freeShippingEnabled') {
+      defaults.freeShippingEnabled = setting.value === 'true';
+    } else if (key === 'freeThreshold') {
+      defaults.freeThreshold = parseFloat(setting.value) || 100;
+    } else if (key === 'standardRate') {
+      defaults.standardRate = parseFloat(setting.value) || 9.99;
+    }
+  }
+
+  return defaults;
+}
+
 export default async function CartPage() {
   const session = await getServerSession(authOptions);
 
@@ -51,7 +76,10 @@ export default async function CartPage() {
     redirect('/auth/signin?callbackUrl=/cart');
   }
 
-  const cart = await getCart(session.user.id);
+  const [cart, shippingSettings] = await Promise.all([
+    getCart(session.user.id),
+    getShippingSettings(),
+  ]);
 
   if (!cart || cart.items.length === 0) {
     return (
@@ -82,9 +110,15 @@ export default async function CartPage() {
     return sum + (item.product.weight || 0) * item.quantity;
   }, 0);
 
-  const estimatedShipping = subtotal >= 99 ? 0 : totalWeight > 20 ? 35 : 15;
+  // Calculate shipping based on settings
+  const qualifiesForFreeShipping = shippingSettings.freeShippingEnabled && subtotal >= shippingSettings.freeThreshold;
+  const estimatedShipping = qualifiesForFreeShipping ? 0 : (totalWeight > 20 ? 35 : shippingSettings.standardRate);
   const tax = subtotal * 0.08;
   const total = subtotal + estimatedShipping + tax;
+
+  // For free shipping progress bar
+  const freeShippingThreshold = shippingSettings.freeThreshold;
+  const showFreeShippingProgress = shippingSettings.freeShippingEnabled && subtotal < freeShippingThreshold;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -216,15 +250,15 @@ export default async function CartPage() {
                   <span className="font-medium">${tax.toFixed(2)}</span>
                 </div>
 
-                {subtotal < 99 && (
+                {showFreeShippingProgress && (
                   <div className="bg-safety-green-50 border border-safety-green-200 rounded-md p-3 text-sm">
                     <div className="text-safety-green-800 font-medium mb-1">
-                      Add ${(99 - subtotal).toFixed(2)} more for FREE shipping!
+                      Add ${(freeShippingThreshold - subtotal).toFixed(2)} more for FREE shipping!
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-safety-green-600 h-2 rounded-full transition-all"
-                        style={{ width: `${Math.min((subtotal / 99) * 100, 100)}%` }}
+                        style={{ width: `${Math.min((subtotal / freeShippingThreshold) * 100, 100)}%` }}
                       />
                     </div>
                   </div>
