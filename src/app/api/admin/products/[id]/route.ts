@@ -107,6 +107,45 @@ export async function PUT(
       );
     }
 
+    // Handle vendorPartNumber - auto-generate if not provided
+    let vendorPartNumber = data.vendorPartNumber;
+    if (!vendorPartNumber && data.defaultSupplierId) {
+      const supplier = await db.supplier.findUnique({
+        where: { id: data.defaultSupplierId },
+        select: { name: true },
+      });
+
+      const prefixMap: Record<string, string> = {
+        'Keen': 'K-',
+        'Bates': 'B-',
+        'PIP': 'PIP-',
+        'Occunomix': 'OCC-',
+        'OccuNomix': 'OCC-',
+      };
+
+      const prefix = supplier?.name ? (prefixMap[supplier.name] || 'ADA-') : 'ADA-';
+      vendorPartNumber = prefix + data.sku;
+    } else if (!vendorPartNumber) {
+      vendorPartNumber = 'ADA-' + data.sku;
+    }
+
+    // Check for duplicate vendorPartNumber (excluding current product)
+    if (vendorPartNumber) {
+      const existingVpn = await db.product.findFirst({
+        where: {
+          vendorPartNumber,
+          id: { not: params.id },
+        },
+      });
+
+      if (existingVpn) {
+        return NextResponse.json(
+          { error: 'A product with this Vendor Part Number already exists' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Update product
     const product = await db.product.update({
       where: { id: params.id },
@@ -114,6 +153,7 @@ export async function PUT(
         name: data.name,
         slug: data.slug,
         sku: data.sku,
+        vendorPartNumber,
         shortDescription: data.shortDescription || null,
         description: data.description || null,
         basePrice: data.basePrice,

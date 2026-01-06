@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { sku: { contains: search, mode: 'insensitive' } },
+          { vendorPartNumber: { contains: search, mode: 'insensitive' } },
           { brand: { name: { contains: search, mode: 'insensitive' } } },
         ],
       });
@@ -82,6 +83,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         sku: true,
+        vendorPartNumber: true,
         name: true,
         slug: true,
         status: true,
@@ -170,12 +172,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Auto-generate vendorPartNumber if not provided
+    let vendorPartNumber = data.vendorPartNumber;
+    if (!vendorPartNumber && data.defaultSupplierId) {
+      const supplier = await db.supplier.findUnique({
+        where: { id: data.defaultSupplierId },
+        select: { name: true },
+      });
+
+      const prefixMap: Record<string, string> = {
+        'Keen': 'K-',
+        'Bates': 'B-',
+        'PIP': 'PIP-',
+        'Occunomix': 'OCC-',
+        'OccuNomix': 'OCC-',
+      };
+
+      const prefix = supplier?.name ? (prefixMap[supplier.name] || 'ADA-') : 'ADA-';
+      vendorPartNumber = prefix + data.sku;
+    } else if (!vendorPartNumber) {
+      vendorPartNumber = 'ADA-' + data.sku;
+    }
+
+    // Check for duplicate vendorPartNumber
+    if (vendorPartNumber) {
+      const existingVpn = await db.product.findUnique({
+        where: { vendorPartNumber },
+      });
+
+      if (existingVpn) {
+        return NextResponse.json(
+          { error: 'A product with this Vendor Part Number already exists' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create product
     const product = await db.product.create({
       data: {
         name: data.name,
         slug: data.slug,
         sku: data.sku,
+        vendorPartNumber,
         shortDescription: data.shortDescription || null,
         description: data.description || null,
         basePrice: data.basePrice,

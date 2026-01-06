@@ -97,6 +97,7 @@ interface ProductDetailProps {
   product: {
     id: string;
     sku: string;
+    manufacturerPartNumber?: string;
     name: string;
     slug: string;
     description: string | null;
@@ -792,6 +793,12 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                   <div className="text-sm text-gray-600 mb-1">SKU</div>
                   <div className="font-medium text-black">{product.sku}</div>
                 </div>
+                {product.manufacturerPartNumber && (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="text-sm text-gray-600 mb-1">Manufacturer Part Number</div>
+                    <div className="font-medium text-black">{product.manufacturerPartNumber}</div>
+                  </div>
+                )}
                 {product.weight && (
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="text-sm text-gray-600 mb-1">Weight</div>

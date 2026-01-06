@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
         { name: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
         { sku: { contains: search, mode: 'insensitive' } },
+        { vendorPartNumber: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -99,6 +100,7 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           sku: true,
+          vendorPartNumber: true,
           name: true,
           slug: true,
           description: true,
@@ -158,7 +160,8 @@ export async function GET(request: NextRequest) {
     // Format products
     const formattedProducts = products.map((product) => ({
       id: product.id,
-      sku: product.sku,
+      sku: product.vendorPartNumber || product.sku, // Display vendorPartNumber as SKU
+      manufacturerPartNumber: product.sku,
       name: product.name,
       slug: product.slug,
       description: product.description,

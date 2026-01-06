@@ -94,7 +94,8 @@ async function getProduct(slug: string) {
 
   return {
     id: product.id,
-    sku: product.sku,
+    sku: product.vendorPartNumber || product.sku, // Display vendorPartNumber as SKU
+    manufacturerPartNumber: product.sku, // Original SKU is now Manufacturer Part Number
     name: product.name,
     slug: product.slug,
     description: product.description,

@@ -387,7 +387,8 @@ model Brand {
 
 model Product {
   id              String        @id @default(cuid())
-  sku             String        @unique
+  sku             String        @unique  // Manufacturer Part Number
+  vendorPartNumber String?      @unique  // Our SKU (displayed to customers)
   name            String
   slug            String        @unique
   description     String?

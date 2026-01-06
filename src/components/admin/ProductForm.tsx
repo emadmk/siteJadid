@@ -30,6 +30,7 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
     name: product?.name || '',
     slug: product?.slug || '',
     sku: product?.sku || '',
+    vendorPartNumber: product?.vendorPartNumber || '',
     shortDescription: product?.shortDescription || '',
     description: product?.description || '',
 
@@ -366,7 +367,7 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              SKU <span className="text-red-500">*</span>
+              Manufacturer Part Number <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -374,7 +375,23 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
               onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 font-mono"
               required
+              placeholder="e.g., 1020025D"
             />
+            <p className="text-xs text-gray-500 mt-1">Original part number from manufacturer</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Vendor Part Number (SKU)
+            </label>
+            <input
+              type="text"
+              value={formData.vendorPartNumber}
+              onChange={(e) => setFormData(prev => ({ ...prev, vendorPartNumber: e.target.value }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 font-mono"
+              placeholder="e.g., K-1020025D"
+            />
+            <p className="text-xs text-gray-500 mt-1">Our SKU displayed to customers (auto-generated if empty)</p>
           </div>
 
           <div>
