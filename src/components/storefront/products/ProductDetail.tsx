@@ -633,7 +633,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                   {currentGsaPrice && (
                     <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-medium">
                       <FileText className="w-4 h-4" />
-                      GSA Price: ${Number(currentGsaPrice).toFixed(2)}
+                      Government Price: ${Number(currentGsaPrice).toFixed(2)}
                     </div>
                   )}
                   {currentWholesalePrice && (
@@ -754,7 +754,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
               onClick={() => setShowBulkOrderModal(true)}
             >
               <Building2 className="w-5 h-5 mr-2" />
-              Request Bulk Order
+              Request Volume Order
             </Button>
 
             {/* Trust Badges */}
@@ -1168,7 +1168,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-xl font-bold text-black mb-2">Request Bulk Order</h3>
+            <h3 className="text-xl font-bold text-black mb-2">Request Volume Order</h3>
             <p className="text-gray-600 text-sm mb-4">
               Fill out the form below and our team will contact you with pricing.
             </p>
