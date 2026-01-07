@@ -122,14 +122,14 @@ export function FeaturedPromoSection() {
                       href={`/products/${product.slug}`}
                       className="group bg-white rounded-lg border border-gray-100 p-2 hover:border-safety-green-400 hover:shadow-md transition-all"
                     >
-                      <div className="aspect-square bg-white rounded-md mb-2 overflow-hidden flex items-center justify-center">
+                      <div className="h-28 bg-white rounded-md mb-2 flex items-center justify-center p-2">
                         {product.images?.[0] ? (
                           <Image
                             src={product.images[0]}
                             alt={product.name}
-                            width={120}
-                            height={120}
-                            className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                            width={100}
+                            height={100}
+                            className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform"
                             unoptimized
                           />
                         ) : (
