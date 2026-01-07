@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { FeaturedPromoSection } from './FeaturedPromoSection';
 
 interface Category {
   id: string;
@@ -167,6 +168,9 @@ export function HeroSection() {
           </div>
         </div>
       </div>
+
+      {/* Featured Products & Business Promo */}
+      <FeaturedPromoSection />
 
       {/* Shop by Category */}
       <div className="container mx-auto px-4 py-6 lg:py-10">
