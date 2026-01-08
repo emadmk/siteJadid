@@ -74,6 +74,7 @@ interface Variant {
   name: string;
   color?: string | null;
   size?: string | null;
+  type?: string | null;
   material?: string | null;
   basePrice: number;
   salePrice?: number | null;

@@ -512,6 +512,7 @@ model ProductVariant {
   // Variant Attributes (direct fields for easy filtering)
   color           String?   // e.g., "Orange", "Black", "Hi-Vis Yellow"
   size            String?   // e.g., "S", "M", "L", "XL", "13", "14"
+  type            String?   // e.g., "Steel Toe", "Composite Toe", "Soft Toe"
   material        String?   // e.g., "Leather", "Rubber", "Polyester"
 
   // Multiple price types (same as Product)
@@ -543,6 +544,7 @@ model ProductVariant {
   @@index([sku])
   @@index([color])
   @@index([size])
+  @@index([type])
   @@index([material])
 }
 

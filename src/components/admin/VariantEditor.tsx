@@ -22,6 +22,7 @@ interface Variant {
   name: string;
   color?: string | null;
   size?: string | null;
+  type?: string | null;
   material?: string | null;
   basePrice: number;
   salePrice?: number | null;
@@ -61,6 +62,7 @@ export function VariantEditor({
     name: variant?.name || '',
     color: variant?.color || '',
     size: variant?.size || '',
+    type: variant?.type || '',
     material: variant?.material || '',
     basePrice: variant?.basePrice?.toString() || '',
     salePrice: variant?.salePrice?.toString() || '',
@@ -75,11 +77,12 @@ export function VariantEditor({
     })),
   });
 
-  // Auto-generate variant name from color, size, material
+  // Auto-generate variant name from color, size, type, material
   const generateName = () => {
     const parts: string[] = [];
     if (formData.color) parts.push(formData.color);
     if (formData.size) parts.push(formData.size);
+    if (formData.type) parts.push(formData.type);
     if (formData.material) parts.push(formData.material);
 
     // Also include legacy attributeValues if any
@@ -126,6 +129,7 @@ export function VariantEditor({
       name: formData.name || generateName(),
       color: formData.color || null,
       size: formData.size || null,
+      type: formData.type || null,
       material: formData.material || null,
       basePrice: parseFloat(formData.basePrice) || 0,
       salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null,
@@ -184,8 +188,8 @@ export function VariantEditor({
             />
           </div>
 
-          {/* Color, Size, Material */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Color, Size, Type, Material */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Color
@@ -207,6 +211,18 @@ export function VariantEditor({
                 value={formData.size}
                 onChange={(e) => setFormData(prev => ({ ...prev, size: e.target.value }))}
                 placeholder="e.g., S, M, L, XL"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type
+              </label>
+              <input
+                type="text"
+                value={formData.type}
+                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                placeholder="e.g., Steel Toe, Soft Toe"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
               />
             </div>

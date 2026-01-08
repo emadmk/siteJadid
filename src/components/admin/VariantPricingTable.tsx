@@ -19,6 +19,7 @@ interface Variant {
   name: string;
   color?: string | null;
   size?: string | null;
+  type?: string | null;
   material?: string | null;
   basePrice: number;
   salePrice?: number | null;
@@ -147,6 +148,11 @@ export function VariantPricingTable({
                   {variant.size && (
                     <span className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
                       Size: {variant.size}
+                    </span>
+                  )}
+                  {variant.type && (
+                    <span className="inline-block bg-teal-100 text-teal-700 px-2 py-0.5 rounded text-xs">
+                      Type: {variant.type}
                     </span>
                   )}
                   {variant.material && (

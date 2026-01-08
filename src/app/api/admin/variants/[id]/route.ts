@@ -56,6 +56,10 @@ export async function PUT(
     const {
       sku,
       name,
+      color,
+      size,
+      type,
+      material,
       basePrice,
       salePrice,
       wholesalePrice,
@@ -71,6 +75,10 @@ export async function PUT(
 
     if (sku !== undefined) updateData.sku = sku;
     if (name !== undefined) updateData.name = name;
+    if (color !== undefined) updateData.color = color;
+    if (size !== undefined) updateData.size = size;
+    if (type !== undefined) updateData.type = type;
+    if (material !== undefined) updateData.material = material;
     if (basePrice !== undefined) updateData.basePrice = basePrice;
     if (salePrice !== undefined) updateData.salePrice = salePrice;
     if (wholesalePrice !== undefined) updateData.wholesalePrice = wholesalePrice;

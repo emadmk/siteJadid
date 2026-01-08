@@ -19,6 +19,7 @@ interface Variant {
   name: string;
   color?: string | null;
   size?: string | null;
+  type?: string | null;
   material?: string | null;
   basePrice: number;
   salePrice?: number | null;
@@ -43,8 +44,8 @@ export function VariantSelector({
   selectedVariantId,
   onColorChange,
 }: VariantSelectorProps) {
-  // Check if variants have the new color/size/material fields
-  const hasColorSizeMaterial = variants.some(v => v.color || v.size || v.material);
+  // Check if variants have the new color/size/type/material fields
+  const hasColorSizeMaterial = variants.some(v => v.color || v.size || v.type || v.material);
 
   // Check if variants have legacy attributeValues
   const hasAttributeValues = variants.some(v => v.attributeValues && v.attributeValues.length > 0);
@@ -250,7 +251,7 @@ function SimpleVariantSelector({
   );
 }
 
-// New Color/Size/Material selector - uses direct variant fields
+// New Color/Size/Type/Material selector - uses direct variant fields
 function ColorSizeMaterialSelector({
   variants,
   onVariantSelect,
@@ -260,11 +261,13 @@ function ColorSizeMaterialSelector({
   // Extract unique values for each attribute
   const colors = Array.from(new Set(variants.map(v => v.color).filter((c): c is string => !!c)));
   const sizes = Array.from(new Set(variants.map(v => v.size).filter((s): s is string => !!s)));
+  const types = Array.from(new Set(variants.map(v => v.type).filter((t): t is string => !!t)));
   const materials = Array.from(new Set(variants.map(v => v.material).filter((m): m is string => !!m)));
 
   // Track selected values
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
 
   // Initialize from selected variant
@@ -274,6 +277,7 @@ function ColorSizeMaterialSelector({
       if (variant) {
         setSelectedColor(variant.color || null);
         setSelectedSize(variant.size || null);
+        setSelectedType(variant.type || null);
         setSelectedMaterial(variant.material || null);
       }
     }
@@ -284,14 +288,16 @@ function ColorSizeMaterialSelector({
     const matchingVariant = variants.find(v => {
       const colorMatch = !colors.length || !selectedColor || v.color === selectedColor;
       const sizeMatch = !sizes.length || !selectedSize || v.size === selectedSize;
+      const typeMatch = !types.length || !selectedType || v.type === selectedType;
       const materialMatch = !materials.length || !selectedMaterial || v.material === selectedMaterial;
-      return colorMatch && sizeMatch && materialMatch && v.isActive && v.stockQuantity > 0;
+      return colorMatch && sizeMatch && typeMatch && materialMatch && v.isActive && v.stockQuantity > 0;
     });
 
     // Determine if all required selections are made
     const allSelected =
       (!colors.length || selectedColor) &&
       (!sizes.length || selectedSize) &&
+      (!types.length || selectedType) &&
       (!materials.length || selectedMaterial);
 
     if (allSelected && matchingVariant) {
@@ -301,14 +307,15 @@ function ColorSizeMaterialSelector({
       const outOfStockVariant = variants.find(v => {
         const colorMatch = !colors.length || !selectedColor || v.color === selectedColor;
         const sizeMatch = !sizes.length || !selectedSize || v.size === selectedSize;
+        const typeMatch = !types.length || !selectedType || v.type === selectedType;
         const materialMatch = !materials.length || !selectedMaterial || v.material === selectedMaterial;
-        return colorMatch && sizeMatch && materialMatch;
+        return colorMatch && sizeMatch && typeMatch && materialMatch;
       });
       onVariantSelect(outOfStockVariant || null);
     } else {
       onVariantSelect(null);
     }
-  }, [selectedColor, selectedSize, selectedMaterial, variants, colors.length, sizes.length, materials.length]);
+  }, [selectedColor, selectedSize, selectedType, selectedMaterial, variants, colors.length, sizes.length, types.length, materials.length]);
 
   // Notify parent when color changes (for image switching)
   const handleColorChange = (color: string) => {
@@ -317,12 +324,13 @@ function ColorSizeMaterialSelector({
   };
 
   // Check if a value is available based on current selections
-  const isValueAvailable = (type: 'color' | 'size' | 'material', value: string) => {
+  const isValueAvailable = (attrType: 'color' | 'size' | 'type' | 'material', value: string) => {
     return variants.some(v => {
-      const colorMatch = type === 'color' ? v.color === value : (!selectedColor || v.color === selectedColor);
-      const sizeMatch = type === 'size' ? v.size === value : (!selectedSize || v.size === selectedSize);
-      const materialMatch = type === 'material' ? v.material === value : (!selectedMaterial || v.material === selectedMaterial);
-      return colorMatch && sizeMatch && materialMatch && v.isActive && v.stockQuantity > 0;
+      const colorMatch = attrType === 'color' ? v.color === value : (!selectedColor || v.color === selectedColor);
+      const sizeMatch = attrType === 'size' ? v.size === value : (!selectedSize || v.size === selectedSize);
+      const typeMatch = attrType === 'type' ? v.type === value : (!selectedType || v.type === selectedType);
+      const materialMatch = attrType === 'material' ? v.material === value : (!selectedMaterial || v.material === selectedMaterial);
+      return colorMatch && sizeMatch && typeMatch && materialMatch && v.isActive && v.stockQuantity > 0;
     });
   };
 
@@ -373,7 +381,7 @@ function ColorSizeMaterialSelector({
     values: string[],
     selected: string | null,
     onSelect: (value: string) => void,
-    type: 'color' | 'size' | 'material'
+    attrType: 'color' | 'size' | 'type' | 'material'
   ) => {
     if (values.length === 0) return null;
 
@@ -390,7 +398,7 @@ function ColorSizeMaterialSelector({
         <div className="flex flex-wrap gap-2">
           {values.map(value => {
             const isSelected = selected === value;
-            const isAvailable = isValueAvailable(type, value);
+            const isAvailable = isValueAvailable(attrType, value);
 
             return (
               <button
@@ -423,17 +431,20 @@ function ColorSizeMaterialSelector({
   const allRequired =
     (colors.length > 0 ? 1 : 0) +
     (sizes.length > 0 ? 1 : 0) +
+    (types.length > 0 ? 1 : 0) +
     (materials.length > 0 ? 1 : 0);
 
   const selectedCount =
     (selectedColor ? 1 : 0) +
     (selectedSize ? 1 : 0) +
+    (selectedType ? 1 : 0) +
     (selectedMaterial ? 1 : 0);
 
   return (
     <div className="space-y-4">
       {renderAttributeSection('Color', colors, selectedColor, handleColorChange, 'color')}
       {renderAttributeSection('Size', sortedSizes, selectedSize, setSelectedSize, 'size')}
+      {renderAttributeSection('Type', types, selectedType, setSelectedType, 'type')}
       {renderAttributeSection('Material', materials, selectedMaterial, setSelectedMaterial, 'material')}
 
       {selectedCount < allRequired && selectedCount > 0 && (
