@@ -495,7 +495,13 @@ export function EditableProductRow({ product: initialProduct, categories, brands
               <Eye className="w-4 h-4" />
             </Button>
           </Link>
-          <Link href={`/admin/products/${product.id}/edit`}>
+          <Link
+            href={`/admin/products/${product.id}/edit`}
+            onClick={() => {
+              // Save scroll position before navigating
+              sessionStorage.setItem('productsScrollPosition', window.scrollY.toString());
+            }}
+          >
             <Button
               size="sm"
               variant="outline"

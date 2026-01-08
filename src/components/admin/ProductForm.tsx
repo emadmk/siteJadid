@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Plus, X, Upload, Image as ImageIcon, Loader2, Star } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Upload, Image as ImageIcon, Loader2, Star, RefreshCw, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { ProductVariantsManager } from './ProductVariantsManager';
 import { ColorImageMapper } from './ColorImageMapper';
@@ -22,6 +22,7 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [saveMode, setSaveMode] = useState<'stay' | 'exit'>('stay');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -241,9 +242,10 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
     setTierPricing(updated);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, mode: 'stay' | 'exit' = 'stay') => {
     e.preventDefault();
     setLoading(true);
+    setSaveMode(mode);
     setError('');
 
     try {
@@ -287,8 +289,22 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
         throw new Error(data.error || 'Failed to save product');
       }
 
-      router.push('/admin/products');
-      router.refresh();
+      const savedProduct = await response.json();
+
+      if (mode === 'stay') {
+        // Reload the page to stay on product edit
+        if (product) {
+          window.location.reload();
+        } else {
+          // New product - redirect to edit page of created product
+          router.push(`/admin/products/${savedProduct.id}/edit`);
+        }
+      } else {
+        // Exit - go back to products list with scroll position
+        const scrollPos = sessionStorage.getItem('productsScrollPosition') || '0';
+        router.push(`/admin/products?scroll=${scrollPos}`);
+        router.refresh();
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -1042,12 +1058,30 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
           </Button>
         </Link>
         <Button
-          type="submit"
+          type="button"
           disabled={loading}
+          onClick={(e) => handleSubmit(e as any, 'stay')}
           className="bg-safety-green-600 hover:bg-safety-green-700 text-white"
         >
-          <Save className="w-4 h-4 mr-2" />
-          {loading ? 'Saving...' : product ? 'Update Product' : 'Create Product'}
+          {loading && saveMode === 'stay' ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4 mr-2" />
+          )}
+          {loading && saveMode === 'stay' ? 'Saving...' : 'Save & Stay'}
+        </Button>
+        <Button
+          type="button"
+          disabled={loading}
+          onClick={(e) => handleSubmit(e as any, 'exit')}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          {loading && saveMode === 'exit' ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <ExternalLink className="w-4 h-4 mr-2" />
+          )}
+          {loading && saveMode === 'exit' ? 'Saving...' : 'Save & Exit'}
         </Button>
       </div>
     </form>

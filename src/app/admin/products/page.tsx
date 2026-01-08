@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Package, Search, Upload, Pencil, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db } from '@/lib/db';
 import { ProductsTable } from '@/components/admin/ProductsTable';
+import { ScrollRestoration } from '@/components/admin/ScrollRestoration';
 
 interface SearchParams {
   status?: string;
@@ -411,6 +413,9 @@ export default async function ProductsPage({
 
   return (
     <div className="p-8">
+      <Suspense fallback={null}>
+        <ScrollRestoration />
+      </Suspense>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
