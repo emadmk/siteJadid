@@ -36,6 +36,17 @@ interface Settings {
     standardRate: number;
     expressRate: number;
     international: boolean;
+    // Shippo Integration
+    shippoApiKey: string;
+    shippoTestMode: boolean;
+    // Origin Address (Warehouse)
+    originName: string;
+    originStreet: string;
+    originCity: string;
+    originState: string;
+    originZip: string;
+    originCountry: string;
+    originPhone: string;
   };
   tax: {
     defaultRate: number;
@@ -44,7 +55,12 @@ interface Settings {
   };
   payment: {
     stripe: boolean;
+    stripePublishableKey: string;
+    stripeSecretKey: string;
+    stripeWebhookSecret: string;
     paypal: boolean;
+    paypalClientId: string;
+    paypalClientSecret: string;
     gsaSmartpay: boolean;
   };
   security: {
@@ -75,6 +91,17 @@ const defaultSettings: Settings = {
     standardRate: 9.99,
     expressRate: 24.99,
     international: true,
+    // Shippo Integration
+    shippoApiKey: '',
+    shippoTestMode: true,
+    // Origin Address (Warehouse)
+    originName: '',
+    originStreet: '',
+    originCity: '',
+    originState: '',
+    originZip: '',
+    originCountry: 'US',
+    originPhone: '',
   },
   tax: {
     defaultRate: 8.5,
@@ -83,7 +110,12 @@ const defaultSettings: Settings = {
   },
   payment: {
     stripe: true,
+    stripePublishableKey: '',
+    stripeSecretKey: '',
+    stripeWebhookSecret: '',
     paypal: false,
+    paypalClientId: '',
+    paypalClientSecret: '',
     gsaSmartpay: true,
   },
   security: {
@@ -277,28 +309,90 @@ export default function SettingsPage() {
           message={message?.category === 'payment' ? message : null}
           onSave={() => saveSettings('payment')}
         >
-          <div className="space-y-4">
-            <PaymentMethod
-              icon={<CreditCard className="w-6 h-6 text-gray-600" />}
-              name="Credit/Debit Cards"
-              description="Stripe Integration"
-              active={settings.payment.stripe}
-              onChange={(v) => updateSetting('payment', 'stripe', v)}
-            />
-            <PaymentMethod
-              icon={<CreditCard className="w-6 h-6 text-gray-600" />}
-              name="PayPal"
-              description="PayPal Integration"
-              active={settings.payment.paypal}
-              onChange={(v) => updateSetting('payment', 'paypal', v)}
-            />
-            <PaymentMethod
-              icon={<Shield className="w-6 h-6 text-gray-600" />}
-              name="GSA SmartPay"
-              description="Government Procurement"
-              active={settings.payment.gsaSmartpay}
-              onChange={(v) => updateSetting('payment', 'gsaSmartpay', v)}
-            />
+          <div className="space-y-6">
+            {/* Stripe Section */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <PaymentMethod
+                icon={<CreditCard className="w-6 h-6 text-gray-600" />}
+                name="Credit/Debit Cards (Stripe)"
+                description="Accept card payments via Stripe"
+                active={settings.payment.stripe}
+                onChange={(v) => updateSetting('payment', 'stripe', v)}
+              />
+              {settings.payment.stripe && (
+                <div className="mt-4 space-y-3 pl-4 border-l-2 border-purple-200 dark:border-purple-800">
+                  <Input
+                    label="Stripe Publishable Key"
+                    value={settings.payment.stripePublishableKey}
+                    onChange={(v) => updateSetting('payment', 'stripePublishableKey', v)}
+                    placeholder="pk_live_... or pk_test_..."
+                  />
+                  <Input
+                    label="Stripe Secret Key"
+                    type="password"
+                    value={settings.payment.stripeSecretKey}
+                    onChange={(v) => updateSetting('payment', 'stripeSecretKey', v)}
+                    placeholder="sk_live_... or sk_test_..."
+                  />
+                  <Input
+                    label="Stripe Webhook Secret"
+                    type="password"
+                    value={settings.payment.stripeWebhookSecret}
+                    onChange={(v) => updateSetting('payment', 'stripeWebhookSecret', v)}
+                    placeholder="whsec_..."
+                  />
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      Get your API keys from <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="underline font-medium">Stripe Dashboard</a>
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* PayPal Section */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <PaymentMethod
+                icon={<CreditCard className="w-6 h-6 text-gray-600" />}
+                name="PayPal"
+                description="Accept PayPal payments"
+                active={settings.payment.paypal}
+                onChange={(v) => updateSetting('payment', 'paypal', v)}
+              />
+              {settings.payment.paypal && (
+                <div className="mt-4 space-y-3 pl-4 border-l-2 border-blue-200 dark:border-blue-800">
+                  <Input
+                    label="PayPal Client ID"
+                    value={settings.payment.paypalClientId}
+                    onChange={(v) => updateSetting('payment', 'paypalClientId', v)}
+                    placeholder="Client ID from PayPal Developer"
+                  />
+                  <Input
+                    label="PayPal Client Secret"
+                    type="password"
+                    value={settings.payment.paypalClientSecret}
+                    onChange={(v) => updateSetting('payment', 'paypalClientSecret', v)}
+                    placeholder="Client Secret from PayPal Developer"
+                  />
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      Get your credentials from <a href="https://developer.paypal.com/dashboard/applications" target="_blank" rel="noopener noreferrer" className="underline font-medium">PayPal Developer Dashboard</a>
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* GSA SmartPay */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <PaymentMethod
+                icon={<Shield className="w-6 h-6 text-gray-600" />}
+                name="GSA SmartPay"
+                description="Government Procurement Cards"
+                active={settings.payment.gsaSmartpay}
+                onChange={(v) => updateSetting('payment', 'gsaSmartpay', v)}
+              />
+            </div>
           </div>
         </SettingsCard>
 
@@ -307,49 +401,141 @@ export default function SettingsPage() {
           icon={<Truck className="w-5 h-5 text-orange-600" />}
           iconBg="bg-orange-100 dark:bg-orange-900/30"
           title="Shipping Options"
-          subtitle="Configure shipping methods"
+          subtitle="Configure shipping methods and Shippo integration"
           saving={saving === 'shipping'}
           message={message?.category === 'shipping' ? message : null}
           onSave={() => saveSettings('shipping')}
         >
-          <div className="space-y-4">
-            <Toggle
-              label="Enable Free Shipping"
-              description="Enable free shipping for orders above threshold"
-              checked={settings.shipping.freeShippingEnabled}
-              onChange={(v) => updateSetting('shipping', 'freeShippingEnabled', v)}
-            />
-            {settings.shipping.freeShippingEnabled && (
+          <div className="space-y-6">
+            {/* Basic Shipping Rates */}
+            <div className="space-y-4">
+              <Toggle
+                label="Enable Free Shipping"
+                description="Enable free shipping for orders above threshold"
+                checked={settings.shipping.freeShippingEnabled}
+                onChange={(v) => updateSetting('shipping', 'freeShippingEnabled', v)}
+              />
+              {settings.shipping.freeShippingEnabled && (
+                <Input
+                  label="Free Shipping Threshold"
+                  type="number"
+                  prefix="$"
+                  value={settings.shipping.freeThreshold}
+                  onChange={(v) => updateSetting('shipping', 'freeThreshold', parseFloat(v) || 0)}
+                />
+              )}
               <Input
-                label="Free Shipping Threshold"
+                label="Standard Shipping Rate"
                 type="number"
                 prefix="$"
-                value={settings.shipping.freeThreshold}
-                onChange={(v) => updateSetting('shipping', 'freeThreshold', parseFloat(v) || 0)}
+                step="0.01"
+                value={settings.shipping.standardRate}
+                onChange={(v) => updateSetting('shipping', 'standardRate', parseFloat(v) || 0)}
               />
-            )}
-            <Input
-              label="Standard Shipping Rate"
-              type="number"
-              prefix="$"
-              step="0.01"
-              value={settings.shipping.standardRate}
-              onChange={(v) => updateSetting('shipping', 'standardRate', parseFloat(v) || 0)}
-            />
-            <Input
-              label="Express Shipping Rate"
-              type="number"
-              prefix="$"
-              step="0.01"
-              value={settings.shipping.expressRate}
-              onChange={(v) => updateSetting('shipping', 'expressRate', parseFloat(v) || 0)}
-            />
-            <Toggle
-              label="International Shipping"
-              description="Enable international shipping"
-              checked={settings.shipping.international}
-              onChange={(v) => updateSetting('shipping', 'international', v)}
-            />
+              <Input
+                label="Express Shipping Rate"
+                type="number"
+                prefix="$"
+                step="0.01"
+                value={settings.shipping.expressRate}
+                onChange={(v) => updateSetting('shipping', 'expressRate', parseFloat(v) || 0)}
+              />
+              <Toggle
+                label="International Shipping"
+                description="Enable international shipping"
+                checked={settings.shipping.international}
+                onChange={(v) => updateSetting('shipping', 'international', v)}
+              />
+            </div>
+
+            {/* Shippo Integration */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Truck className="w-4 h-4 text-orange-500" />
+                Shippo Integration (Live Rates)
+              </h3>
+              <div className="space-y-4">
+                <Input
+                  label="Shippo API Key"
+                  type="password"
+                  value={settings.shipping.shippoApiKey}
+                  onChange={(v) => updateSetting('shipping', 'shippoApiKey', v)}
+                  placeholder="shippo_live_... or shippo_test_..."
+                />
+                <Toggle
+                  label="Test Mode"
+                  description="Use Shippo test environment (no real charges)"
+                  checked={settings.shipping.shippoTestMode}
+                  onChange={(v) => updateSetting('shipping', 'shippoTestMode', v)}
+                />
+                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                  <p className="text-xs text-orange-700 dark:text-orange-300">
+                    Get your API key from <a href="https://apps.goshippo.com/settings/api" target="_blank" rel="noopener noreferrer" className="underline font-medium">Shippo Dashboard</a>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Origin Address (Warehouse) */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Store className="w-4 h-4 text-green-500" />
+                Origin Address (Warehouse)
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                This address is used to calculate shipping rates
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Input
+                    label="Company/Warehouse Name"
+                    value={settings.shipping.originName}
+                    onChange={(v) => updateSetting('shipping', 'originName', v)}
+                    placeholder="ADA Supply Warehouse"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Input
+                    label="Street Address"
+                    value={settings.shipping.originStreet}
+                    onChange={(v) => updateSetting('shipping', 'originStreet', v)}
+                    placeholder="123 Main Street"
+                  />
+                </div>
+                <Input
+                  label="City"
+                  value={settings.shipping.originCity}
+                  onChange={(v) => updateSetting('shipping', 'originCity', v)}
+                  placeholder="Warner Robins"
+                />
+                <Input
+                  label="State"
+                  value={settings.shipping.originState}
+                  onChange={(v) => updateSetting('shipping', 'originState', v)}
+                  placeholder="GA"
+                />
+                <Input
+                  label="ZIP Code"
+                  value={settings.shipping.originZip}
+                  onChange={(v) => updateSetting('shipping', 'originZip', v)}
+                  placeholder="31088"
+                />
+                <Input
+                  label="Country"
+                  value={settings.shipping.originCountry}
+                  onChange={(v) => updateSetting('shipping', 'originCountry', v)}
+                  placeholder="US"
+                />
+                <div className="md:col-span-2">
+                  <Input
+                    label="Phone Number"
+                    value={settings.shipping.originPhone}
+                    onChange={(v) => updateSetting('shipping', 'originPhone', v)}
+                    placeholder="478-329-8896"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </SettingsCard>
 
@@ -516,6 +702,7 @@ function Input({
   onChange,
   prefix,
   step,
+  placeholder,
 }: {
   label: string;
   type?: string;
@@ -523,6 +710,7 @@ function Input({
   onChange: (value: string) => void;
   prefix?: string;
   step?: string;
+  placeholder?: string;
 }) {
   return (
     <div>
@@ -540,7 +728,8 @@ function Input({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           step={step}
-          className={`w-full ${prefix ? 'pl-8' : 'px-3'} pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white`}
+          placeholder={placeholder}
+          className={`w-full ${prefix ? 'pl-8' : 'px-3'} pr-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white placeholder-gray-400`}
         />
       </div>
     </div>

@@ -25,6 +25,17 @@ const DEFAULT_SETTINGS = {
   'shipping.standardRate': { value: '9.99', type: 'number', category: 'shipping' },
   'shipping.expressRate': { value: '24.99', type: 'number', category: 'shipping' },
   'shipping.international': { value: 'true', type: 'boolean', category: 'shipping' },
+  // Shippo Integration
+  'shipping.shippoApiKey': { value: '', type: 'string', category: 'shipping' },
+  'shipping.shippoTestMode': { value: 'true', type: 'boolean', category: 'shipping' },
+  // Origin Address (Warehouse)
+  'shipping.originName': { value: '', type: 'string', category: 'shipping' },
+  'shipping.originStreet': { value: '', type: 'string', category: 'shipping' },
+  'shipping.originCity': { value: '', type: 'string', category: 'shipping' },
+  'shipping.originState': { value: '', type: 'string', category: 'shipping' },
+  'shipping.originZip': { value: '', type: 'string', category: 'shipping' },
+  'shipping.originCountry': { value: 'US', type: 'string', category: 'shipping' },
+  'shipping.originPhone': { value: '', type: 'string', category: 'shipping' },
 
   // Tax settings (basic)
   'tax.defaultRate': { value: '8.5', type: 'number', category: 'tax' },
@@ -33,7 +44,12 @@ const DEFAULT_SETTINGS = {
 
   // Payment settings
   'payment.stripe': { value: 'true', type: 'boolean', category: 'payment' },
+  'payment.stripePublishableKey': { value: '', type: 'string', category: 'payment' },
+  'payment.stripeSecretKey': { value: '', type: 'string', category: 'payment' },
+  'payment.stripeWebhookSecret': { value: '', type: 'string', category: 'payment' },
   'payment.paypal': { value: 'false', type: 'boolean', category: 'payment' },
+  'payment.paypalClientId': { value: '', type: 'string', category: 'payment' },
+  'payment.paypalClientSecret': { value: '', type: 'string', category: 'payment' },
   'payment.gsaSmartpay': { value: 'true', type: 'boolean', category: 'payment' },
 
   // Security settings
