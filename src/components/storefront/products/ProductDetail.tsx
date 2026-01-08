@@ -197,7 +197,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
   // Only use color mapping if the color has actual images mapped
   const colorHasImages = selectedColor && product.colorImages && product.colorImages[selectedColor] && product.colorImages[selectedColor].length > 0;
   const displayImages = colorHasImages
-    ? product.colorImages[selectedColor].map((idx: number) => product.images[idx]).filter(Boolean)
+    ? (product.colorImages![selectedColor!] as number[]).map((idx: number) => product.images[idx]).filter(Boolean)
     : product.images;
 
   // Check if user is admin
