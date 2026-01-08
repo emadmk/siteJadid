@@ -184,19 +184,20 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
   const handleColorChange = (color: string | null) => {
     setSelectedColor(color);
     // Reset to first image when color changes
-    if (color && product.colorImages && product.colorImages[color]) {
-      const colorImageIndices = product.colorImages[color];
-      if (colorImageIndices.length > 0) {
-        setSelectedImage(colorImageIndices[0]);
-      }
+    if (color && product.colorImages && product.colorImages[color] && product.colorImages[color].length > 0) {
+      // Color has mapped images - set to first mapped image
+      setSelectedImage(0); // Always use index 0 of the filtered displayImages
     } else {
+      // No mapping for this color - reset to first product image
       setSelectedImage(0);
     }
   };
 
   // Get images to display - filtered by color if applicable
-  const displayImages = selectedColor && product.colorImages && product.colorImages[selectedColor]
-    ? product.colorImages[selectedColor].map(idx => product.images[idx]).filter(Boolean)
+  // Only use color mapping if the color has actual images mapped
+  const colorHasImages = selectedColor && product.colorImages && product.colorImages[selectedColor] && product.colorImages[selectedColor].length > 0;
+  const displayImages = colorHasImages
+    ? product.colorImages[selectedColor].map((idx: number) => product.images[idx]).filter(Boolean)
     : product.images;
 
   // Check if user is admin
