@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { X, Eye, EyeOff, Loader2, Mail, Lock, User, Building2, AlertCircle } from 'lucide-react';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 
 export function AuthModal() {
-  const { isOpen, view, closeModal, setView } = useAuthModal();
+  const { isOpen, view, reason, closeModal, setView } = useAuthModal();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,13 +25,13 @@ export function AuthModal() {
     { value: 'GCSS-Army', label: 'Global Combat Support System-Army (GCSS-Army)' },
   ];
 
-  // Register form
+  // Register form - Pre-select B2B if reason is 'b2b'
   const [registerData, setRegisterData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    accountType: 'B2C' as 'B2C' | 'B2B' | 'GSA',
+    accountType: (reason === 'b2b' ? 'B2B' : 'B2C') as 'B2C' | 'B2B' | 'GSA',
     companyName: '',
     gsaDepartment: '',
   });
@@ -39,6 +39,13 @@ export function AuthModal() {
   // Forgot password form
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+
+  // Pre-select B2B account type when reason is 'b2b'
+  useEffect(() => {
+    if (reason === 'b2b') {
+      setRegisterData(prev => ({ ...prev, accountType: 'B2B' }));
+    }
+  }, [reason]);
 
   if (!isOpen) return null;
 

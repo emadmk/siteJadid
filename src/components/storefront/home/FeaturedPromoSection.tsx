@@ -221,39 +221,41 @@ export function FeaturedPromoSection() {
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />
             </div>
 
-            {/* Content */}
-            <div className="relative p-4 h-full flex flex-col items-center justify-center text-center">
-              {/* Badge Image */}
-              <div className="mb-3">
+            {/* Content - Logo Left, Text Right */}
+            <div className="relative p-4 h-full flex items-center gap-4">
+              {/* Badge Image - Left Side Big */}
+              <div className="flex-shrink-0">
                 <Image
                   src="/images/imagesite/badge copy.png"
                   alt="ADA Supply Badge"
-                  width={80}
-                  height={80}
+                  width={140}
+                  height={140}
                   className="object-contain"
                   unoptimized
                 />
               </div>
 
-              {/* Text */}
-              <p className="text-white text-base font-medium mb-4 max-w-xs leading-snug">
-                Purchase on behalf of a company? Let us show you why customers choose us.
-              </p>
+              {/* Text & Buttons - Right Side */}
+              <div className="flex-1 flex flex-col justify-center">
+                <p className="text-white text-base font-medium mb-3 leading-snug">
+                  Purchase on behalf of a company? Let us show you why customers choose us.
+                </p>
 
-              {/* Buttons */}
-              <div className="flex gap-3 w-full max-w-xs">
-                <Link
-                  href="/auth/register?type=b2b"
-                  className="flex-1 bg-white text-safety-green-700 px-3 py-2 rounded-lg font-semibold text-sm text-center hover:bg-gray-100 transition-colors"
-                >
-                  Register Now B2B
-                </Link>
-                <button
-                  onClick={() => setShowContactModal(true)}
-                  className="flex-1 bg-white/20 text-white px-3 py-2 rounded-lg font-semibold text-sm text-center hover:bg-white/30 transition-colors border border-white/30"
-                >
-                  Contact us Now
-                </button>
+                {/* Buttons */}
+                <div className="flex gap-2">
+                  <Link
+                    href="/auth/signup?type=b2b"
+                    className="bg-white text-safety-green-700 px-4 py-2 rounded-lg font-semibold text-sm text-center hover:bg-gray-100 transition-colors"
+                  >
+                    Register Now B2B
+                  </Link>
+                  <button
+                    onClick={() => setShowContactModal(true)}
+                    className="bg-white/20 text-white px-4 py-2 rounded-lg font-semibold text-sm text-center hover:bg-white/30 transition-colors border border-white/30"
+                  >
+                    Contact us Now
+                  </button>
+                </div>
               </div>
             </div>
           </div>
