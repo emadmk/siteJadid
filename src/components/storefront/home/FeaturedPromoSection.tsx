@@ -238,7 +238,9 @@ export function FeaturedPromoSection() {
               {/* Text & Buttons - Right Side */}
               <div className="flex-1 flex flex-col justify-center">
                 <p className="text-white text-base font-medium mb-3 leading-snug">
-                  Purchase on behalf of a company? Let us show you why customers choose us.
+                  Purchase on behalf of a company?<br />
+                  or need a personalised quote?<br />
+                  Let us show you why customers choose us.
                 </p>
 
                 {/* Buttons */}
