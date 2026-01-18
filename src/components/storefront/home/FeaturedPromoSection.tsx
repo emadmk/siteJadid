@@ -49,27 +49,23 @@ export function FeaturedPromoSection() {
     fetchFeaturedProducts();
   }, []);
 
-  // Auto-rotate products
+  // Auto-rotate products - 1 at a time
   useEffect(() => {
-    if (products.length <= 3) return;
+    if (products.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % Math.max(1, products.length - 2));
+      setCurrentIndex((prev) => (prev + 1) % products.length);
     }, 4000);
     return () => clearInterval(timer);
   }, [products.length]);
 
-  const visibleProducts = products.slice(currentIndex, currentIndex + 3);
-  if (visibleProducts.length < 3 && products.length >= 3) {
-    const remaining = 3 - visibleProducts.length;
-    visibleProducts.push(...products.slice(0, remaining));
-  }
+  const currentProduct = products[currentIndex];
 
   const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % Math.max(1, products.length - 2));
+    setCurrentIndex((prev) => (prev + 1) % products.length);
   };
 
   const prevSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + Math.max(1, products.length - 2)) % Math.max(1, products.length - 2));
+    setCurrentIndex((prev) => (prev - 1 + products.length) % products.length);
   };
 
   const handleContactSubmit = async (e: React.FormEvent) => {
@@ -119,89 +115,104 @@ export function FeaturedPromoSection() {
               </Link>
             </div>
 
-            {/* Products Carousel */}
-            <div className="p-3 relative">
+            {/* Single Product Display */}
+            <div className="p-4 relative">
               {isLoading ? (
-                <div className="grid grid-cols-3 gap-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="h-20 bg-gray-100 rounded-lg mb-2" />
-                      <div className="h-3 bg-gray-100 rounded w-3/4 mb-1" />
-                      <div className="h-3 bg-gray-100 rounded w-1/2" />
-                    </div>
-                  ))}
+                <div className="animate-pulse flex items-center gap-4">
+                  <div className="w-24 h-24 bg-gray-100 rounded-lg flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-1/2 mb-3" />
+                    <div className="h-5 bg-gray-100 rounded w-1/4" />
+                  </div>
                 </div>
-              ) : products.length > 0 ? (
+              ) : currentProduct ? (
                 <>
-                  {products.length > 3 && (
+                  {/* Navigation Arrows */}
+                  {products.length > 1 && (
                     <>
                       <button
                         onClick={prevSlide}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-1 transition-all"
+                        className="absolute left-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-1.5 transition-all"
                       >
-                        <ChevronLeft className="w-3 h-3 text-gray-700" />
+                        <ChevronLeft className="w-4 h-4 text-gray-700" />
                       </button>
                       <button
                         onClick={nextSlide}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-1 transition-all"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-1.5 transition-all"
                       >
-                        <ChevronRight className="w-3 h-3 text-gray-700" />
+                        <ChevronRight className="w-4 h-4 text-gray-700" />
                       </button>
                     </>
                   )}
 
-                  <div className="grid grid-cols-3 gap-2">
-                    {visibleProducts.map((product, idx) => (
-                      <Link
-                        key={`${product.id}-${idx}`}
-                        href={`/products/${product.slug}`}
-                        className="group bg-white rounded-lg border border-gray-100 p-1.5 hover:border-safety-green-400 hover:shadow-md transition-all"
-                      >
-                        <div className="h-20 bg-white rounded-md mb-1.5 flex items-center justify-center p-1">
-                          {product.images?.[0] ? (
-                            <Image
-                              src={product.images[0]}
-                              alt={product.name}
-                              width={80}
-                              height={80}
-                              className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                              <span className="text-xl text-gray-300">📦</span>
-                            </div>
-                          )}
+                  {/* Single Product Card - Horizontal Layout */}
+                  <Link
+                    href={`/products/${currentProduct.slug}`}
+                    className="group flex items-center gap-4 bg-white rounded-lg border border-gray-100 p-3 mx-6 hover:border-safety-green-400 hover:shadow-md transition-all"
+                  >
+                    {/* Product Image */}
+                    <div className="w-24 h-24 bg-white rounded-lg flex-shrink-0 flex items-center justify-center p-2">
+                      {currentProduct.images?.[0] ? (
+                        <Image
+                          src={currentProduct.images[0]}
+                          alt={currentProduct.name}
+                          width={96}
+                          height={96}
+                          className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl text-gray-300">📦</span>
                         </div>
-                        <h4 className="text-[10px] font-medium text-gray-800 line-clamp-2 group-hover:text-safety-green-600 transition-colors leading-tight">
-                          {product.name}
-                        </h4>
-                        <div className="mt-0.5">
-                          {product.salePrice ? (
-                            <span className="text-xs font-bold text-safety-green-600">
-                              ${Number(product.salePrice).toFixed(2)}
-                            </span>
-                          ) : (
-                            <span className="text-xs font-bold text-gray-900">
-                              ${Number(product.basePrice).toFixed(2)}
-                            </span>
-                          )}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                      )}
+                    </div>
 
-                  {products.length > 3 && (
-                    <div className="flex justify-center gap-1 mt-2">
-                      {Array.from({ length: Math.max(1, products.length - 2) }).slice(0, 6).map((_, idx) => (
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      {currentProduct.brand && (
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">
+                          {currentProduct.brand.name}
+                        </span>
+                      )}
+                      <h4 className="text-sm font-semibold text-gray-800 line-clamp-2 group-hover:text-safety-green-600 transition-colors leading-snug mt-0.5">
+                        {currentProduct.name}
+                      </h4>
+                      <div className="mt-2 flex items-center gap-2">
+                        {currentProduct.salePrice ? (
+                          <>
+                            <span className="text-lg font-bold text-safety-green-600">
+                              ${Number(currentProduct.salePrice).toFixed(2)}
+                            </span>
+                            <span className="text-sm text-gray-400 line-through">
+                              ${Number(currentProduct.basePrice).toFixed(2)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-lg font-bold text-gray-900">
+                            ${Number(currentProduct.basePrice).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* Dots Indicator */}
+                  {products.length > 1 && (
+                    <div className="flex justify-center gap-1.5 mt-3">
+                      {products.slice(0, 8).map((_, idx) => (
                         <button
                           key={idx}
                           onClick={() => setCurrentIndex(idx)}
-                          className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                            currentIndex === idx ? 'bg-safety-green-600' : 'bg-gray-300'
+                          className={`w-2 h-2 rounded-full transition-colors ${
+                            currentIndex === idx ? 'bg-safety-green-600' : 'bg-gray-300 hover:bg-gray-400'
                           }`}
                         />
                       ))}
+                      {products.length > 8 && (
+                        <span className="text-xs text-gray-400 ml-1">+{products.length - 8}</span>
+                      )}
                     </div>
                   )}
                 </>
