@@ -4,12 +4,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Shield, CheckCircle2, Building2 } from 'lucide-react';
 
-export function PromoSection() {
-  // DISABLED: These banners are temporarily disabled
-  // To re-enable, remove the "return null" line below and uncomment the section
-  return null;
+// DISABLED: Set to false to re-enable the GSA/B2B/Quote banners
+const BANNERS_ENABLED = false;
 
-  /* DISABLED SECTION START
+export function PromoSection() {
+  if (!BANNERS_ENABLED) {
+    return null;
+  }
+
   return (
     <section className="py-12 lg:py-16">
       <div className="container mx-auto px-4">
@@ -140,5 +142,4 @@ export function PromoSection() {
       </div>
     </section>
   );
-  DISABLED SECTION END */
 }
