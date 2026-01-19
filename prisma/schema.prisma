@@ -304,6 +304,7 @@ model LoyaltyTransaction {
 
 enum ProductStatus {
   DRAFT
+  PRERELEASE
   ACTIVE
   INACTIVE
   OUT_OF_STOCK
@@ -424,6 +425,9 @@ model Product {
   metaTitle       String?
   metaDescription String?
   metaKeywords    String?
+
+  // Import/PreRelease fields
+  originalCategory String?       // Category from Excel import (for PreRelease review)
 
   // Media
   images          String[]

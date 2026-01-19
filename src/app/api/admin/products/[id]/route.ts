@@ -186,19 +186,29 @@ export async function PUT(
     });
 
     // Handle multiple categories if provided
+    // Support both categoryIds array and additionalCategoryIds
+    let allCategoryIds: string[] = [];
+
     if (data.categoryIds && Array.isArray(data.categoryIds)) {
+      allCategoryIds = data.categoryIds;
+    } else if (data.additionalCategoryIds && Array.isArray(data.additionalCategoryIds)) {
+      // additionalCategoryIds are categories beyond the primary one
+      allCategoryIds = data.additionalCategoryIds;
+    }
+
+    if (allCategoryIds.length > 0 || data.additionalCategoryIds !== undefined) {
       // Delete existing category relationships
       await db.productCategory.deleteMany({
         where: { productId: params.id },
       });
 
       // Create new category relationships
-      if (data.categoryIds.length > 0) {
+      if (allCategoryIds.length > 0) {
         await db.productCategory.createMany({
-          data: data.categoryIds.map((categoryId: string, index: number) => ({
+          data: allCategoryIds.map((categoryId: string, index: number) => ({
             productId: params.id,
             categoryId,
-            isPrimary: index === 0,
+            isPrimary: false,
             displayOrder: index,
           })),
         });

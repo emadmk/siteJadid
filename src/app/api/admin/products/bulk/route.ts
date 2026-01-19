@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
 
       case 'update_status': {
         const { status } = params;
-        if (!status || !['ACTIVE', 'DRAFT', 'INACTIVE', 'DISCONTINUED'].includes(status)) {
+        if (!status || !['ACTIVE', 'DRAFT', 'INACTIVE', 'DISCONTINUED', 'PRERELEASE'].includes(status)) {
           return NextResponse.json({ success: false, message: 'Invalid status' }, { status: 400 });
         }
 

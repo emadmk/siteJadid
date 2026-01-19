@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Package, Search, Upload, Pencil, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Package, Search, Upload, Pencil, ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, Rocket } from 'lucide-react';
 import { db } from '@/lib/db';
 import { ProductsTable } from '@/components/admin/ProductsTable';
 import { ScrollRestoration } from '@/components/admin/ScrollRestoration';
@@ -406,6 +406,7 @@ export default async function ProductsPage({
   const stats = {
     total: await db.product.count(),
     active: await db.product.count({ where: { status: 'ACTIVE' } }),
+    prerelease: await db.product.count({ where: { status: 'PRERELEASE' } }),
     lowStock: await db.product.count({
       where: { status: 'ACTIVE', stockQuantity: { lte: 10 } },
     }),
@@ -423,6 +424,12 @@ export default async function ProductsPage({
           <p className="text-gray-600">Manage your product catalog</p>
         </div>
         <div className="flex gap-3">
+          <Link href="/admin/products/prerelease">
+            <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50">
+              <Rocket className="w-4 h-4 mr-2" />
+              PreRelease
+            </Button>
+          </Link>
           <Link href="/admin/products/bulk-edit">
             <Button variant="outline" className="border-gray-300">
               <Pencil className="w-4 h-4 mr-2" />
@@ -445,7 +452,7 @@ export default async function ProductsPage({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="text-3xl font-bold text-black mb-1">{stats.total}</div>
           <div className="text-sm text-gray-600">Total Products</div>
@@ -454,8 +461,12 @@ export default async function ProductsPage({
           <div className="text-3xl font-bold text-safety-green-600 mb-1">{stats.active}</div>
           <div className="text-sm text-gray-600">Active Products</div>
         </div>
+        <Link href="/admin/products/prerelease" className="bg-white rounded-lg border border-orange-200 p-6 hover:border-orange-400 transition-colors">
+          <div className="text-3xl font-bold text-orange-600 mb-1">{stats.prerelease}</div>
+          <div className="text-sm text-gray-600">PreRelease (Pending Review)</div>
+        </Link>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-3xl font-bold text-orange-600 mb-1">{stats.lowStock}</div>
+          <div className="text-3xl font-bold text-red-600 mb-1">{stats.lowStock}</div>
           <div className="text-sm text-gray-600">Low Stock</div>
         </div>
       </div>
@@ -494,6 +505,7 @@ export default async function ProductsPage({
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
               <option value="DRAFT">Draft</option>
+              <option value="PRERELEASE">PreRelease</option>
               <option value="OUT_OF_STOCK">Out of Stock</option>
               <option value="DISCONTINUED">Discontinued</option>
             </select>

@@ -107,7 +107,7 @@ export default function ProductImportPage() {
     defaultSupplierId: '',
     // Stock and Status defaults
     defaultStockQuantity: 0,
-    defaultStatus: 'ACTIVE' as 'DRAFT' | 'ACTIVE' | 'INACTIVE',
+    defaultStatus: 'PRERELEASE' as 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'PRERELEASE',
   });
 
   // Fetch dropdown data on mount
@@ -641,10 +641,11 @@ export default function ProductImportPage() {
                       <select
                         value={options.defaultStatus}
                         onChange={(e) =>
-                          setOptions({ ...options, defaultStatus: e.target.value as 'DRAFT' | 'ACTIVE' | 'INACTIVE' })
+                          setOptions({ ...options, defaultStatus: e.target.value as 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'PRERELEASE' })
                         }
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent bg-white"
                       >
+                        <option value="PRERELEASE">PreRelease (Review First)</option>
                         <option value="ACTIVE">Active</option>
                         <option value="DRAFT">Draft</option>
                         <option value="INACTIVE">Inactive</option>
