@@ -198,18 +198,16 @@ export function FeaturedPromoSection() {
                     className="group flex items-center gap-4 bg-white rounded-lg border border-gray-100 p-3 mx-6 hover:border-safety-green-400 hover:shadow-md transition-all"
                   >
                     {/* Product Image */}
-                    <div className="w-24 h-24 bg-white rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
+                    <div className="w-32 h-32 bg-white rounded-lg flex-shrink-0 flex items-center justify-center p-2">
                       {currentProduct.images?.[0] ? (
-                        <div className="relative w-full h-full p-1">
-                          <Image
-                            src={currentProduct.images[0]}
-                            alt={currentProduct.name}
-                            fill
-                            sizes="96px"
-                            className="object-contain group-hover:scale-105 transition-transform"
-                            unoptimized
-                          />
-                        </div>
+                        <Image
+                          src={currentProduct.images[0]}
+                          alt={currentProduct.name}
+                          width={120}
+                          height={120}
+                          className="object-contain max-w-full max-h-full group-hover:scale-105 transition-transform"
+                          unoptimized
+                        />
                       ) : (
                         <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
                           <span className="text-2xl text-gray-300">📦</span>
