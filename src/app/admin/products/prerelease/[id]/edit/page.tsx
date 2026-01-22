@@ -129,11 +129,13 @@ export default function PreReleaseEditPage() {
         }
 
         if (categoriesRes.ok) {
-          setCategories(await categoriesRes.json());
+          const catData = await categoriesRes.json();
+          setCategories(catData.categories || []);
         }
 
         if (brandsRes.ok) {
-          setBrands(await brandsRes.json());
+          const brandData = await brandsRes.json();
+          setBrands(brandData.brands || []);
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);

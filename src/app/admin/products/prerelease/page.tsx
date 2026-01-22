@@ -38,7 +38,7 @@ export default function PreReleasePage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 20;
+  const pageSize = 50;
 
   // Fetch prerelease products
   const fetchProducts = async () => {
@@ -71,7 +71,7 @@ export default function PreReleasePage() {
       const res = await fetch('/api/admin/categories');
       if (res.ok) {
         const data = await res.json();
-        setCategories(data || []);
+        setCategories(data.categories || []);
       }
     } catch (error) {
       console.error('Failed to fetch categories:', error);
