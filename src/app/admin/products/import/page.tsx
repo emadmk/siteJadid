@@ -26,7 +26,7 @@ import {
   Footprints,
 } from 'lucide-react';
 
-type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine';
+type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine' | 'carhartt';
 
 interface Brand {
   id: string;
@@ -204,6 +204,8 @@ export default function ProductImportPage() {
         ? '/api/admin/pip-import'
         : importType === 'wolverine'
         ? '/api/admin/wolverine-import'
+        : importType === 'carhartt'
+        ? '/api/admin/carhartt-import'
         : '/api/admin/bulk-import';
 
       const response = await fetch(apiUrl, {
@@ -328,6 +330,21 @@ export default function ProductImportPage() {
           </button>
           <button
             onClick={() => {
+              setImportType('carhartt');
+              setFile(null);
+              setResult(null);
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              importType === 'carhartt'
+                ? 'bg-orange-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Footprints className="w-5 h-5" />
+            Carhartt Import
+          </button>
+          <button
+            onClick={() => {
               setImportType('gsa');
               setFile(null);
               setResult(null);
@@ -349,6 +366,8 @@ export default function ProductImportPage() {
             ? 'Import PiP products. Creates brands, categories (parent/child), and variants (Color/Size) automatically.'
             : importType === 'wolverine'
             ? 'Import Wolverine/Bates footwear products. Creates size variants automatically from manufacturer part numbers.'
+            : importType === 'carhartt'
+            ? 'Import Carhartt workwear products. Creates size variants automatically and maps to Footwear category.'
             : 'Import GSA products with custom field mapping and compliance data.'}
         </p>
       </div>
@@ -364,6 +383,8 @@ export default function ProductImportPage() {
               ? 'bg-purple-50 border-purple-200'
               : importType === 'wolverine'
               ? 'bg-amber-50 border-amber-200'
+              : importType === 'carhartt'
+              ? 'bg-orange-50 border-orange-200'
               : 'bg-blue-50 border-blue-200'
           }`}>
             <h2 className={`text-lg font-semibold mb-3 ${
@@ -373,9 +394,11 @@ export default function ProductImportPage() {
                 ? 'text-purple-800'
                 : importType === 'wolverine'
                 ? 'text-amber-800'
+                : importType === 'carhartt'
+                ? 'text-orange-800'
                 : 'text-blue-800'
             }`}>
-              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : importType === 'wolverine' ? 'Wolverine Bates Import' : 'GSA Import'} Selected
+              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : importType === 'wolverine' ? 'Wolverine Bates Import' : importType === 'carhartt' ? 'Carhartt Import' : 'GSA Import'} Selected
             </h2>
             {importType === 'occunomix' ? (
               <div className="space-y-2 text-sm text-safety-green-700">
@@ -413,6 +436,20 @@ export default function ProductImportPage() {
                   <li>Image matching: {'{style}'}.jpg, {'{style}'}_2.jpg, {'{style}'}_3.jpg</li>
                   <li>Products without images in import-images folder are skipped</li>
                   <li>GSA SIN and pricing automatically captured</li>
+                </ul>
+              </div>
+            ) : importType === 'carhartt' ? (
+              <div className="space-y-2 text-sm text-orange-700">
+                <p><strong>Expected Columns:</strong> manufacturer_part_number, ADA vendor_part_number, item_name, item_description, commercial_price, Website Sale Price, GSA/Federal Price</p>
+                <p><strong>Features:</strong></p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Manufacturer Part Number (CMW6095) → Product SKU</li>
+                  <li>ADA Vendor Part Number (CHT-CMW6095-7M) → Variant SKU</li>
+                  <li>Size variants created from ADA part numbers (7M, 8W, etc.)</li>
+                  <li>Multiple prices: Commercial, Website Sale, Supplier Cost, GSA</li>
+                  <li>Images from: /import-images/Images/{'<Category>/<Style>/<PartNumber>'}/JPEG/</li>
+                  <li>Auto-creates Carhartt brand and assigns to Footwear category</li>
+                  <li>Products go to PreRelease status for review</li>
                 </ul>
               </div>
             ) : (
