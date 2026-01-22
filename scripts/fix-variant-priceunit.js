@@ -24,7 +24,7 @@ async function main() {
       },
       OR: [
         { priceUnit: { in: ['DZ', 'dz', 'dozen'] } },
-        { priceUnit: null }
+        { priceUnit: { equals: null } }
       ]
     },
     include: {
@@ -58,7 +58,7 @@ async function main() {
       },
       OR: [
         { priceUnit: { in: ['DZ', 'dz', 'dozen'] } },
-        { priceUnit: null }
+        { priceUnit: { equals: null } }
       ]
     },
     data: {
