@@ -368,16 +368,31 @@ export class CarharttImportService {
 
   /**
    * Get images for a part number
+   * Supports partial matching - folder name may contain the part number
    */
   private getImagesForPartNumber(partNumber: string): string[] {
+    const upperPart = partNumber.toUpperCase();
+
     // Try exact match first
-    let images = this.imageCache.get(partNumber.toUpperCase());
+    let images = this.imageCache.get(upperPart);
     if (images) return images;
 
     // Try without suffix (e.g., CMW6095-M → CMW6095)
-    const basePart = partNumber.split('-')[0];
-    images = this.imageCache.get(basePart.toUpperCase());
+    const basePart = partNumber.split('-')[0].toUpperCase();
+    images = this.imageCache.get(basePart);
     if (images) return images;
+
+    // Try partial match - folder name CONTAINS the part number
+    for (const [folderName, folderImages] of this.imageCache.entries()) {
+      // Check if folder name contains the part number or base part
+      if (folderName.includes(upperPart) || folderName.includes(basePart)) {
+        return folderImages;
+      }
+      // Also check if part number contains folder name (reverse check)
+      if (upperPart.includes(folderName.split('_')[0])) {
+        return folderImages;
+      }
+    }
 
     return [];
   }
@@ -431,6 +446,49 @@ export class CarharttImportService {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .substring(0, 100);
+  }
+
+  /**
+   * Generate SEO fields
+   */
+  private generateSeoFields(group: VariantGroup): {
+    metaTitle: string;
+    metaDescription: string;
+    metaKeywords: string;
+  } {
+    const brandName = 'Carhartt';
+    const productName = group.productName || group.basePartNumber;
+
+    // Meta Title: Brand + Product Name (max 60 chars)
+    const metaTitle = `${brandName} ${productName}`.substring(0, 60);
+
+    // Meta Description: Short description + key info (max 160 chars)
+    const descText = (group.description || productName)
+      .replace(/<[^>]*>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const metaDescription = `Shop ${brandName} ${productName}. ${descText}`.substring(0, 160);
+
+    // Meta Keywords: Brand, product type, key features
+    const keywords = [
+      brandName,
+      'workwear',
+      'safety footwear',
+      'work boots',
+      group.basePartNumber,
+    ];
+
+    // Extract keywords from product name
+    const nameWords = productName.toLowerCase().split(/\s+/);
+    const relevantWords = nameWords.filter(w =>
+      w.length > 3 &&
+      !['with', 'and', 'the', 'for'].includes(w)
+    );
+    keywords.push(...relevantWords.slice(0, 5));
+
+    const metaKeywords = [...new Set(keywords)].join(', ');
+
+    return { metaTitle, metaDescription, metaKeywords };
   }
 
   /**
@@ -628,6 +686,9 @@ export class CarharttImportService {
       slug = `${slug}-${group.basePartNumber.toLowerCase()}`;
     }
 
+    // Generate SEO fields
+    const seoFields = this.generateSeoFields(group);
+
     // Map UOM to priceUnit
     const priceUnitMap: Record<string, string> = {
       'PR': 'pr',
@@ -663,8 +724,12 @@ export class CarharttImportService {
       ...(group.weight && { weight: new Decimal(group.weight) }),
       // Store original category info for PreRelease review
       originalCategory: 'Carhartt Footwear',
-      // For single variant, set vendor part number
-      ...(!hasVariants && firstRow.adaVendorPartNumber && {
+      // SEO fields
+      metaTitle: seoFields.metaTitle,
+      metaDescription: seoFields.metaDescription,
+      metaKeywords: seoFields.metaKeywords,
+      // Always set vendor part number from first row's ADA part number
+      ...(firstRow.adaVendorPartNumber && {
         vendorPartNumber: firstRow.adaVendorPartNumber
       }),
     };
