@@ -105,11 +105,28 @@ export function CheckoutForm({
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
-  // Shipping settings from database
+  // Shipping rates from Shippo
+  interface ShippingRateOption {
+    id: string;
+    carrier: string;
+    carrierLogo: string;
+    serviceName: string;
+    serviceCode: string;
+    cost: number;
+    currency: string;
+    estimatedDays: number | null;
+    arrivesBy: string | null;
+  }
+
+  const [shippingRates, setShippingRates] = useState<ShippingRateOption[]>([]);
+  const [selectedRateId, setSelectedRateId] = useState<string | null>(null);
+  const [loadingRates, setLoadingRates] = useState(false);
+  const [ratesError, setRatesError] = useState<string | null>(null);
+
+  // Free shipping settings
   const [shippingSettings, setShippingSettings] = useState({
     freeShippingEnabled: false,
     freeThreshold: 100,
-    standardRate: 15,
   });
 
   // Fetch shipping settings
@@ -120,13 +137,67 @@ export function CheckoutForm({
         setShippingSettings({
           freeShippingEnabled: data.freeShippingEnabled ?? false,
           freeThreshold: data.freeThreshold ?? 100,
-          standardRate: data.standardRate ?? 15,
         });
       })
       .catch(() => {
         // Keep defaults on error
       });
   }, []);
+
+  // Fetch shipping rates when address is selected
+  const fetchShippingRates = async (address: Address) => {
+    setLoadingRates(true);
+    setRatesError(null);
+
+    try {
+      const response = await fetch('/api/shipping/rates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toAddress: {
+            name: `${address.firstName} ${address.lastName}`,
+            street1: address.address1,
+            street2: address.address2,
+            city: address.city,
+            state: address.state,
+            zipCode: address.zipCode,
+            country: address.country || 'US',
+            phone: address.phone,
+          },
+          cartItems: cartItems.map(item => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+          })),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.rates) {
+        setShippingRates(data.rates);
+        // Auto-select cheapest rate
+        if (data.rates.length > 0) {
+          setSelectedRateId(data.rates[0].id);
+          setShippingMethod(data.rates[0].serviceCode);
+        }
+      } else {
+        setRatesError(data.error || 'Failed to fetch shipping rates');
+      }
+    } catch (err) {
+      console.error('Error fetching rates:', err);
+      setRatesError('Failed to fetch shipping rates');
+    } finally {
+      setLoadingRates(false);
+    }
+  };
+
+  // Fetch rates when address changes
+  useEffect(() => {
+    const address = addresses.find(a => a.id === selectedAddressId);
+    if (address) {
+      fetchShippingRates(address);
+    }
+  }, [selectedAddressId]);
 
   // Card details
   const [cardNumber, setCardNumber] = useState('');
@@ -162,14 +233,13 @@ export function CheckoutForm({
     return sum + price * item.quantity;
   }, 0);
 
+  // Get shipping cost from selected rate or fallback
+  const selectedRate = shippingRates.find(r => r.id === selectedRateId);
+  const baseShippingCost = selectedRate?.cost ?? 15;
   const shippingCost =
-    shippingMethod === 'ground'
-      ? shippingSettings.freeShippingEnabled && subtotal >= shippingSettings.freeThreshold
-        ? 0
-        : shippingSettings.standardRate
-      : shippingMethod === 'express'
-      ? 29.99
-      : 49.99;
+    shippingSettings.freeShippingEnabled && subtotal >= shippingSettings.freeThreshold
+      ? 0
+      : baseShippingCost;
 
   const discount = appliedCoupon?.discount || 0;
   const tax = isB2BAccount || isGSAAccount ? 0 : (subtotal - discount) * 0.08;
@@ -268,6 +338,10 @@ export function CheckoutForm({
         shippingAddressId: selectedAddressId,
         billingAddressId: selectedAddressId, // Same as shipping for now
         shippingMethod,
+        shippingRateId: selectedRateId,
+        shippingCost: shippingCost,
+        shippingCarrier: selectedRate?.carrier,
+        shippingServiceName: selectedRate?.serviceName,
         paymentMethod,
         costCenterId: selectedCostCenterId,
         couponCode: appliedCoupon?.code,
@@ -561,76 +635,99 @@ export function CheckoutForm({
               <h2 className="text-xl font-bold text-black">Delivery Method</h2>
             </div>
 
-            <div className="space-y-3">
-              <label
-                className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                  shippingMethod === 'ground'
-                    ? 'border-safety-green-600 bg-safety-green-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="shipping"
-                  checked={shippingMethod === 'ground'}
-                  onChange={() => setShippingMethod('ground')}
-                  className="w-4 h-4 text-safety-green-600"
-                />
-                <div className="flex-1">
-                  <div className="font-medium text-black">FedEx Ground</div>
-                  <div className="text-sm text-gray-600">5-7 business days</div>
-                </div>
-                <div className="font-bold text-black">
-                  {subtotal >= 99 ? (
-                    <span className="text-safety-green-600">FREE</span>
-                  ) : (
-                    '$15.00'
-                  )}
-                </div>
-              </label>
+            {/* Loading state */}
+            {loadingRates && (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 text-safety-green-600 animate-spin mr-3" />
+                <span className="text-gray-600">Calculating shipping rates...</span>
+              </div>
+            )}
 
-              <label
-                className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                  shippingMethod === 'express'
-                    ? 'border-safety-green-600 bg-safety-green-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="shipping"
-                  checked={shippingMethod === 'express'}
-                  onChange={() => setShippingMethod('express')}
-                  className="w-4 h-4 text-safety-green-600"
-                />
-                <div className="flex-1">
-                  <div className="font-medium text-black">FedEx 2Day</div>
-                  <div className="text-sm text-gray-600">2 business days</div>
+            {/* Error state */}
+            {ratesError && !loadingRates && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 text-red-700">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span>{ratesError}</span>
                 </div>
-                <div className="font-bold text-black">$29.99</div>
-              </label>
+              </div>
+            )}
 
-              <label
-                className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                  shippingMethod === 'overnight'
-                    ? 'border-safety-green-600 bg-safety-green-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="shipping"
-                  checked={shippingMethod === 'overnight'}
-                  onChange={() => setShippingMethod('overnight')}
-                  className="w-4 h-4 text-safety-green-600"
-                />
-                <div className="flex-1">
-                  <div className="font-medium text-black">FedEx Overnight</div>
-                  <div className="text-sm text-gray-600">Next business day</div>
-                </div>
-                <div className="font-bold text-black">$49.99</div>
-              </label>
-            </div>
+            {/* Shipping rates */}
+            {!loadingRates && shippingRates.length > 0 && (
+              <div className="space-y-3">
+                {shippingRates.map((rate) => {
+                  const isFreeEligible = shippingSettings.freeShippingEnabled &&
+                    subtotal >= shippingSettings.freeThreshold &&
+                    rate.id === shippingRates[0]?.id; // Only first (cheapest) rate can be free
+
+                  return (
+                    <label
+                      key={rate.id}
+                      className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                        selectedRateId === rate.id
+                          ? 'border-safety-green-600 bg-safety-green-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="shipping"
+                        checked={selectedRateId === rate.id}
+                        onChange={() => {
+                          setSelectedRateId(rate.id);
+                          setShippingMethod(rate.serviceCode);
+                        }}
+                        className="w-4 h-4 text-safety-green-600"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {rate.carrierLogo && (
+                            <img
+                              src={rate.carrierLogo}
+                              alt={rate.carrier}
+                              className="h-5 w-auto"
+                            />
+                          )}
+                          <span className="font-medium text-black">
+                            {rate.carrier} {rate.serviceName}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {rate.estimatedDays
+                            ? `${rate.estimatedDays} business day${rate.estimatedDays > 1 ? 's' : ''}`
+                            : rate.arrivesBy
+                            ? `Arrives by ${rate.arrivesBy}`
+                            : 'Estimated delivery time varies'}
+                        </div>
+                      </div>
+                      <div className="font-bold text-black">
+                        {isFreeEligible ? (
+                          <span className="text-safety-green-600">FREE</span>
+                        ) : (
+                          `$${rate.cost.toFixed(2)}`
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
+
+                {/* Free shipping notice */}
+                {shippingSettings.freeShippingEnabled && subtotal < shippingSettings.freeThreshold && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                    Add ${(shippingSettings.freeThreshold - subtotal).toFixed(2)} more for free shipping!
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* No rates available */}
+            {!loadingRates && shippingRates.length === 0 && !ratesError && (
+              <div className="text-center py-8 text-gray-600">
+                <Truck className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                <p>Please select a shipping address to see available shipping options.</p>
+              </div>
+            )}
 
             {/* Cost Center Selection for B2B */}
             {b2bMembership && costCenters.length > 0 && (
@@ -844,11 +941,19 @@ export function CheckoutForm({
                 </button>
               </div>
               <div className="text-sm text-gray-700">
-                {shippingMethod === 'ground'
-                  ? 'FedEx Ground (5-7 business days)'
-                  : shippingMethod === 'express'
-                  ? 'FedEx 2Day (2 business days)'
-                  : 'FedEx Overnight (Next business day)'}
+                {selectedRate ? (
+                  <div className="flex items-center gap-2">
+                    {selectedRate.carrierLogo && (
+                      <img src={selectedRate.carrierLogo} alt={selectedRate.carrier} className="h-4" />
+                    )}
+                    <span>
+                      {selectedRate.carrier} {selectedRate.serviceName}
+                      {selectedRate.estimatedDays && ` (${selectedRate.estimatedDays} business days)`}
+                    </span>
+                  </div>
+                ) : (
+                  'Please select a delivery method'
+                )}
               </div>
             </div>
 

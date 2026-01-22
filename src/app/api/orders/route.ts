@@ -116,6 +116,10 @@ export async function POST(request: NextRequest) {
       shippingAddressId,
       billingAddressId,
       shippingMethod,
+      shippingRateId,
+      shippingCost: providedShippingCost,
+      shippingCarrier,
+      shippingServiceName,
       paymentMethod,
       costCenterId,
       notes,
@@ -218,7 +222,15 @@ export async function POST(request: NextRequest) {
       return sum + (item.product.weight || 0) * item.quantity;
     }, 0);
 
-    const shippingCost = subtotal >= 99 ? 0 : totalWeight > 20 ? 35 : 15;
+    // Use shipping cost from checkout if provided, otherwise calculate fallback
+    let shippingCost: number;
+    if (typeof providedShippingCost === 'number') {
+      shippingCost = providedShippingCost;
+    } else {
+      // Fallback calculation if not provided
+      shippingCost = subtotal >= 99 ? 0 : totalWeight > 20 ? 35 : 15;
+    }
+
     const tax = user?.accountType === 'B2B' || user?.accountType === 'GSA' ? 0 : subtotal * 0.08;
     const total = subtotal + shippingCost + tax;
 
@@ -242,7 +254,8 @@ export async function POST(request: NextRequest) {
         status: requiresApproval ? 'ON_HOLD' : 'PENDING',
         paymentStatus: 'PENDING',
         paymentMethod: paymentMethod || 'CREDIT_CARD',
-        shippingMethod: shippingMethod || 'GROUND',
+        shippingMethod: shippingServiceName || shippingMethod || 'GROUND',
+        shippingCarrier: shippingCarrier || null,
         subtotal,
         shipping: shippingCost,
         tax,

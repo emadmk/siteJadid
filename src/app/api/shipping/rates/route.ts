@@ -1,100 +1,137 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  getShippingRates,
+  estimateParcel,
+  ShippoAddress,
+  ShippoParcel,
+  ShippingRate
+} from '@/lib/services/shippo';
 import { prisma } from '@/lib/prisma';
 
 interface ShippingRateRequest {
-  fromAddress: {
-    country: string;
-    state: string;
-    city: string;
-    zipCode: string;
-  };
+  // Destination address
   toAddress: {
-    country: string;
-    state: string;
+    name?: string;
+    street1?: string;
+    street2?: string;
     city: string;
+    state: string;
     zipCode: string;
+    country?: string;
+    phone?: string;
   };
-  package: {
-    weight: number; // pounds
-    length: number; // inches
-    width: number;
-    height: number;
-  };
-  value?: number; // For insurance
+  // Package info - can provide weight/dimensions
+  weight?: number; // Total weight in lbs
+  length?: number;
+  width?: number;
+  height?: number;
+  // Or cart items to calculate weight from
+  cartItems?: Array<{
+    productId: string;
+    quantity: number;
+  }>;
 }
 
-// POST /api/shipping/rates
+// POST /api/shipping/rates - Get shipping rates from Shippo
 export async function POST(request: NextRequest) {
   try {
     const data: ShippingRateRequest = await request.json();
 
     // Validate required fields
-    if (!data.fromAddress || !data.toAddress || !data.package) {
+    if (!data.toAddress) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Destination address is required' },
         { status: 400 }
       );
     }
 
-    // Get active shipping providers
-    const providers = await prisma.shippingProviderSettings.findMany({
-      where: { isActive: true },
-      include: { services: { where: { isActive: true } } },
-    });
-
-    if (providers.length === 0) {
+    if (!data.toAddress.zipCode || !data.toAddress.city || !data.toAddress.state) {
       return NextResponse.json(
-        { error: 'No shipping providers configured' },
-        { status: 404 }
+        { error: 'City, state, and ZIP code are required' },
+        { status: 400 }
       );
     }
 
-    const allRates: any[] = [];
+    // Calculate total weight
+    let totalWeight = data.weight || 0;
 
-    // Get rates from each provider
-    for (const provider of providers) {
-      try {
-        let rates: any[] = [];
+    // If cart items provided, calculate weight from products
+    if (data.cartItems && data.cartItems.length > 0) {
+      const productIds = data.cartItems.map(item => item.productId);
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, weight: true }
+      });
 
-        switch (provider.provider) {
-          case 'USPS':
-            rates = await getUSPSRates(provider, data);
-            break;
-          case 'FEDEX':
-            rates = await getFedExRates(provider, data);
-            break;
-          case 'UPS':
-            rates = await getUPSRates(provider, data);
-            break;
-          default:
-            continue;
-        }
+      const weightMap = new Map(products.map(p => [p.id, Number(p.weight) || 0.5]));
 
-        // Apply markup
-        rates = rates.map((rate) => ({
-          ...rate,
-          originalCost: rate.cost,
-          cost: applyMarkup(rate.cost, provider.services.find(s => s.serviceCode === rate.serviceCode)),
-        }));
-
-        allRates.push(...rates);
-      } catch (error) {
-        console.error(`Error fetching rates from ${provider.provider}:`, error);
-        // Continue with other providers
-      }
+      totalWeight = data.cartItems.reduce((sum, item) => {
+        const weight = weightMap.get(item.productId) || 0.5;
+        return sum + (weight * item.quantity);
+      }, 0);
     }
 
-    if (allRates.length === 0) {
-      return NextResponse.json(
-        { error: 'No shipping rates available' },
-        { status: 404 }
-      );
+    // Ensure minimum weight
+    totalWeight = Math.max(totalWeight, 0.5);
+
+    // Build parcel info
+    let parcel: ShippoParcel;
+
+    if (data.length && data.width && data.height) {
+      parcel = {
+        length: data.length,
+        width: data.width,
+        height: data.height,
+        distance_unit: 'in',
+        weight: totalWeight,
+        mass_unit: 'lb',
+      };
+    } else {
+      // Estimate parcel size based on weight
+      parcel = estimateParcel(totalWeight);
     }
 
-    // Sort by cost
-    allRates.sort((a, b) => a.cost - b.cost);
+    // Build destination address for Shippo
+    const toAddress: ShippoAddress = {
+      name: data.toAddress.name || 'Customer',
+      street1: data.toAddress.street1 || '123 Main St', // Shippo requires street for rates
+      street2: data.toAddress.street2,
+      city: data.toAddress.city,
+      state: data.toAddress.state,
+      zip: data.toAddress.zipCode,
+      country: data.toAddress.country || 'US',
+      phone: data.toAddress.phone,
+    };
 
-    return NextResponse.json({ rates: allRates });
+    // Get rates from Shippo
+    const { rates, error } = await getShippingRates(toAddress, [parcel]);
+
+    if (error) {
+      // If Shippo fails, return fallback rates
+      console.warn('Shippo rate error, using fallback:', error);
+
+      // Return fallback flat rates
+      const fallbackRates: ShippingRate[] = getFallbackRates(totalWeight);
+
+      return NextResponse.json({
+        rates: fallbackRates,
+        warning: 'Using estimated rates. ' + error,
+        fallback: true
+      });
+    }
+
+    if (rates.length === 0) {
+      // No rates from Shippo, return fallback
+      const fallbackRates: ShippingRate[] = getFallbackRates(totalWeight);
+
+      return NextResponse.json({
+        rates: fallbackRates,
+        warning: 'No carrier rates available. Using estimated rates.',
+        fallback: true
+      });
+    }
+
+    return NextResponse.json({ rates, fallback: false });
   } catch (error: any) {
     console.error('Error fetching shipping rates:', error);
     return NextResponse.json(
@@ -104,262 +141,43 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function applyMarkup(cost: number, service: any) {
-  if (!service) return cost;
+// Fallback rates when Shippo is not available
+function getFallbackRates(totalWeight: number): ShippingRate[] {
+  const groundCost = totalWeight > 20 ? 35 : totalWeight > 10 ? 25 : 15;
 
-  const markupValue = Number(service.markupValue);
-  if (markupValue === 0) return cost;
-
-  if (service.markupType === 'percentage') {
-    return cost * (1 + markupValue / 100);
-  } else {
-    return cost + markupValue;
-  }
-}
-
-async function getUSPSRates(provider: any, data: ShippingRateRequest) {
-  const baseUrl = provider.testMode
-    ? 'https://secure.shippingapis.com/ShippingAPI.dll'
-    : 'https://secure.shippingapis.com/ShippingAPI.dll';
-
-  const xmlRequest = `
-    <RateV4Request USERID="${provider.username}">
-      <Revision>2</Revision>
-      <Package ID="1">
-        <Service>ALL</Service>
-        <ZipOrigination>${data.fromAddress.zipCode}</ZipOrigination>
-        <ZipDestination>${data.toAddress.zipCode}</ZipDestination>
-        <Pounds>${Math.floor(data.package.weight)}</Pounds>
-        <Ounces>${Math.round((data.package.weight % 1) * 16)}</Ounces>
-        <Container>VARIABLE</Container>
-        <Size>REGULAR</Size>
-        <Width>${data.package.width}</Width>
-        <Length>${data.package.length}</Length>
-        <Height>${data.package.height}</Height>
-        <Machinable>true</Machinable>
-      </Package>
-    </RateV4Request>
-  `.trim();
-
-  const response = await fetch(`${baseUrl}?API=RateV4&XML=${encodeURIComponent(xmlRequest)}`);
-  const xmlText = await response.text();
-
-  // Parse XML response (simplified - would use proper XML parser)
-  const rates: any[] = [];
-
-  // Basic parsing - in production, use a proper XML parser
-  const serviceRegex = /<Postage[^>]*>[\s\S]*?<MailService>(.*?)<\/MailService>[\s\S]*?<Rate>(.*?)<\/Rate>[\s\S]*?<\/Postage>/g;
-  let match;
-
-  while ((match = serviceRegex.exec(xmlText)) !== null) {
-    const serviceName = match[1];
-    const rate = parseFloat(match[2]);
-
-    rates.push({
-      carrier: 'USPS',
-      serviceName: serviceName,
-      serviceCode: serviceName.replace(/\s+/g, '_').toUpperCase(),
-      cost: rate,
-      deliveryDays: null,
-      deliveryDate: null,
-    });
-  }
-
-  return rates;
-}
-
-async function getFedExRates(provider: any, data: ShippingRateRequest) {
-  const baseUrl = provider.testMode
-    ? 'https://apis-sandbox.fedex.com'
-    : 'https://apis.fedex.com';
-
-  // Get OAuth token first
-  const tokenResponse = await fetch(`${baseUrl}/oauth/token`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+  return [
+    {
+      id: 'fallback_ground',
+      carrier: 'Standard Shipping',
+      carrierLogo: '',
+      serviceName: 'Ground',
+      serviceCode: 'GROUND',
+      cost: groundCost,
+      currency: 'USD',
+      estimatedDays: 7,
+      arrivesBy: null,
     },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: provider.apiKey || '',
-      client_secret: provider.apiSecret || '',
-    }),
-  });
-
-  if (!tokenResponse.ok) {
-    throw new Error('Failed to authenticate with FedEx');
-  }
-
-  const tokenData = await tokenResponse.json();
-  const accessToken = tokenData.access_token;
-
-  // Get rates
-  const rateResponse = await fetch(`${baseUrl}/rate/v1/rates/quotes`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'X-locale': 'en_US',
+    {
+      id: 'fallback_express',
+      carrier: 'Express Shipping',
+      carrierLogo: '',
+      serviceName: '2-Day Express',
+      serviceCode: 'EXPRESS',
+      cost: 29.99,
+      currency: 'USD',
+      estimatedDays: 3,
+      arrivesBy: null,
     },
-    body: JSON.stringify({
-      accountNumber: {
-        value: provider.accountNumber,
-      },
-      requestedShipment: {
-        shipper: {
-          address: {
-            postalCode: data.fromAddress.zipCode,
-            countryCode: data.fromAddress.country,
-            stateOrProvinceCode: data.fromAddress.state,
-          },
-        },
-        recipient: {
-          address: {
-            postalCode: data.toAddress.zipCode,
-            countryCode: data.toAddress.country,
-            stateOrProvinceCode: data.toAddress.state,
-          },
-        },
-        pickupType: 'DROPOFF_AT_FEDEX_LOCATION',
-        rateRequestType: ['LIST', 'ACCOUNT'],
-        requestedPackageLineItems: [
-          {
-            weight: {
-              units: 'LB',
-              value: data.package.weight,
-            },
-            dimensions: {
-              length: data.package.length,
-              width: data.package.width,
-              height: data.package.height,
-              units: 'IN',
-            },
-          },
-        ],
-      },
-    }),
-  });
-
-  if (!rateResponse.ok) {
-    const errorData = await rateResponse.json();
-    throw new Error(errorData.errors?.[0]?.message || 'FedEx rate request failed');
-  }
-
-  const rateData = await rateResponse.json();
-  const rates: any[] = [];
-
-  rateData.output?.rateReplyDetails?.forEach((detail: any) => {
-    const ratedShipmentDetails = detail.ratedShipmentDetails?.[0];
-    if (ratedShipmentDetails) {
-      rates.push({
-        carrier: 'FEDEX',
-        serviceName: detail.serviceName,
-        serviceCode: detail.serviceType,
-        cost: ratedShipmentDetails.totalNetCharge,
-        deliveryDays: detail.commit?.transitDays,
-        deliveryDate: detail.commit?.dateDetail?.dayFormat,
-      });
-    }
-  });
-
-  return rates;
-}
-
-async function getUPSRates(provider: any, data: ShippingRateRequest) {
-  const baseUrl = provider.testMode
-    ? 'https://wwwcie.ups.com/api'
-    : 'https://onlinetools.ups.com/api';
-
-  // Get OAuth token
-  const tokenResponse = await fetch(`${baseUrl}/security/v1/oauth/token`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${Buffer.from(`${provider.apiKey}:${provider.apiSecret}`).toString('base64')}`,
+    {
+      id: 'fallback_overnight',
+      carrier: 'Priority Shipping',
+      carrierLogo: '',
+      serviceName: 'Overnight',
+      serviceCode: 'OVERNIGHT',
+      cost: 49.99,
+      currency: 'USD',
+      estimatedDays: 1,
+      arrivesBy: null,
     },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-    }),
-  });
-
-  if (!tokenResponse.ok) {
-    throw new Error('Failed to authenticate with UPS');
-  }
-
-  const tokenData = await tokenResponse.json();
-  const accessToken = tokenData.access_token;
-
-  // Get rates
-  const rateResponse = await fetch(`${baseUrl}/rating/v1/rate`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      RateRequest: {
-        Request: {
-          TransactionReference: {
-            CustomerContext: 'Rating',
-          },
-        },
-        Shipment: {
-          Shipper: {
-            Address: {
-              PostalCode: data.fromAddress.zipCode,
-              CountryCode: data.fromAddress.country,
-              StateProvinceCode: data.fromAddress.state,
-            },
-          },
-          ShipTo: {
-            Address: {
-              PostalCode: data.toAddress.zipCode,
-              CountryCode: data.toAddress.country,
-              StateProvinceCode: data.toAddress.state,
-            },
-          },
-          Package: {
-            PackagingType: {
-              Code: '02',
-            },
-            Dimensions: {
-              UnitOfMeasurement: {
-                Code: 'IN',
-              },
-              Length: data.package.length.toString(),
-              Width: data.package.width.toString(),
-              Height: data.package.height.toString(),
-            },
-            PackageWeight: {
-              UnitOfMeasurement: {
-                Code: 'LBS',
-              },
-              Weight: data.package.weight.toString(),
-            },
-          },
-        },
-      },
-    }),
-  });
-
-  if (!rateResponse.ok) {
-    const errorData = await rateResponse.json();
-    throw new Error(errorData.response?.errors?.[0]?.message || 'UPS rate request failed');
-  }
-
-  const rateData = await rateResponse.json();
-  const rates: any[] = [];
-
-  rateData.RateResponse?.RatedShipment?.forEach((shipment: any) => {
-    rates.push({
-      carrier: 'UPS',
-      serviceName: shipment.Service?.Code,
-      serviceCode: shipment.Service?.Code,
-      cost: parseFloat(shipment.TotalCharges?.MonetaryValue),
-      deliveryDays: null,
-      deliveryDate: null,
-    });
-  });
-
-  return rates;
+  ];
 }
