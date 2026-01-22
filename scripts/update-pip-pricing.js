@@ -134,10 +134,11 @@ async function main() {
 
         if (variant) {
           try {
-            // Update variant
+            // Update variant - also update priceUnit!
             await prisma.productVariant.update({
               where: { id: variant.id },
               data: {
+                priceUnit,
                 costPrice: pricePerUM,
                 basePrice: websitePrice,
               }
