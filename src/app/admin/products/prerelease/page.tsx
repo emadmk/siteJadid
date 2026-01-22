@@ -55,8 +55,9 @@ export default function PreReleasePage() {
       if (res.ok) {
         const data = await res.json();
         setProducts(data.products || []);
-        setTotalCount(data.totalCount || 0);
-        setTotalPages(Math.ceil((data.totalCount || 0) / pageSize));
+        const total = data.pagination?.total || 0;
+        setTotalCount(total);
+        setTotalPages(data.pagination?.totalPages || Math.ceil(total / pageSize));
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
