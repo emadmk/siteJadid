@@ -143,11 +143,13 @@ async function main() {
               }
             });
 
-            // Also update parent product's priceUnit and qtyPerPack
+            // Also update parent product's priceUnit, qtyPerPack, AND prices
             await prisma.product.update({
               where: { id: variant.productId },
               data: {
                 priceUnit,
+                costPrice: pricePerUM,
+                basePrice: websitePrice,
                 minimumOrderQty: 1,
                 qtyPerPack: 1,
               }
