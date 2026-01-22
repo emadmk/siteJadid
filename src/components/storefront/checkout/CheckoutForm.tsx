@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import {
   CreditCard,
   Truck,
@@ -15,7 +17,7 @@ import {
   Building2,
   FileText,
   Wallet,
-  ChevronDown,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -76,6 +78,30 @@ interface CheckoutFormProps {
 
 type CheckoutStep = 'shipping' | 'delivery' | 'payment' | 'review';
 
+// Stripe Payment Element component for card input
+function StripePaymentElement({
+  onReady,
+  onError,
+}: {
+  onReady: () => void;
+  onError: (error: string) => void;
+}) {
+  return (
+    <PaymentElement
+      onReady={onReady}
+      onChange={(event) => {
+        if (event.complete) {
+          onError('');
+        }
+      }}
+      options={{
+        layout: 'tabs',
+        paymentMethodOrder: ['card', 'apple_pay', 'google_pay'],
+      }}
+    />
+  );
+}
+
 export function CheckoutForm({
   cartItems,
   addresses,
@@ -128,6 +154,42 @@ export function CheckoutForm({
     freeShippingEnabled: false,
     freeThreshold: 100,
   });
+
+  // Stripe state
+  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [stripeError, setStripeError] = useState<string | null>(null);
+  const [isPaymentReady, setIsPaymentReady] = useState(false);
+  const [saveCard, setSaveCard] = useState(false);
+
+  // New address form
+  const [newAddress, setNewAddress] = useState({
+    firstName: '',
+    lastName: '',
+    address1: '',
+    address2: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'United States',
+    phone: '',
+    isDefault: false,
+  });
+
+  const isB2BAccount = accountType === 'B2B';
+  const isGSAAccount = accountType === 'GSA';
+
+  // Calculate totals
+  const subtotal = cartItems.reduce((sum, item) => {
+    let price = Number(item.product.salePrice || item.product.basePrice);
+    if (isB2BAccount && item.product.wholesalePrice) {
+      price = Number(item.product.wholesalePrice);
+    } else if (isGSAAccount && item.product.gsaPrice) {
+      price = Number(item.product.gsaPrice);
+    }
+    return sum + price * item.quantity;
+  }, 0);
 
   // Fetch shipping settings
   useEffect(() => {
@@ -199,40 +261,6 @@ export function CheckoutForm({
     }
   }, [selectedAddressId]);
 
-  // Card details
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvc, setCardCvc] = useState('');
-  const [cardName, setCardName] = useState(userName || '');
-
-  // New address form
-  const [newAddress, setNewAddress] = useState({
-    firstName: '',
-    lastName: '',
-    address1: '',
-    address2: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: 'United States',
-    phone: '',
-    isDefault: false,
-  });
-
-  const isB2BAccount = accountType === 'B2B';
-  const isGSAAccount = accountType === 'GSA';
-
-  // Calculate totals
-  const subtotal = cartItems.reduce((sum, item) => {
-    let price = Number(item.product.salePrice || item.product.basePrice);
-    if (isB2BAccount && item.product.wholesalePrice) {
-      price = Number(item.product.wholesalePrice);
-    } else if (isGSAAccount && item.product.gsaPrice) {
-      price = Number(item.product.gsaPrice);
-    }
-    return sum + price * item.quantity;
-  }, 0);
-
   // Get shipping cost from selected rate or fallback
   const selectedRate = shippingRates.find(r => r.id === selectedRateId);
   const baseShippingCost = selectedRate?.cost ?? 15;
@@ -244,6 +272,62 @@ export function CheckoutForm({
   const discount = appliedCoupon?.discount || 0;
   const tax = isB2BAccount || isGSAAccount ? 0 : (subtotal - discount) * 0.08;
   const total = subtotal - discount + shippingCost + tax;
+
+  // Initialize Stripe and create payment intent when entering payment step
+  useEffect(() => {
+    async function initStripe() {
+      // Only for card payments
+      if (paymentMethod !== 'card') return;
+      if (currentStep !== 'payment' && currentStep !== 'review') return;
+      if (clientSecret) return; // Already initialized
+      if (total <= 0) return; // Wait for total to be calculated
+
+      try {
+        // Get Stripe config
+        const configResponse = await fetch('/api/payments/checkout');
+        if (!configResponse.ok) {
+          throw new Error('Failed to load payment configuration');
+        }
+        const config = await configResponse.json();
+
+        if (!config.publishableKey) {
+          throw new Error('Payment system not configured');
+        }
+
+        // Initialize Stripe
+        const stripe = loadStripe(config.publishableKey);
+        setStripePromise(stripe);
+
+        // Create payment intent
+        const intentResponse = await fetch('/api/payments/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: total,
+            currency: 'usd',
+            saveCard: saveCard,
+            metadata: {
+              userEmail,
+            },
+          }),
+        });
+
+        if (!intentResponse.ok) {
+          const data = await intentResponse.json();
+          throw new Error(data.error || 'Failed to initialize payment');
+        }
+
+        const intentData = await intentResponse.json();
+        setClientSecret(intentData.clientSecret);
+        setPaymentIntentId(intentData.paymentIntentId);
+      } catch (err: any) {
+        console.error('Stripe init error:', err);
+        setStripeError(err.message || 'Failed to initialize payment');
+      }
+    }
+
+    initStripe();
+  }, [currentStep, paymentMethod, total, userEmail, clientSecret, saveCard]);
 
   // Check approval requirements
   const requiresApproval =
@@ -334,45 +418,109 @@ export function CheckoutForm({
     setError(null);
 
     try {
-      const orderData = {
-        shippingAddressId: selectedAddressId,
-        billingAddressId: selectedAddressId, // Same as shipping for now
-        shippingMethod,
-        shippingRateId: selectedRateId,
-        shippingCost: shippingCost,
-        shippingCarrier: selectedRate?.carrier,
-        shippingServiceName: selectedRate?.serviceName,
-        paymentMethod,
-        costCenterId: selectedCostCenterId,
-        couponCode: appliedCoupon?.code,
-        notes: orderNote,
-        cardDetails:
-          paymentMethod === 'card'
-            ? {
-                number: cardNumber.replace(/\s/g, ''),
-                expiry: cardExpiry,
-                cvc: cardCvc,
-                name: cardName,
-              }
-            : undefined,
-      };
+      // For card payments, we need to confirm with Stripe first
+      if (paymentMethod === 'card' && clientSecret) {
+        // Get Stripe instance
+        const stripeInstance = await stripePromise;
+        if (!stripeInstance) {
+          throw new Error('Payment system not ready');
+        }
 
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
+        // Create order first to get orderId
+        const orderData = {
+          shippingAddressId: selectedAddressId,
+          billingAddressId: selectedAddressId,
+          shippingMethod,
+          shippingRateId: selectedRateId,
+          shippingCost: shippingCost,
+          shippingCarrier: selectedRate?.carrier,
+          shippingServiceName: selectedRate?.serviceName,
+          paymentMethod,
+          paymentIntentId, // Include payment intent ID
+          costCenterId: selectedCostCenterId,
+          couponCode: appliedCoupon?.code,
+          notes: orderNote,
+        };
 
-      const data = await response.json();
+        const orderResponse = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData),
+        });
 
-      if (response.ok) {
-        // Clear cart and redirect to confirmation
-        router.push(`/orders/${data.orderNumber}?new=true`);
+        const orderResult = await orderResponse.json();
+
+        if (!orderResponse.ok) {
+          throw new Error(orderResult.error || 'Failed to create order');
+        }
+
+        // Update payment intent with order ID
+        if (paymentIntentId) {
+          await fetch('/api/payments/checkout', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              paymentIntentId,
+              orderId: orderResult.id,
+              metadata: {
+                orderNumber: orderResult.orderNumber,
+              },
+            }),
+          });
+        }
+
+        // Confirm the payment with Stripe using redirect
+        const { error: stripeErr } = await stripeInstance.confirmPayment({
+          clientSecret,
+          confirmParams: {
+            return_url: `${window.location.origin}/orders/${orderResult.orderNumber}?new=true`,
+            receipt_email: userEmail,
+          },
+        });
+
+        // If we get here, there was an error (otherwise we'd be redirected)
+        if (stripeErr) {
+          // Payment failed - but order is created. Mark it as failed
+          await fetch(`/api/orders/${orderResult.id}/payment-failed`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: stripeErr.message }),
+          });
+          throw new Error(stripeErr.message || 'Payment failed');
+        }
       } else {
-        setError(data.error || 'Failed to place order');
+        // For non-card payments (net30, etc.), just create the order
+        const orderData = {
+          shippingAddressId: selectedAddressId,
+          billingAddressId: selectedAddressId,
+          shippingMethod,
+          shippingRateId: selectedRateId,
+          shippingCost: shippingCost,
+          shippingCarrier: selectedRate?.carrier,
+          shippingServiceName: selectedRate?.serviceName,
+          paymentMethod,
+          costCenterId: selectedCostCenterId,
+          couponCode: appliedCoupon?.code,
+          notes: orderNote,
+        };
+
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          router.push(`/orders/${data.orderNumber}?new=true`);
+        } else {
+          throw new Error(data.error || 'Failed to place order');
+        }
       }
-    } catch (err) {
-      setError('Failed to place order. Please try again.');
+    } catch (err: any) {
+      console.error('Order error:', err);
+      setError(err.message || 'Failed to place order. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -386,7 +534,7 @@ export function CheckoutForm({
         return !!shippingMethod;
       case 'payment':
         if (paymentMethod === 'card') {
-          return cardNumber && cardExpiry && cardCvc && cardName;
+          return isPaymentReady && !!clientSecret;
         }
         return true;
       case 'review':
@@ -834,57 +982,77 @@ export function CheckoutForm({
 
             {(paymentMethod === 'card' || !isB2BAccount) && (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">Name on Card</label>
-                  <input
-                    type="text"
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">Card Number</label>
-                  <input
-                    type="text"
-                    value={cardNumber}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 16);
-                      setCardNumber(value.replace(/(.{4})/g, '$1 ').trim());
+                {stripeError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                    <div className="text-sm text-red-800">{stripeError}</div>
+                  </div>
+                )}
+
+                {!clientSecret && !stripeError && (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 text-safety-green-600 animate-spin mr-3" />
+                    <span className="text-gray-600">Initializing secure payment...</span>
+                  </div>
+                )}
+
+                {stripePromise && clientSecret && (
+                  <Elements
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret,
+                      appearance: {
+                        theme: 'stripe',
+                        variables: {
+                          colorPrimary: '#16a34a',
+                          colorBackground: '#ffffff',
+                          colorText: '#1f2937',
+                          colorDanger: '#dc2626',
+                          fontFamily: 'Inter, system-ui, sans-serif',
+                          spacingUnit: '4px',
+                          borderRadius: '8px',
+                        },
+                      },
                     }}
-                    placeholder="1234 5678 9012 3456"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-1">Expiry Date</label>
-                    <input
-                      type="text"
-                      value={cardExpiry}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                        if (value.length > 2) {
-                          setCardExpiry(`${value.slice(0, 2)}/${value.slice(2)}`);
-                        } else {
-                          setCardExpiry(value);
-                        }
-                      }}
-                      placeholder="MM/YY"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                  >
+                    <StripePaymentElement
+                      onReady={() => setIsPaymentReady(true)}
+                      onError={(err) => setStripeError(err)}
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-1">CVC</label>
+                  </Elements>
+                )}
+
+                {/* Save card option */}
+                {clientSecret && (
+                  <label className="flex items-center gap-3 cursor-pointer mt-4">
                     <input
-                      type="text"
-                      value={cardCvc}
-                      onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      placeholder="123"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                      type="checkbox"
+                      checked={saveCard}
+                      onChange={(e) => setSaveCard(e.target.checked)}
+                      className="w-4 h-4 text-safety-green-600 rounded border-gray-300 focus:ring-safety-green-500"
                     />
+                    <span className="text-sm text-gray-700">Save card for future purchases</span>
+                  </label>
+                )}
+
+                {/* Security badges */}
+                <div className="flex items-center justify-center gap-6 py-3 border-t border-gray-200 mt-4">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <ShieldCheck className="w-4 h-4 text-safety-green-600" />
+                    <span>256-bit SSL</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Lock className="w-4 h-4 text-safety-green-600" />
+                    <span>PCI DSS Compliant</span>
                   </div>
                 </div>
+
+                {/* Test mode indicator */}
+                {clientSecret?.includes('_test_') && (
+                  <div className="text-center text-xs text-amber-600 bg-amber-50 rounded-lg py-2 mt-2">
+                    Test Mode - Use card 4242 4242 4242 4242
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -971,7 +1139,7 @@ export function CheckoutForm({
               <div className="text-sm text-gray-700">
                 {paymentMethod === 'net30'
                   ? 'Net 30 Terms'
-                  : `Credit Card ending in ${cardNumber.slice(-4)}`}
+                  : 'Credit Card (Secure payment via Stripe)'}
               </div>
             </div>
 

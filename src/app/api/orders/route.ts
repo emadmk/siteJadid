@@ -121,6 +121,7 @@ export async function POST(request: NextRequest) {
       shippingCarrier,
       shippingServiceName,
       paymentMethod,
+      paymentIntentId: providedPaymentIntentId,
       costCenterId,
       notes,
     } = body;
@@ -244,6 +245,13 @@ export async function POST(request: NextRequest) {
       b2bMembership.approvalThreshold &&
       total > Number(b2bMembership.approvalThreshold);
 
+    // Determine payment status based on payment method
+    const initialPaymentStatus = paymentMethod === 'net30' || paymentMethod === 'invoice'
+      ? 'PENDING' // Invoice-based payments start as pending
+      : providedPaymentIntentId
+        ? 'PENDING' // Card payments will be confirmed via Stripe webhook
+        : 'PENDING';
+
     // Create order
     const order = await db.order.create({
       data: {
@@ -252,8 +260,9 @@ export async function POST(request: NextRequest) {
         accountType: user?.accountType || 'B2C',
         ...(b2bMembership && { createdByMemberId: b2bMembership.id }),
         status: requiresApproval ? 'ON_HOLD' : 'PENDING',
-        paymentStatus: 'PENDING',
+        paymentStatus: initialPaymentStatus,
         paymentMethod: paymentMethod || 'CREDIT_CARD',
+        paymentIntentId: providedPaymentIntentId || null,
         shippingMethod: shippingServiceName || shippingMethod || 'GROUND',
         shippingCarrier: shippingCarrier || null,
         subtotal,

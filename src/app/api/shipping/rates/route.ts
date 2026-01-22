@@ -63,11 +63,11 @@ export async function POST(request: NextRequest) {
         select: { id: true, weight: true }
       });
 
-      const weightMap = new Map(products.map(p => [p.id, Number(p.weight) || 0.5]));
+      const weightMap = new Map<string, number>(products.map(p => [p.id, Number(p.weight) || 0.5]));
 
-      totalWeight = data.cartItems.reduce((sum, item) => {
-        const weight = weightMap.get(item.productId) || 0.5;
-        return sum + (weight * item.quantity);
+      totalWeight = data.cartItems.reduce((sum: number, item: { productId: string; quantity: number }) => {
+        const weight: number = weightMap.get(item.productId) || 0.5;
+        return sum + (weight * Number(item.quantity));
       }, 0);
     }
 
