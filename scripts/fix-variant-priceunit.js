@@ -16,13 +16,16 @@ async function main() {
   console.log('='.repeat(60));
   console.log('');
 
-  // Find all variants where product.priceUnit is 'pr' but variant.priceUnit is 'DZ' or 'dz'
+  // Find all variants where product.priceUnit is 'pr' but variant.priceUnit is 'DZ' or 'dz' or null
   const variants = await prisma.productVariant.findMany({
     where: {
       product: {
         priceUnit: 'pr'
       },
-      priceUnit: { in: ['DZ', 'dz', 'dozen', null] }
+      OR: [
+        { priceUnit: { in: ['DZ', 'dz', 'dozen'] } },
+        { priceUnit: null }
+      ]
     },
     include: {
       product: {
@@ -53,7 +56,10 @@ async function main() {
       product: {
         priceUnit: 'pr'
       },
-      priceUnit: { in: ['DZ', 'dz', 'dozen', null] }
+      OR: [
+        { priceUnit: { in: ['DZ', 'dz', 'dozen'] } },
+        { priceUnit: null }
+      ]
     },
     data: {
       priceUnit: 'pr'
