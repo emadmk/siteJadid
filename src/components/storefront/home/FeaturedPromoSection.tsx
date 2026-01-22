@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronRight, ChevronLeft, Star, X, Phone, Mail, Loader2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getImageSize } from '@/lib/image-utils';
 
 interface Product {
   id: string;
@@ -201,7 +202,7 @@ export function FeaturedPromoSection() {
                     <div className="w-24 h-24 bg-white rounded-lg flex-shrink-0 overflow-hidden">
                       {currentProduct.images?.[0] ? (
                         <img
-                          src={currentProduct.images[0]}
+                          src={getImageSize(currentProduct.images[0], 'medium')}
                           alt={currentProduct.name}
                           className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                         />
