@@ -256,7 +256,7 @@ async function handlePaymentIntentCanceled(paymentIntent: Stripe.PaymentIntent) 
       await prisma.order.update({
         where: { id: orderId },
         data: {
-          paymentStatus: 'CANCELLED',
+          paymentStatus: 'FAILED',
         },
       });
     } catch (error) {
