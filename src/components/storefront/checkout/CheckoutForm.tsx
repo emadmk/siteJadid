@@ -481,7 +481,7 @@ export function CheckoutForm({
         // If we get here, there was an error (otherwise we'd be redirected)
         if (stripeErr) {
           // Payment failed - but order is created. Mark it as failed
-          await fetch(`/api/orders/${orderResult.id}/payment-failed`, {
+          await fetch(`/api/orders/${orderResult.orderNumber}/payment-failed`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ error: stripeErr.message }),

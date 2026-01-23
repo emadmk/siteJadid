@@ -4,15 +4,15 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 /**
- * POST /api/orders/[id]/payment-failed
+ * POST /api/orders/[orderNumber]/payment-failed
  * Mark order payment as failed (called when Stripe payment fails)
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ orderNumber: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { orderNumber } = await params;
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -23,8 +23,11 @@ export async function POST(
     const { error: errorMessage } = body;
 
     // Find and verify order belongs to user
-    const order = await prisma.order.findUnique({
-      where: { id },
+    const order = await prisma.order.findFirst({
+      where: {
+        orderNumber,
+        userId: session.user.id,
+      },
       select: {
         id: true,
         orderNumber: true,
@@ -37,13 +40,9 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    if (order.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
     // Update order payment status
     await prisma.order.update({
-      where: { id },
+      where: { id: order.id },
       data: {
         paymentStatus: 'FAILED',
         adminNotes: errorMessage
@@ -55,7 +54,7 @@ export async function POST(
     // Log the status change
     await prisma.orderStatusHistory.create({
       data: {
-        orderId: id,
+        orderId: order.id,
         status: 'PENDING',
         notes: `Payment failed: ${errorMessage || 'Unknown error'}. Please retry payment.`,
         changedBy: 'system',
