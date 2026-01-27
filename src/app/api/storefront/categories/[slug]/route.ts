@@ -1,6 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+// Custom size ordering for clothing (S to 5X)
+const CLOTHING_SIZE_ORDER: Record<string, number> = {
+  'S': 1, 'M': 2, 'L': 3, 'XL': 4,
+  '2X': 5, '2XL': 5, 'XXL': 5,
+  '3X': 6, '3XL': 6, 'XXXL': 6,
+  '4X': 7, '4XL': 7,
+  '5X': 8, '5XL': 8,
+};
+
+// Custom size ordering for footwear (numeric)
+const FOOTWEAR_SIZE_ORDER: Record<string, number> = {
+  '4': 1, '4.5': 2, '5': 3, '5.5': 4, '6': 5, '6.5': 6,
+  '7': 7, '7.5': 8, '8': 9, '8.5': 10, '9': 11, '9.5': 12,
+  '10': 13, '10.5': 14, '11': 15, '11.5': 16, '12': 17, '12.5': 18,
+  '13': 19, '13.5': 20, '14': 21, '15': 22,
+  'Wide': 100, 'Wide (2E)': 101, 'Extra Wide': 102, 'Extra Wide (4E)': 103,
+};
+
+// Sort function for sizes
+function sortSizes(values: string[], filterKey: string): string[] {
+  if (filterKey === 'hiVisSize' || filterKey === 'size') {
+    return values.sort((a, b) => {
+      const orderA = CLOTHING_SIZE_ORDER[a] ?? 99;
+      const orderB = CLOTHING_SIZE_ORDER[b] ?? 99;
+      return orderA - orderB;
+    });
+  }
+  if (filterKey === 'footwearSize') {
+    return values.sort((a, b) => {
+      const orderA = FOOTWEAR_SIZE_ORDER[a] ?? 99;
+      const orderB = FOOTWEAR_SIZE_ORDER[b] ?? 99;
+      return orderA - orderB;
+    });
+  }
+  // Default alphabetical sort
+  return values.sort();
+}
+
 // Smart filter keywords - these are extracted from product names/descriptions
 // Keywords map to their normalized display value
 const SMART_FILTER_PATTERNS: Record<string, { keywords: Record<string, string>; label: string }> = {
@@ -629,7 +667,7 @@ function extractSmartFilters(
   const result: Record<string, string[]> = {};
   for (const [key, values] of Object.entries(filters)) {
     if (values.size > 0) {
-      result[key] = Array.from(values).sort();
+      result[key] = sortSizes(Array.from(values), key);
     }
   }
 
