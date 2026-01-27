@@ -155,6 +155,55 @@ const SMART_FILTER_PATTERNS: Record<string, { keywords: Record<string, string>; 
     },
     label: 'Style',
   },
+  // Footwear-specific numeric sizes
+  footwearSize: {
+    keywords: {
+      // Full sizes
+      'size 4': '4',
+      'size 5': '5',
+      'size 6': '6',
+      'size 7': '7',
+      'size 8': '8',
+      'size 9': '9',
+      'size 10': '10',
+      'size 11': '11',
+      'size 12': '12',
+      'size 13': '13',
+      'size 14': '14',
+      'size 15': '15',
+      // Half sizes
+      'size 4.5': '4.5',
+      'size 5.5': '5.5',
+      'size 6.5': '6.5',
+      'size 7.5': '7.5',
+      'size 8.5': '8.5',
+      'size 9.5': '9.5',
+      'size 10.5': '10.5',
+      'size 11.5': '11.5',
+      'size 12.5': '12.5',
+      'size 13.5': '13.5',
+      // Without "size" prefix (with spaces to avoid false matches)
+      ' 4 ': '4',
+      ' 5 ': '5',
+      ' 6 ': '6',
+      ' 7 ': '7',
+      ' 8 ': '8',
+      ' 9 ': '9',
+      ' 10 ': '10',
+      ' 11 ': '11',
+      ' 12 ': '12',
+      ' 13 ': '13',
+      ' 14 ': '14',
+      ' 15 ': '15',
+      // Wide widths
+      'wide': 'Wide',
+      'extra wide': 'Extra Wide',
+      '2e': 'Wide (2E)',
+      '4e': 'Extra Wide (4E)',
+      'eee': 'Extra Wide',
+    },
+    label: 'Shoe Size',
+  },
   type: {
     keywords: {
       'ansi class 2': 'ANSI Class 2',
@@ -397,21 +446,21 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   include?: string[];
   exclude?: string[];
 }> = {
-  // Footwear - standard footwear filters
+  // Footwear - use numeric shoe sizes
   'footwear': {
-    include: ['gender', 'toeType', 'material', 'size', 'color', 'protection', 'style'],
+    include: ['gender', 'toeType', 'material', 'footwearSize', 'color', 'protection', 'style'],
   },
   'boots': {
-    include: ['gender', 'toeType', 'material', 'size', 'color', 'protection', 'style'],
+    include: ['gender', 'toeType', 'material', 'footwearSize', 'color', 'protection', 'style'],
   },
   'shoes': {
-    include: ['gender', 'toeType', 'material', 'size', 'color', 'protection', 'style'],
+    include: ['gender', 'toeType', 'material', 'footwearSize', 'color', 'protection', 'style'],
   },
   'safety-footwear': {
-    include: ['gender', 'toeType', 'material', 'size', 'color', 'protection', 'style'],
+    include: ['gender', 'toeType', 'material', 'footwearSize', 'color', 'protection', 'style'],
   },
   'work-boots': {
-    include: ['gender', 'toeType', 'material', 'size', 'color', 'protection', 'style'],
+    include: ['gender', 'toeType', 'material', 'footwearSize', 'color', 'protection', 'style'],
   },
   // Gloves
   'gloves': {
