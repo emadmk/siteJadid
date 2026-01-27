@@ -461,7 +461,6 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   'shirts': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
   },
-  },
   't-shirts': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
   },
@@ -551,7 +550,7 @@ function extractSmartFilters(
     // Only include specified filters
     filterKeysToProcess = effectiveConfig.include.filter(key => SMART_FILTER_PATTERNS[key]);
   }
-  if (effectiveConfig.exclude) {
+  if ('exclude' in effectiveConfig && effectiveConfig.exclude) {
     // Remove excluded filters
     filterKeysToProcess = filterKeysToProcess.filter(key => !effectiveConfig.exclude!.includes(key));
   }
