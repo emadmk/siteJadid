@@ -428,44 +428,38 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
     include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
     exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
-  // High Visibility Vests
+  // High Visibility Vests - all variations
   'vests': {
     include: ['gender', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
-    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType', 'hiVisColor'],
   },
   'safety-vests': {
     include: ['gender', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
-    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType', 'hiVisColor'],
   },
   'hi-vis-vests': {
     include: ['gender', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
-    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType', 'hiVisColor'],
   },
-  // High Visibility Shirts
+  // High Visibility Shirts - all variations
   'shirts': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
-    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType'],
   },
   't-shirts': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
-    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType'],
+  },
+  't-shirts--shirts': {
+    include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
   },
   'hi-vis-shirts': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
-    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType'],
   },
-  // High Visibility Jackets
+  // High Visibility Jackets - all variations
   'jackets': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
-    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
   },
   'hi-vis-jackets': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
-    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
   },
   'coats': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
-    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
   },
   // High Visibility parent category
   'high-visibility': {
@@ -480,15 +474,35 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
 
 // Check if a category or its ancestors match any filter config
 function getCategoryFilterConfig(categorySlug: string, hierarchy: { slug: string }[]): { include?: string[]; exclude?: string[] } | null {
-  // Check current category first
-  if (CATEGORY_FILTER_CONFIG[categorySlug]) {
-    return CATEGORY_FILTER_CONFIG[categorySlug];
+  // Normalize slug - lowercase and handle URL encoding
+  const normalizedSlug = decodeURIComponent(categorySlug).toLowerCase().replace(/[,\s]+/g, '-');
+
+  // Check current category first (try multiple variations)
+  const slugVariations = [
+    normalizedSlug,
+    normalizedSlug.replace(/-+/g, '-'),
+    normalizedSlug.split('-')[0], // First word only (e.g., "vests" from "safety-vests")
+  ];
+
+  for (const slug of slugVariations) {
+    if (CATEGORY_FILTER_CONFIG[slug]) {
+      return CATEGORY_FILTER_CONFIG[slug];
+    }
   }
 
   // Check ancestors (from nearest to root)
   for (let i = hierarchy.length - 1; i >= 0; i--) {
-    if (CATEGORY_FILTER_CONFIG[hierarchy[i].slug]) {
-      return CATEGORY_FILTER_CONFIG[hierarchy[i].slug];
+    const ancestorSlug = hierarchy[i].slug.toLowerCase();
+    const ancestorVariations = [
+      ancestorSlug,
+      ancestorSlug.replace(/-+/g, '-'),
+      ancestorSlug.split('-')[0],
+    ];
+
+    for (const slug of ancestorVariations) {
+      if (CATEGORY_FILTER_CONFIG[slug]) {
+        return CATEGORY_FILTER_CONFIG[slug];
+      }
     }
   }
 
