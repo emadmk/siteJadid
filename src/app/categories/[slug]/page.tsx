@@ -525,162 +525,178 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Filters Sidebar - Desktop */}
           <aside className="hidden lg:block lg:col-span-1">
-            <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold text-black">Filters</h2>
-                <SlidersHorizontal className="w-5 h-5 text-gray-400" />
-              </div>
-
-              {/* Search */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-black mb-2">Search</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                    placeholder="Search products..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                  />
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm sticky top-4 max-h-[calc(100vh-2rem)] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-5 h-5 text-gray-500" />
+                  <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
                 </div>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-red-600 hover:text-red-700 font-medium"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
 
-              {/* Brands - First filter */}
-              {brands && brands.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-black mb-3">Brands</h3>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    <button
-                      onClick={() => {
-                        setSelectedBrand('');
-                        setTimeout(() => fetchData(1, true), 0);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                        !selectedBrand
-                          ? 'bg-safety-green-100 text-safety-green-800 font-medium'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      All Brands
-                    </button>
-                    {brands.map((brand) => (
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-5 scrollbar-thin">
+                {/* Search */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                      placeholder="Search products..."
+                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent transition-all"
+                    />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  </div>
+                </div>
+
+                {/* Brands */}
+                {brands && brands.length > 0 && (
+                  <div className="border-t border-gray-100 pt-4">
+                    <h3 className="text-sm font-medium text-gray-900 mb-3">Brands</h3>
+                    <div className="space-y-1 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
                       <button
-                        key={brand.id}
                         onClick={() => {
-                          setSelectedBrand(brand.slug);
+                          setSelectedBrand('');
                           setTimeout(() => fetchData(1, true), 0);
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          selectedBrand === brand.slug
-                            ? 'bg-safety-green-100 text-safety-green-800 font-medium'
-                            : 'text-gray-700 hover:bg-gray-100'
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+                          !selectedBrand
+                            ? 'bg-safety-green-50 text-safety-green-700 font-medium border border-safety-green-200'
+                            : 'text-gray-600 hover:bg-gray-50'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <span>{brand.name}</span>
-                          <span className="text-xs text-gray-500">{brand._count.products}</span>
-                        </div>
+                        All Brands
                       </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Price Range */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-black mb-3">Price Range</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Min Price</label>
-                    <input
-                      type="number"
-                      value={priceRange.min}
-                      onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
-                      placeholder="$0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Max Price</label>
-                    <input
-                      type="number"
-                      value={priceRange.max}
-                      onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
-                      placeholder="$1000"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* TAA/BAA Approved Filter */}
-              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={taaApproved}
-                    onChange={(e) => {
-                      const newValue = e.target.checked;
-                      setTaaApproved(newValue);
-                      fetchData(1, true, newValue);
-                    }}
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-semibold text-blue-800">TAA/BAA Approved</div>
-                    <div className="text-xs text-blue-600">Government compliant products</div>
-                  </div>
-                </label>
-              </div>
-
-              {/* Smart Filters */}
-              {Object.entries(smartFilters || {}).map(([filterKey, values]) => (
-                <div key={filterKey} className="mb-4 border-t pt-4">
-                  <button
-                    onClick={() => toggleFilterSection(filterKey)}
-                    className="flex items-center justify-between w-full text-sm font-medium text-black mb-2"
-                  >
-                    <span>{smartFilterLabels[filterKey] || filterKey}</span>
-                    {expandedFilterSections[filterKey] ? (
-                      <ChevronUp className="w-4 h-4 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-gray-400" />
-                    )}
-                  </button>
-                  {expandedFilterSections[filterKey] && (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {values.map((value) => (
-                        <label key={value} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={(activeSmartFilters[filterKey] || []).includes(value)}
-                            onChange={() => toggleSmartFilter(filterKey, value)}
-                            className="w-4 h-4 text-safety-green-600 rounded focus:ring-safety-green-500"
-                          />
-                          <span className="text-sm text-gray-700">{value}</span>
-                        </label>
+                      {brands.map((brand) => (
+                        <button
+                          key={brand.id}
+                          onClick={() => {
+                            setSelectedBrand(brand.slug);
+                            setTimeout(() => fetchData(1, true), 0);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
+                            selectedBrand === brand.slug
+                              ? 'bg-safety-green-50 text-safety-green-700 font-medium border border-safety-green-200'
+                              : 'text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{brand.name}</span>
+                            <span className="text-xs text-gray-400">{brand._count.products}</span>
+                          </div>
+                        </button>
                       ))}
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                )}
 
-              {/* Apply / Clear */}
-              <div className="space-y-2 mt-6 pt-4 border-t">
-                <Button onClick={applyFilters} className="w-full bg-safety-green-600 hover:bg-safety-green-700">
+                {/* Price Range */}
+                <div className="border-t border-gray-100 pt-4">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">Price Range</h3>
+                  <div className="flex gap-2 items-center">
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={priceRange.min}
+                        onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
+                        placeholder="Min"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                      />
+                    </div>
+                    <span className="text-gray-400">-</span>
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={priceRange.max}
+                        onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
+                        placeholder="Max"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* TAA/BAA Approved Filter */}
+                <div className="border-t border-gray-100 pt-4">
+                  <label className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 cursor-pointer hover:shadow-sm transition-shadow">
+                    <input
+                      type="checkbox"
+                      checked={taaApproved}
+                      onChange={(e) => {
+                        const newValue = e.target.checked;
+                        setTaaApproved(newValue);
+                        fetchData(1, true, newValue);
+                      }}
+                      className="w-5 h-5 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="font-medium text-blue-900 text-sm">TAA/BAA Approved</div>
+                      <div className="text-xs text-blue-600">Government compliant</div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Smart Filters */}
+                {Object.entries(smartFilters || {}).map(([filterKey, values]) => (
+                  <div key={filterKey} className="border-t border-gray-100 pt-4">
+                    <button
+                      onClick={() => toggleFilterSection(filterKey)}
+                      className="flex items-center justify-between w-full text-left group"
+                    >
+                      <span className="text-sm font-medium text-gray-900 group-hover:text-safety-green-600 transition-colors">
+                        {smartFilterLabels[filterKey] || filterKey}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {(activeSmartFilters[filterKey] || []).length > 0 && (
+                          <span className="bg-safety-green-100 text-safety-green-700 text-xs font-medium px-2 py-0.5 rounded-full">
+                            {activeSmartFilters[filterKey].length}
+                          </span>
+                        )}
+                        {expandedFilterSections[filterKey] ? (
+                          <ChevronUp className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        )}
+                      </div>
+                    </button>
+                    {expandedFilterSections[filterKey] && (
+                      <div className="mt-3 space-y-1 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
+                        {values.map((value) => (
+                          <label
+                            key={value}
+                            className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(activeSmartFilters[filterKey] || []).includes(value)}
+                              onChange={() => toggleSmartFilter(filterKey, value)}
+                              className="w-4 h-4 text-safety-green-600 border-gray-300 rounded focus:ring-safety-green-500 focus:ring-offset-0"
+                            />
+                            <span className="text-sm text-gray-700">{value}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                <Button onClick={applyFilters} className="w-full bg-safety-green-600 hover:bg-safety-green-700 font-medium py-2.5 rounded-lg">
                   Apply Filters
                 </Button>
-                {hasActiveFilters && (
-                  <Button
-                    onClick={clearFilters}
-                    variant="outline"
-                    className="w-full border-red-500 text-red-500 hover:bg-red-50"
-                  >
-                    Clear All Filters
-                  </Button>
-                )}
               </div>
             </div>
           </aside>

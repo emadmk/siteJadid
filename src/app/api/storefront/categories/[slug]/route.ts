@@ -6,18 +6,36 @@ import { db } from '@/lib/db';
 const SMART_FILTER_PATTERNS: Record<string, { keywords: Record<string, string>; label: string }> = {
   gender: {
     keywords: {
+      // Male variations
       "men's": "Male",
       "mens": "Male",
       "men": "Male",
       "male": "Male",
       "man": "Male",
+      "for men": "Male",
+      "gentleman": "Male",
+      "gentlemen": "Male",
+      "boys": "Male",
+      "boy's": "Male",
+      " m ": "Male",
+      // Female variations
       "women's": "Female",
       "womens": "Female",
       "women": "Female",
       "woman": "Female",
       "ladies": "Female",
+      "lady": "Female",
       "female": "Female",
+      "for women": "Female",
+      "girl": "Female",
+      "girls": "Female",
+      " f ": "Female",
+      "feminine": "Female",
+      // Unisex variations
       "unisex": "Unisex",
+      "uni-sex": "Unisex",
+      "universal": "Unisex",
+      "all gender": "Unisex",
     },
     label: 'Gender',
   },
@@ -234,7 +252,7 @@ const SMART_FILTER_PATTERNS: Record<string, { keywords: Record<string, string>; 
       'wraparound': 'Wraparound',
       'wrap-around': 'Wraparound',
     },
-    label: 'Style',
+    label: 'Eyewear Style',
   },
   hardHatType: {
     keywords: {
@@ -251,7 +269,125 @@ const SMART_FILTER_PATTERNS: Record<string, { keywords: Record<string, string>; 
       'type 1': 'Type I',
       'type 2': 'Type II',
     },
+    label: 'Hard Hat Type',
+  },
+  // High Visibility specific filters
+  hiVisStyle: {
+    keywords: {
+      'zipper': 'Zipper Closure',
+      'zipper closure': 'Zipper Closure',
+      'velcro': 'Velcro Closure',
+      'velcro closure': 'Velcro Closure',
+      'hook and loop': 'Velcro Closure',
+      'breakaway': 'Breakaway',
+      'break-away': 'Breakaway',
+      'incident command': 'Incident Command',
+      'incident': 'Incident Command',
+      'public safety': 'Public Safety',
+      'surveyor': 'Surveyor',
+      'bomber': 'Bomber Style',
+      'bomber style': 'Bomber Style',
+      'parka': 'Parka Style',
+      'parka style': 'Parka Style',
+      'windbreaker': 'Windbreaker',
+      'long sleeve': 'Long Sleeve',
+      'long-sleeve': 'Long Sleeve',
+      'short sleeve': 'Short Sleeve',
+      'short-sleeve': 'Short Sleeve',
+      'button down': 'Button Down',
+      'button-down': 'Button Down',
+    },
+    label: 'Style',
+  },
+  hiVisType: {
+    keywords: {
+      'ansi class 2': 'ANSI Class 2',
+      'class 2': 'ANSI Class 2',
+      'class ii': 'ANSI Class 2',
+      'ansi class 3': 'ANSI Class 3',
+      'class 3': 'ANSI Class 3',
+      'class iii': 'ANSI Class 3',
+      'non ansi': 'Non-ANSI',
+      'non-ansi': 'Non-ANSI',
+      'nonansi': 'Non-ANSI',
+    },
     label: 'Type',
+  },
+  hiVisMaterial: {
+    keywords: {
+      'polyester mesh': 'Polyester Mesh',
+      'mesh': 'Polyester Mesh',
+      'polyester tricot': 'Polyester Tricot/Solid',
+      'tricot': 'Polyester Tricot/Solid',
+      'solid': 'Polyester Tricot/Solid',
+      'cotton': 'Cotton',
+      '100% cotton': 'Cotton',
+      'polyester': 'Polyester',
+      '100% polyester': 'Polyester',
+    },
+    label: 'Material',
+  },
+  hiVisSize: {
+    keywords: {
+      'small': 'S',
+      'medium': 'M',
+      'large': 'L',
+      ' s ': 'S',
+      ' m ': 'M',
+      ' l ': 'L',
+      'xl': 'XL',
+      '2xl': '2X',
+      '2x': '2X',
+      'xxl': '2X',
+      '3xl': '3X',
+      '3x': '3X',
+      'xxxl': '3X',
+      '4xl': '4X',
+      '4x': '4X',
+      '5xl': '5X',
+      '5x': '5X',
+    },
+    label: 'Size',
+  },
+  hiVisColor: {
+    keywords: {
+      'hi vis orange': 'Hi-Vis Orange',
+      'hi-vis orange': 'Hi-Vis Orange',
+      'high vis orange': 'Hi-Vis Orange',
+      'high-vis orange': 'Hi-Vis Orange',
+      'safety orange': 'Hi-Vis Orange',
+      'fluorescent orange': 'Hi-Vis Orange',
+      'hi vis yellow': 'Hi-Vis Yellow',
+      'hi-vis yellow': 'Hi-Vis Yellow',
+      'high vis yellow': 'Hi-Vis Yellow',
+      'high-vis yellow': 'Hi-Vis Yellow',
+      'safety yellow': 'Hi-Vis Yellow',
+      'fluorescent yellow': 'Hi-Vis Yellow',
+      'lime': 'Hi-Vis Yellow',
+      'lime green': 'Hi-Vis Yellow',
+      'black': 'Black',
+    },
+    label: 'Color',
+  },
+  hiVisProtection: {
+    keywords: {
+      'fire resistant': 'Fire Resistant',
+      'fire-resistant': 'Fire Resistant',
+      'flame resistant': 'Fire Resistant',
+      'fr ': 'Fire Resistant',
+      'water resistant': 'Water Resistant',
+      'water-resistant': 'Water Resistant',
+      'waterproof': 'Waterproof',
+      'water proof': 'Waterproof',
+      'uv protection': 'UV Protection',
+      'uv-protection': 'UV Protection',
+      'upf': 'UV Protection',
+      'insulated': 'Insulated',
+      'thermal': 'Thermal',
+      'dust': 'Dust Protection',
+      'laser': 'Laser Protection',
+    },
+    label: 'Protection',
   },
 };
 
@@ -264,33 +400,81 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   // EAR Protection - only NRR filter, no material/size
   'ear-protection': {
     include: ['nrr', 'color', 'protection'],
-    exclude: ['material', 'size', 'gender', 'toeType', 'style', 'type', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType'],
+    exclude: ['material', 'size', 'gender', 'toeType', 'style', 'type', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   'hearing-protection': {
     include: ['nrr', 'color', 'protection'],
-    exclude: ['material', 'size', 'gender', 'toeType', 'style', 'type', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType'],
+    exclude: ['material', 'size', 'gender', 'toeType', 'style', 'type', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   // Head Protection - no gender/material, add hardHatType
   'head-protection': {
     include: ['hardHatType', 'color', 'protection'],
-    exclude: ['gender', 'material', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'style', 'type'],
+    exclude: ['gender', 'material', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   'hard-hats': {
     include: ['hardHatType', 'color', 'protection'],
-    exclude: ['gender', 'material', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'style', 'type'],
+    exclude: ['gender', 'material', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   // Eye Protection - no gender/material/size, add eyewearStyle, protectionType, antiFog, antiScratch
   'eye-protection': {
     include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
-    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type'],
+    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   'safety-glasses': {
     include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
-    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type'],
+    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   'safety-goggles': {
     include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
-    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type'],
+    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
+  },
+  // High Visibility Vests
+  'vests': {
+    include: ['gender', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType', 'hiVisColor'],
+  },
+  'safety-vests': {
+    include: ['gender', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType', 'hiVisColor'],
+  },
+  'hi-vis-vests': {
+    include: ['gender', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType', 'hiVisColor'],
+  },
+  // High Visibility Shirts
+  'shirts': {
+    include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType'],
+  },
+  't-shirts': {
+    include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType'],
+  },
+  'hi-vis-shirts': {
+    include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection', 'hiVisType'],
+  },
+  // High Visibility Jackets
+  'jackets': {
+    include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
+  },
+  'hi-vis-jackets': {
+    include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
+  },
+  'coats': {
+    include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
+  },
+  // High Visibility parent category
+  'high-visibility': {
+    include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
+  },
+  'high-visibility-clothing': {
+    include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
   },
 };
 
