@@ -397,36 +397,55 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   include?: string[];
   exclude?: string[];
 }> = {
-  // EAR Protection - only NRR filter, no material/size
+  // Footwear - standard footwear filters
+  'footwear': {
+    include: ['gender', 'toeType', 'material', 'size', 'color', 'protection', 'style'],
+  },
+  'boots': {
+    include: ['gender', 'toeType', 'material', 'size', 'color', 'protection', 'style'],
+  },
+  'shoes': {
+    include: ['gender', 'toeType', 'material', 'size', 'color', 'protection', 'style'],
+  },
+  'safety-footwear': {
+    include: ['gender', 'toeType', 'material', 'size', 'color', 'protection', 'style'],
+  },
+  'work-boots': {
+    include: ['gender', 'toeType', 'material', 'size', 'color', 'protection', 'style'],
+  },
+  // Gloves
+  'gloves': {
+    include: ['material', 'size', 'color', 'protection'],
+  },
+  'work-gloves': {
+    include: ['material', 'size', 'color', 'protection'],
+  },
+  'hand-protection': {
+    include: ['material', 'size', 'color', 'protection'],
+  },
+  // EAR Protection - only NRR filter
   'ear-protection': {
     include: ['nrr', 'color', 'protection'],
-    exclude: ['material', 'size', 'gender', 'toeType', 'style', 'type', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   'hearing-protection': {
     include: ['nrr', 'color', 'protection'],
-    exclude: ['material', 'size', 'gender', 'toeType', 'style', 'type', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
-  // Head Protection - no gender/material, add hardHatType
+  // Head Protection - hardHatType
   'head-protection': {
     include: ['hardHatType', 'color', 'protection'],
-    exclude: ['gender', 'material', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   'hard-hats': {
     include: ['hardHatType', 'color', 'protection'],
-    exclude: ['gender', 'material', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
-  // Eye Protection - no gender/material/size, add eyewearStyle, protectionType, antiFog, antiScratch
+  // Eye Protection - eyewearStyle, protectionType, antiFog, antiScratch
   'eye-protection': {
     include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
-    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   'safety-glasses': {
     include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
-    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   'safety-goggles': {
     include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
-    exclude: ['gender', 'material', 'size', 'toeType', 'nrr', 'hardHatType', 'style', 'type', 'hiVisStyle', 'hiVisType', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection'],
   },
   // High Visibility Vests - all variations
   'vests': {
@@ -441,6 +460,7 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   // High Visibility Shirts - all variations
   'shirts': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
+  },
   },
   't-shirts': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
@@ -509,24 +529,31 @@ function getCategoryFilterConfig(categorySlug: string, hierarchy: { slug: string
   return null;
 }
 
+// Default filters to use when no category-specific config is found
+// Excludes all specialized filters (hi-vis, eye, head, ear protection)
+const DEFAULT_FILTER_CONFIG = {
+  include: ['gender', 'material', 'size', 'color', 'protection', 'style', 'type'],
+};
+
 function extractSmartFilters(
   products: { name: string; description: string | null }[],
   categoryConfig?: { include?: string[]; exclude?: string[] } | null
 ): Record<string, string[]> {
   const filters: Record<string, Set<string>> = {};
 
+  // Use provided config or default config (to avoid showing all filters including hi-vis)
+  const effectiveConfig = categoryConfig || DEFAULT_FILTER_CONFIG;
+
   // Determine which filter keys to process
   let filterKeysToProcess = Object.keys(SMART_FILTER_PATTERNS);
 
-  if (categoryConfig) {
-    if (categoryConfig.include) {
-      // Only include specified filters
-      filterKeysToProcess = categoryConfig.include.filter(key => SMART_FILTER_PATTERNS[key]);
-    }
-    if (categoryConfig.exclude) {
-      // Remove excluded filters
-      filterKeysToProcess = filterKeysToProcess.filter(key => !categoryConfig.exclude!.includes(key));
-    }
+  if (effectiveConfig.include) {
+    // Only include specified filters
+    filterKeysToProcess = effectiveConfig.include.filter(key => SMART_FILTER_PATTERNS[key]);
+  }
+  if (effectiveConfig.exclude) {
+    // Remove excluded filters
+    filterKeysToProcess = filterKeysToProcess.filter(key => !effectiveConfig.exclude!.includes(key));
   }
 
   for (const product of products) {
