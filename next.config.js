@@ -1,14 +1,42 @@
 /** @type {import('next').NextConfig} */
+
+// Get hostname from environment variable (without protocol)
+const getHostname = () => {
+  const url = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return 'localhost';
+  }
+};
+
+const appHostname = getHostname();
+
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ['localhost', 'images.unsplash.com', 'via.placeholder.com', '104.234.46.217'],
+    domains: ['localhost', 'images.unsplash.com', 'via.placeholder.com', appHostname, 'adasupply.com', 'www.adasupply.com'],
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'http',
-        hostname: '104.234.46.217',
+        hostname: appHostname,
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: appHostname,
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'adasupply.com',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.adasupply.com',
         pathname: '/uploads/**',
       },
       {
