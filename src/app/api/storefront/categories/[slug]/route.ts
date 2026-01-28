@@ -476,6 +476,249 @@ const SMART_FILTER_PATTERNS: Record<string, { keywords: Record<string, string>; 
     },
     label: 'Protection',
   },
+  // TAA/BAA Compliance filter
+  taaCompliance: {
+    keywords: {
+      'taa': 'TAA Compliant',
+      'taa compliant': 'TAA Compliant',
+      'taa-compliant': 'TAA Compliant',
+      'trade agreements act': 'TAA Compliant',
+      'baa': 'BAA Compliant',
+      'baa compliant': 'BAA Compliant',
+      'baa-compliant': 'BAA Compliant',
+      'buy american': 'BAA Compliant',
+      'buy american act': 'BAA Compliant',
+      'made in usa': 'Made in USA',
+      'made in america': 'Made in USA',
+      'american made': 'Made in USA',
+      'government compliant': 'Government Compliant',
+    },
+    label: 'TAA/BAA Approved',
+  },
+  // ANSI Class filter (separate from Type)
+  ansiClass: {
+    keywords: {
+      'ansi class 2': 'ANSI Class 2',
+      'class 2': 'ANSI Class 2',
+      'class ii': 'ANSI Class 2',
+      'ansi class 3': 'ANSI Class 3',
+      'class 3': 'ANSI Class 3',
+      'class iii': 'ANSI Class 3',
+      'non ansi': 'Non-ANSI',
+      'non-ansi': 'Non-ANSI',
+      'nonansi': 'Non-ANSI',
+    },
+    label: 'ANSI Class',
+  },
+  // Sweatshirt specific styles
+  sweatshirtStyle: {
+    keywords: {
+      'pullover crew': 'Pullover Crew Neck',
+      'crew neck': 'Pullover Crew Neck',
+      'crewneck': 'Pullover Crew Neck',
+      'pullover hooded': 'Pullover Hooded Sweatshirt',
+      'hooded sweatshirt': 'Pullover Hooded Sweatshirt',
+      'hoodie': 'Pullover Hooded Sweatshirt',
+      'pullover hoodie': 'Pullover Hooded Sweatshirt',
+      'zipper hooded': 'Zipper Hooded Sweatshirt',
+      'zip hooded': 'Zipper Hooded Sweatshirt',
+      'zip hoodie': 'Zipper Hooded Sweatshirt',
+      'zip-up hoodie': 'Zipper Hooded Sweatshirt',
+      'full zip': 'Zipper Hooded Sweatshirt',
+      'full-zip': 'Zipper Hooded Sweatshirt',
+    },
+    label: 'Style',
+  },
+  // Trouser specific styles
+  trouserStyle: {
+    keywords: {
+      'polyester mesh': 'Polyester Mesh',
+      'mesh pant': 'Polyester Mesh',
+      'polyester tricot': 'Polyester Tricot',
+      'tricot pant': 'Polyester Tricot',
+      'waterproof bib': 'Waterproof Bib',
+      'bib overall': 'Waterproof Bib',
+      'waterproof pant': 'Waterproof',
+      'waterproof': 'Waterproof',
+      'breathable': 'Breathable',
+      'breathable pant': 'Breathable',
+    },
+    label: 'Style',
+  },
+  // Trouser type (CLASS E)
+  trouserType: {
+    keywords: {
+      'class e': 'Class E',
+      'class-e': 'Class E',
+      'ansi class e': 'Class E',
+    },
+    label: 'Type',
+  },
+  // Extended color palette for various categories
+  extendedHiVisColor: {
+    keywords: {
+      'hi vis orange': 'Hi-Vis Orange',
+      'hi-vis orange': 'Hi-Vis Orange',
+      'high vis orange': 'Hi-Vis Orange',
+      'safety orange': 'Hi-Vis Orange',
+      'fluorescent orange': 'Hi-Vis Orange',
+      'hi vis yellow': 'Hi-Vis Yellow',
+      'hi-vis yellow': 'Hi-Vis Yellow',
+      'high vis yellow': 'Hi-Vis Yellow',
+      'safety yellow': 'Hi-Vis Yellow',
+      'fluorescent yellow': 'Hi-Vis Yellow',
+      'lime': 'Hi-Vis Yellow',
+      'lime green': 'Hi-Vis Yellow',
+      'black': 'Black',
+      'navy': 'Navy',
+      'navy blue': 'Navy',
+      'red': 'Red',
+      'green': 'Green',
+      'blue': 'Blue',
+      'yellow': 'Yellow',
+      'orange': 'Orange',
+    },
+    label: 'Color',
+  },
+  // Rain gear specific styles
+  rainGearStyle: {
+    keywords: {
+      'rain jacket': 'Rain Jacket',
+      'rain coat': 'Rain Jacket',
+      'raincoat': 'Rain Jacket',
+      'rain pant': 'Rain Pant',
+      'rain pants': 'Rain Pant',
+      'coverall': 'Coverall',
+      'coveralls': 'Coverall',
+      'bib': 'Bib',
+      'bib overall': 'Bib',
+      'rain suit': 'Raingear Set (Pant & Jacket)',
+      'rain set': 'Raingear Set (Pant & Jacket)',
+      'raingear set': 'Raingear Set (Pant & Jacket)',
+      '2 piece': 'Raingear Set (Pant & Jacket)',
+      '2-piece': 'Raingear Set (Pant & Jacket)',
+    },
+    label: 'Style',
+  },
+  // Hi-Vis Accessory styles
+  hiVisAccessoryStyle: {
+    keywords: {
+      'gaiter': 'Gaiters',
+      'gaiters': 'Gaiters',
+      'leg gaiter': 'Gaiters',
+      'sash': 'Sash Belt',
+      'sash belt': 'Sash Belt',
+      'safety sash': 'Sash Belt',
+      'seatbelt cover': 'Seatbelt Cover',
+      'seat belt cover': 'Seatbelt Cover',
+      'seatbelt': 'Seatbelt Cover',
+    },
+    label: 'Style',
+  },
+  // Hi-Vis Accessory colors (limited)
+  hiVisAccessoryColor: {
+    keywords: {
+      'hi vis orange': 'Hi-Vis Orange',
+      'hi-vis orange': 'Hi-Vis Orange',
+      'safety orange': 'Hi-Vis Orange',
+      'fluorescent orange': 'Hi-Vis Orange',
+      'hi vis yellow': 'Hi-Vis Yellow',
+      'hi-vis yellow': 'Hi-Vis Yellow',
+      'safety yellow': 'Hi-Vis Yellow',
+      'fluorescent yellow': 'Hi-Vis Yellow',
+      'lime': 'Hi-Vis Yellow',
+    },
+    label: 'Color',
+  },
+  // Lens color for eyewear
+  lensColor: {
+    keywords: {
+      'clear': 'Clear',
+      'clear lens': 'Clear',
+      'smoke': 'Smoke',
+      'smoked': 'Smoke',
+      'gray': 'Gray',
+      'grey': 'Gray',
+      'amber': 'Amber',
+      'yellow': 'Yellow',
+      'blue': 'Blue',
+      'blue mirror': 'Blue Mirror',
+      'silver mirror': 'Silver Mirror',
+      'mirror': 'Mirror',
+      'indoor/outdoor': 'Indoor/Outdoor',
+      'indoor outdoor': 'Indoor/Outdoor',
+      'i/o': 'Indoor/Outdoor',
+      'photochromic': 'Photochromic',
+      'transition': 'Photochromic',
+    },
+    label: 'Lens Color',
+  },
+  // Eyewear protection (simplified)
+  eyewearProtection: {
+    keywords: {
+      'anti-fog': 'Anti-Fog',
+      'anti fog': 'Anti-Fog',
+      'antifog': 'Anti-Fog',
+      'fog free': 'Anti-Fog',
+      'anti-scratch': 'Anti-Scratch',
+      'anti scratch': 'Anti-Scratch',
+      'scratch resistant': 'Anti-Scratch',
+      'hard coat': 'Anti-Scratch',
+      'welding': 'Welding',
+      'weld': 'Welding',
+    },
+    label: 'Protection',
+  },
+  // Eyewear accessories product type
+  eyewearProduct: {
+    keywords: {
+      'dispenser': 'Eyewear Dispenser',
+      'eyewear dispenser': 'Eyewear Dispenser',
+      'glasses dispenser': 'Eyewear Dispenser',
+      'lens cleaning': 'Lens Cleaning Dispenser',
+      'lens cleaner': 'Lens Cleaning Dispenser',
+      'cleaning dispenser': 'Lens Cleaning Dispenser',
+      'cleaning station': 'Cleaning Stations',
+      'cleaning stations': 'Cleaning Stations',
+      'lanyard': 'Lanyards',
+      'lanyards': 'Lanyards',
+      'cord': 'Lanyards',
+      'retainer': 'Lanyards',
+      'face shield': 'Face Shields',
+      'face shields': 'Face Shields',
+      'faceshield': 'Face Shields',
+      'side shield': 'Side Shields',
+      'side shields': 'Side Shields',
+      'sideshield': 'Side Shields',
+    },
+    label: 'Product',
+  },
+  // Bibs & Coveralls protection
+  bibsProtection: {
+    keywords: {
+      'insulated': 'Insulated / Cold Weather',
+      'cold weather': 'Insulated / Cold Weather',
+      'thermal': 'Insulated / Cold Weather',
+      'winter': 'Insulated / Cold Weather',
+    },
+    label: 'Protection',
+  },
+  // Extended protection for trousers
+  trouserProtection: {
+    keywords: {
+      'fire resistant': 'Fire Resistant',
+      'fire-resistant': 'Fire Resistant',
+      'flame resistant': 'Fire Resistant',
+      'fr ': 'Fire Resistant',
+      'water resistant': 'Water Resistant',
+      'water-resistant': 'Water Resistant',
+      'waterproof': 'Waterproof',
+      'ripstop': 'Ripstop',
+      'rip-stop': 'Ripstop',
+      'rip stop': 'Ripstop',
+    },
+    label: 'Protection',
+  },
 };
 
 // Category-specific filter configurations
@@ -524,16 +767,6 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   'hard-hats': {
     include: ['hardHatType', 'color', 'protection'],
   },
-  // Eye Protection - eyewearStyle, protectionType, antiFog, antiScratch
-  'eye-protection': {
-    include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
-  },
-  'safety-glasses': {
-    include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
-  },
-  'safety-goggles': {
-    include: ['eyewearStyle', 'protectionType', 'antiFog', 'antiScratch', 'color'],
-  },
   // High Visibility Vests - all variations
   'vests': {
     include: ['gender', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisStyle'],
@@ -575,6 +808,100 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   'high-visibility-clothing': {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
     exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
+  },
+
+  // ========== NEW CATEGORY CONFIGURATIONS ==========
+
+  // Sweatshirts
+  'sweatshirts': {
+    include: ['taaCompliance', 'gender', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection', 'sweatshirtStyle', 'ansiClass'],
+  },
+  'hi-vis-sweatshirts': {
+    include: ['taaCompliance', 'gender', 'hiVisMaterial', 'hiVisSize', 'hiVisColor', 'hiVisProtection', 'sweatshirtStyle', 'ansiClass'],
+  },
+
+  // Trousers
+  'trousers': {
+    include: ['taaCompliance', 'gender', 'hiVisSize', 'extendedHiVisColor', 'trouserProtection', 'trouserStyle', 'trouserType'],
+  },
+  'hi-vis-trousers': {
+    include: ['taaCompliance', 'gender', 'hiVisSize', 'extendedHiVisColor', 'trouserProtection', 'trouserStyle', 'trouserType'],
+  },
+  'pants': {
+    include: ['taaCompliance', 'gender', 'hiVisSize', 'extendedHiVisColor', 'trouserProtection', 'trouserStyle', 'trouserType'],
+  },
+
+  // Bibs & Coveralls, Insulated Gear
+  'bibs-coveralls-insulated-gear': {
+    include: ['gender', 'hiVisSize', 'extendedHiVisColor', 'bibsProtection'],
+  },
+  'bibs---coveralls--insulated-gear': {
+    include: ['gender', 'hiVisSize', 'extendedHiVisColor', 'bibsProtection'],
+  },
+  'coveralls': {
+    include: ['gender', 'hiVisSize', 'extendedHiVisColor', 'bibsProtection'],
+  },
+  'bibs': {
+    include: ['gender', 'hiVisSize', 'extendedHiVisColor', 'bibsProtection'],
+  },
+  'insulated-gear': {
+    include: ['gender', 'hiVisSize', 'extendedHiVisColor', 'bibsProtection'],
+  },
+
+  // High Visibility Accessories
+  'high-visibility-accessories': {
+    include: ['hiVisAccessoryColor', 'hiVisAccessoryStyle'],
+  },
+  'hi-vis-accessories': {
+    include: ['hiVisAccessoryColor', 'hiVisAccessoryStyle'],
+  },
+
+  // Rain Gear
+  'rain-gear': {
+    include: ['taaCompliance', 'hiVisMaterial', 'hiVisSize', 'extendedHiVisColor', 'hiVisProtection', 'rainGearStyle', 'ansiClass'],
+  },
+  'raingear': {
+    include: ['taaCompliance', 'hiVisMaterial', 'hiVisSize', 'extendedHiVisColor', 'hiVisProtection', 'rainGearStyle', 'ansiClass'],
+  },
+
+  // Eye Protection - updated
+  'eye-protection': {
+    include: ['taaCompliance', 'gender', 'color', 'lensColor', 'eyewearProtection', 'eyewearStyle'],
+  },
+  'safety-glasses': {
+    include: ['taaCompliance', 'gender', 'color', 'lensColor', 'eyewearProtection', 'eyewearStyle'],
+  },
+
+  // Safety Goggles
+  'safety-goggles': {
+    include: ['taaCompliance', 'eyewearProtection', 'color', 'eyewearStyle', 'type'],
+  },
+  'goggles': {
+    include: ['taaCompliance', 'eyewearProtection', 'color', 'eyewearStyle', 'type'],
+  },
+
+  // Eyewear Accessories - only product type
+  'eyewear-accessories': {
+    include: ['eyewearProduct'],
+  },
+
+  // Foam (Ear Protection)
+  'foam': {
+    include: ['taaCompliance', 'nrr'],
+  },
+  'foam-ear-plugs': {
+    include: ['taaCompliance', 'nrr'],
+  },
+  'ear-plugs': {
+    include: ['taaCompliance', 'nrr'],
+  },
+
+  // Ear Accessories
+  'ear-accessories': {
+    include: ['taaCompliance', 'nrr'],
+  },
+  'hearing-accessories': {
+    include: ['taaCompliance', 'nrr'],
   },
 };
 
