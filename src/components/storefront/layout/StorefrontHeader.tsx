@@ -94,7 +94,7 @@ export function StorefrontHeader() {
                 <div className="hidden sm:flex items-center gap-3">
                   <div className="w-px h-10 bg-gray-300"></div>
                   <span className="text-lg lg:text-xl font-medium text-safety-green-600 italic">
-                    Safety Done Right
+                    Safety Done Right!
                   </span>
                 </div>
               </Link>
