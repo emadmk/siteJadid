@@ -809,6 +809,10 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
     include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
     exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
   },
+  'hi-vis-apparel': {
+    include: ['gender', 'hiVisColor', 'hiVisMaterial', 'hiVisSize', 'hiVisProtection', 'hiVisType', 'hiVisStyle'],
+    exclude: ['material', 'size', 'color', 'style', 'type', 'toeType', 'nrr', 'protectionType', 'antiFog', 'antiScratch', 'eyewearStyle', 'hardHatType', 'protection'],
+  },
 
   // ========== NEW CATEGORY CONFIGURATIONS ==========
 
