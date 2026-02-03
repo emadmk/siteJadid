@@ -228,11 +228,13 @@ export function HeroSection() {
                 <h3 className="text-xs lg:text-sm font-medium text-gray-800 text-center group-hover:text-safety-green-600 transition-colors line-clamp-2">
                   {category.name}
                 </h3>
+                {/* Temporarily hidden - item count
                 {category._count && category._count.products > 0 && (
                   <p className="text-xs text-gray-500 text-center mt-0.5">
                     {category._count.products.toLocaleString()} items
                   </p>
                 )}
+                */}
               </Link>
             ))}
           </div>
