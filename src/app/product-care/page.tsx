@@ -367,6 +367,6 @@ export default function ProductCarePage() {
 }
 
 export const metadata = {
-  title: 'Product Care Guide | ADA Supply',
+  title: 'Product Care Guide | ADA Supplies',
   description: 'Learn how to properly care for and maintain your safety equipment for maximum protection and longevity.',
 };

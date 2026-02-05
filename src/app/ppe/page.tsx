@@ -252,6 +252,6 @@ export default async function PPEPage() {
 }
 
 export const metadata = {
-  title: 'Personal Protective Equipment (PPE) | ADA Supply',
+  title: 'Personal Protective Equipment (PPE) | ADA Supplies',
   description: 'Browse our complete catalog of personal protective equipment including footwear, high-visibility clothing, head protection, eye protection, and more.',
 };

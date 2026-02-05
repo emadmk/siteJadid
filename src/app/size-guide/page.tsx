@@ -375,6 +375,6 @@ export default function SizeGuidePage() {
 }
 
 export const metadata = {
-  title: 'Size Guide | ADA Supply',
+  title: 'Size Guide | ADA Supplies',
   description: 'Find the perfect fit with our comprehensive size guide for safety equipment and workwear.',
 };

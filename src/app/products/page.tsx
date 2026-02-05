@@ -243,6 +243,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 }
 
 export const metadata = {
-  title: 'All Products | ADA Supply',
+  title: 'All Products | ADA Supplies',
   description: 'Browse our complete catalog of professional safety equipment and industrial supplies.',
 };

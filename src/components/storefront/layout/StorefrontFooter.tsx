@@ -272,7 +272,7 @@ export function StorefrontFooter() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Copyright */}
             <div className="text-sm text-gray-400 text-center md:text-left">
-              &copy; {new Date().getFullYear()} ADA Supply. All rights reserved.
+              &copy; {new Date().getFullYear()} ADA Supplies. All rights reserved.
             </div>
 
             {/* Legal Links */}

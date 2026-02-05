@@ -301,6 +301,6 @@ export default async function AdvancedSearchPage({
 }
 
 export const metadata = {
-  title: 'Advanced Search | ADA Supply',
+  title: 'Advanced Search | ADA Supplies',
   description: 'Search and filter through our complete catalog of safety equipment.',
 };

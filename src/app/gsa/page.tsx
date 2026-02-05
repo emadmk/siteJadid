@@ -20,23 +20,19 @@ import {
 } from 'lucide-react';
 
 export const metadata = {
-  title: 'GSA MAS Contracts | ADA Supply - Federal Government Purchasing',
-  description: 'ADA Supply is a GSA Schedule holder (GS-21F-0086U) and DLA BPA contractor. Streamlined procurement for federal agencies with TAA/BAA compliant products.',
+  title: 'GSA MAS Contracts | ADA Supplies - Federal Government Purchasing',
+  description: 'ADA Supplies is a GSA Schedule holder (GS-21F-0086U). Streamlined procurement for federal agencies with TAA/BAA compliant products.',
 };
 
 export default function GSAContractPage() {
-  // Services list
+  // Services list - Updated
   const services = [
     'Custom Fabrication & Kitting',
     'Software/Engineering VAR',
     'Custom Manufacturing',
-    'Private Labeling',
-    'Custom Safety Kit Assembly',
-    'Custom Packaging, Marking, & Fulfillment',
-    'Maintenance, Repair, & Operations',
   ];
 
-  // Products list
+  // Products list - Updated (removed crossed out items)
   const products = [
     'Abrasive/Cutting',
     'Air Duct Systems',
@@ -47,17 +43,11 @@ export default function GSAContractPage() {
     'Hand Tools & Power Tools',
     'Hardware/Hydraulics',
     'Industrial Clothing, Uniforms, and Shoes',
-    'Instrumentation',
     'Janitorial/Industrial/Maintenance',
-    'Lubrication',
     'Medical & Occupational PPE',
-    'Office Products',
     'Power/Pneumatic',
-    'Precision Tools',
     'Safety',
-    'Signs & Labels',
     'Tapes/Adhesives',
-    'Welding',
   ];
 
   // Major accounts
@@ -71,17 +61,17 @@ export default function GSAContractPage() {
     'Robins AFB, Georgia',
   ];
 
-  // NAICS codes
+  // NAICS codes - Updated (removed crossed out codes)
   const naicsCodes = [
-    '423490', '423610', '424120', '423440', '423720', '424610',
-    '423840', '424340', '423140', '423460', '423730', '424690',
-    '424130', '423450', '423210', '423690', '423860', '424720',
-    '423390', '423830', '423420', '423710', '423910', '424950',
+    '423490', '423610', '424120', '423720', '424610',
+    '423840', '424340', '423140', '423730', '424690',
+    '424130', '423450', '423210', '423860', '424720',
+    '423390', '423830', '423420', '423910', '424950',
   ];
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Hero Section with Soldier Image */}
+      {/* Hero Section - Centered Design */}
       <div className="relative bg-gray-900 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
@@ -92,119 +82,151 @@ export default function GSAContractPage() {
             className="object-cover opacity-40"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-900/60 to-gray-900/80" />
         </div>
 
         <div className="relative container mx-auto px-4 py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Side - Title and Tunnel to Towers */}
-            <div className="text-white">
-              <div className="inline-flex items-center gap-2 bg-safety-green-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-6">
-                <Shield className="w-4 h-4" />
-                GSA Contract Holder
-              </div>
+          {/* Centered Content */}
+          <div className="flex flex-col items-center text-center text-white">
+            {/* GSA Contract Holder Badge */}
+            <div className="inline-flex items-center gap-2 bg-safety-green-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-8">
+              <Shield className="w-4 h-4" />
+              GSA Contract Holder
+            </div>
 
-              {/* Title with Badge */}
-              <div className="flex items-start gap-6 mb-4">
+            {/* Main Title - Centered and Large */}
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6">
+              <span className="text-safety-green-400">GSA MAS</span>
+              <br />
+              <span className="text-white">CONTRACTOR</span>
+            </h1>
+
+            {/* 25 Years Badge */}
+            <div className="mb-4">
+              <Image
+                src="/images/imagesite/badge copy.png"
+                alt="25 Years Badge"
+                width={140}
+                height={140}
+                className="object-contain"
+              />
+            </div>
+
+            {/* Tagline below badge */}
+            <p className="text-xl md:text-2xl text-gray-300 font-light italic mb-10">
+              Serving the government for over 25 years
+            </p>
+
+            {/* Partner Logos Row */}
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              {/* WOSB */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
                 <Image
-                  src="/images/imagesite/badge copy.png"
-                  alt="25 Years Badge"
-                  width={120}
-                  height={120}
-                  className="object-contain"
+                  src="/images/imagesite/1.jpeg"
+                  alt="WOSB Certified"
+                  width={100}
+                  height={60}
+                  className="object-contain max-w-full max-h-full"
                 />
-                <div>
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight">
-                    <span className="text-safety-green-400">GSA MAS</span>
-                    <br />
-                    CONTRACTOR
-                  </h1>
-                </div>
               </div>
 
-              {/* Tagline */}
-              <p className="text-xl md:text-2xl text-gray-300 font-light italic mb-8">
-                Serving the government for over 25 years
-              </p>
+              {/* FedMall */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+                <Image
+                  src="/images/imagesite/02.jpg"
+                  alt="FedMall"
+                  width={100}
+                  height={60}
+                  className="object-contain max-w-full max-h-full"
+                />
+              </div>
 
-              {/* Partner Badges - Larger and more attractive */}
-              <div className="flex flex-wrap gap-4 mt-6">
-                {/* US Small Business */}
-                <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[168px] h-[108px] overflow-hidden">
-                  <Image
-                    src="/images/imagesite/ussmall.png"
-                    alt="US Small Business"
-                    width={144}
-                    height={90}
-                    className="object-contain max-w-full max-h-full"
-                  />
-                </div>
+              {/* GSA */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+                <Image
+                  src="/images/imagesite/01.jpg"
+                  alt="GSA"
+                  width={100}
+                  height={60}
+                  className="object-contain max-w-full max-h-full"
+                />
+              </div>
 
-                {/* Partner Image 2 */}
-                <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[168px] h-[108px] overflow-hidden">
-                  <Image
-                    src="/images/imagesite/2.jpeg"
-                    alt="Partner Certification"
-                    width={144}
-                    height={90}
-                    className="object-contain max-w-full max-h-full"
-                  />
-                </div>
+              {/* AbilityOne & MRO */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+                <Image
+                  src="/images/imagesite/03.png"
+                  alt="AbilityOne & MRO"
+                  width={100}
+                  height={60}
+                  className="object-contain max-w-full max-h-full"
+                />
+              </div>
 
-                {/* Tunnel to Towers */}
-                <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[168px] h-[108px] overflow-hidden">
-                  <Image
-                    src="/images/imagesite/t2t.jpg"
-                    alt="Tunnel to Towers Foundation"
-                    width={144}
-                    height={90}
-                    className="object-contain max-w-full max-h-full"
-                  />
-                </div>
+              {/* HubZone */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+                <Image
+                  src="/images/imagesite/2.jpeg"
+                  alt="HubZone Certified"
+                  width={100}
+                  height={60}
+                  className="object-contain max-w-full max-h-full"
+                />
+              </div>
+
+              {/* Tunnel to Towers */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+                <Image
+                  src="/images/imagesite/t2t.jpg"
+                  alt="Tunnel to Towers Foundation"
+                  width={100}
+                  height={60}
+                  className="object-contain max-w-full max-h-full"
+                />
               </div>
             </div>
 
-            {/* Right Side - Contract Info */}
-            <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 text-center">
-                <h2 className="text-2xl font-bold text-safety-green-400">SCHEDULE 51V</h2>
-              </div>
+            {/* Shop on GSA Button */}
+            <a
+              href="https://www.gsaadvantage.gov/advantage/ws/search/advantage_search?q=0:2GS21F0086U&db=0&searchType=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 bg-safety-green-600 hover:bg-safety-green-700 text-white font-bold text-xl px-12 py-4 rounded-lg transition-colors shadow-lg"
+            >
+              SHOP ON GSA
+              <ExternalLink className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+      </div>
 
-              {/* Contract Numbers */}
-              <div className="p-6 border-b border-gray-200">
-                <div className="space-y-3 text-center">
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">GSA MAS Contract#</div>
-                    <div className="text-xl font-bold text-gray-900">GS-21F-0086U</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">DLA BPA Contract#</div>
-                    <div className="text-xl font-bold text-gray-900">SP3300-20-A-5011</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Green Divider */}
-              <div className="h-1 bg-safety-green-500" />
-
-              {/* Identifiers */}
-              <div className="p-6 bg-gray-50">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">CAGE Code</div>
-                    <div className="text-lg font-bold text-gray-900">1J2Y1</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">EIN</div>
-                    <div className="text-lg font-bold text-gray-900">58-2440650</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 uppercase tracking-wider">UEI</div>
-                    <div className="text-lg font-bold text-gray-900">JAHKAMJPCCE7</div>
-                  </div>
-                </div>
-              </div>
+      {/* Contract Info Bar - Single Line */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10 text-center">
+            <div>
+              <div className="text-xs text-gray-500 uppercase tracking-wider">SCHEDULE</div>
+              <div className="text-lg font-bold text-safety-green-600">51V</div>
+            </div>
+            <div className="h-8 w-px bg-gray-300 hidden md:block" />
+            <div>
+              <div className="text-xs text-gray-500 uppercase tracking-wider">GSA MAS Contract#</div>
+              <div className="text-lg font-bold text-gray-900">GS-21F-0086U</div>
+            </div>
+            <div className="h-8 w-px bg-gray-300 hidden md:block" />
+            <div>
+              <div className="text-xs text-gray-500 uppercase tracking-wider">CAGE Code</div>
+              <div className="text-lg font-bold text-gray-900">1J2Y1</div>
+            </div>
+            <div className="h-8 w-px bg-gray-300 hidden md:block" />
+            <div>
+              <div className="text-xs text-gray-500 uppercase tracking-wider">EIN</div>
+              <div className="text-lg font-bold text-gray-900">58-2440650</div>
+            </div>
+            <div className="h-8 w-px bg-gray-300 hidden md:block" />
+            <div>
+              <div className="text-xs text-gray-500 uppercase tracking-wider">UEI</div>
+              <div className="text-lg font-bold text-gray-900">JAHKAMJPCCE7</div>
             </div>
           </div>
         </div>
@@ -242,19 +264,6 @@ export default function GSAContractPage() {
           </div>
         </div>
 
-        {/* Shop on GSA Button */}
-        <div className="mt-8 flex justify-center">
-          <a
-            href="https://www.gsaadvantage.gov/advantage/ws/search/advantage_search?q=0:2GS21F0086U&db=0&searchType=1"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-3 bg-gray-600 hover:bg-gray-700 text-white font-bold text-xl px-12 py-4 rounded-lg transition-colors shadow-lg"
-          >
-            SHOP ON GSA
-            <ExternalLink className="w-5 h-5" />
-          </a>
-        </div>
-
         {/* Major Accounts & NAICS Codes */}
         <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Major Accounts */}
@@ -276,7 +285,7 @@ export default function GSAContractPage() {
           <div className="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-200">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 text-center mb-6 tracking-wider">NAICS CODES</h2>
-              <div className="grid grid-cols-6 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 {naicsCodes.map((code, index) => (
                   <div
                     key={index}

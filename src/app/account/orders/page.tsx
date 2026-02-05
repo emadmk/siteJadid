@@ -207,6 +207,6 @@ export default async function OrdersPage() {
 }
 
 export const metadata = {
-  title: 'My Orders | ADA Supply',
+  title: 'My Orders | ADA Supplies',
   description: 'View and track your order history.',
 };

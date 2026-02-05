@@ -5,8 +5,8 @@ import { ShieldCheck, Users, Award, TrendingUp, CheckCircle, Building2, Globe, T
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
-  title: 'About Us | ADA Supply - Safety Done Right',
-  description: 'Learn about ADA Supply - your trusted partner for industrial safety equipment, PPE, and GSA contract solutions serving government and commercial customers nationwide.',
+  title: 'About Us | ADA Supplies - Safety Done Right',
+  description: 'Learn about ADA Supplies - your trusted partner for industrial safety equipment, PPE, and GSA contract solutions serving government and commercial customers nationwide.',
 };
 
 export default function AboutPage() {
@@ -19,7 +19,7 @@ export default function AboutPage() {
           <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Left - Text Content */}
             <div className="max-w-xl">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">About ADA Supply</h1>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">About ADA Supplies</h1>
               <p className="text-xl text-safety-green-200 mb-4 font-medium">
                 Safety Done Right
               </p>
@@ -219,7 +219,7 @@ export default function AboutPage() {
 
         {/* Core Values */}
         <div className="mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Why Choose ADA Supply?</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Why Choose ADA Supplies?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
               <div className="w-14 h-14 bg-safety-green-100 rounded-xl flex items-center justify-center mb-4">
@@ -318,7 +318,7 @@ export default function AboutPage() {
             <div>
               <h2 className="text-3xl font-bold mb-4">GSA Schedule Contract Holder</h2>
               <p className="text-blue-100 mb-6">
-                ADA Supply is proud to be an authorized GSA Schedule contract holder, providing federal,
+                ADA Supplies is proud to be an authorized GSA Schedule contract holder, providing federal,
                 state, and local government agencies with streamlined procurement of safety equipment
                 at pre-negotiated prices.
               </p>

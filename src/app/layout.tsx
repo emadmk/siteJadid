@@ -6,7 +6,7 @@ import { ConditionalFooter } from '@/components/ConditionalFooter';
 import { GlobalModals } from '@/components/GlobalModals';
 
 export const metadata: Metadata = {
-  title: 'ADA Supply - Professional Safety Equipment',
+  title: 'ADA Supplies - Professional Safety Equipment',
   description: 'Your trusted source for professional safety equipment. ANSI certified products for industrial, construction, and workplace safety needs. B2B and GSA approved.',
 };
 

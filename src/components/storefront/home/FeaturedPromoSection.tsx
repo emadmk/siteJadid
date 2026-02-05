@@ -315,7 +315,7 @@ export function FeaturedPromoSection({ homeStyle = 1 }: FeaturedPromoSectionProp
                 <div className="flex-shrink-0">
                   <Image
                     src="/images/imagesite/badge copy.png"
-                    alt="ADA Supply Badge"
+                    alt="ADA Supplies Badge"
                     width={120}
                     height={120}
                     className="object-contain"
@@ -353,7 +353,7 @@ export function FeaturedPromoSection({ homeStyle = 1 }: FeaturedPromoSectionProp
                 <div className="flex-shrink-0">
                   <Image
                     src="/images/imagesite/badge copy.png"
-                    alt="ADA Supply Badge"
+                    alt="ADA Supplies Badge"
                     width={140}
                     height={140}
                     className="object-contain"

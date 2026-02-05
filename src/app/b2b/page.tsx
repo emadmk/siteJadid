@@ -386,6 +386,6 @@ export default async function B2BDashboardPage() {
 }
 
 export const metadata = {
-  title: 'Business Account | ADA Supply',
+  title: 'Business Account | ADA Supplies',
   description: 'Manage your B2B account, team, orders, and access exclusive business features.',
 };

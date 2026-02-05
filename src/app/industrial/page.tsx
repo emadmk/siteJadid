@@ -230,6 +230,6 @@ export default async function IndustrialPage() {
 }
 
 export const metadata = {
-  title: 'Safety, Industrial Products & Tools | ADA Supply',
+  title: 'Safety, Industrial Products & Tools | ADA Supplies',
   description: 'Browse our complete catalog of industrial products including tools, traffic safety equipment, and more.',
 };

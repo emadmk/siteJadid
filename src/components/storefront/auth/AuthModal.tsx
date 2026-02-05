@@ -176,7 +176,7 @@ export function AuthModal() {
             <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xl">A</span>
             </div>
-            <span className="text-xl font-bold">ADA Supply</span>
+            <span className="text-xl font-bold">ADA Supplies</span>
           </div>
           <h2 className="text-2xl font-bold">
             {view === 'login' && 'Welcome Back'}
@@ -185,7 +185,7 @@ export function AuthModal() {
           </h2>
           <p className="text-white/80 text-sm mt-1">
             {view === 'login' && 'Sign in to access your account'}
-            {view === 'register' && 'Join ADA Supply for exclusive benefits'}
+            {view === 'register' && 'Join ADA Supplies for exclusive benefits'}
             {view === 'forgot-password' && "Enter your email to reset your password"}
           </p>
         </div>

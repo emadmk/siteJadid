@@ -491,7 +491,7 @@ export default function SettingsPage() {
                     label="Company/Warehouse Name"
                     value={settings.shipping.originName}
                     onChange={(v) => updateSetting('shipping', 'originName', v)}
-                    placeholder="ADA Supply Warehouse"
+                    placeholder="ADA Supplies Warehouse"
                   />
                 </div>
                 <div className="md:col-span-2">

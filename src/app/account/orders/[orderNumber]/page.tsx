@@ -336,7 +336,7 @@ export default async function OrderDetailPage({
 
 export async function generateMetadata({ params }: { params: { orderNumber: string } }) {
   return {
-    title: `Order ${params.orderNumber} | ADA Supply`,
+    title: `Order ${params.orderNumber} | ADA Supplies`,
     description: 'View your order details and tracking information.',
   };
 }
