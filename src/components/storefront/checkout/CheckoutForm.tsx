@@ -76,7 +76,7 @@ interface CheckoutFormProps {
   costCenters: CostCenter[];
 }
 
-type CheckoutStep = 'shipping' | 'delivery' | 'payment' | 'review';
+type CheckoutStep = 'shipping' | 'delivery' | 'government' | 'payment' | 'review';
 
 // Stripe Payment Element component for card input
 function StripePaymentElement({
@@ -130,6 +130,15 @@ export function CheckoutForm({
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  // Government Buyer state
+  const [isGovBuyer, setIsGovBuyer] = useState(false);
+  const [govBuyerInfo, setGovBuyerInfo] = useState({
+    agencyName: '',
+    contactName: '',
+    contactEmail: '',
+    contractNumber: '',
+  });
 
   // Shipping rates from Shippo
   interface ShippingRateOption {
@@ -269,8 +278,10 @@ export function CheckoutForm({
       ? 0
       : baseShippingCost;
 
-  const discount = appliedCoupon?.discount || 0;
-  const tax = isB2BAccount || isGSAAccount ? 0 : (subtotal - discount) * 0.08;
+  const couponDiscount = appliedCoupon?.discount || 0;
+  const govBuyerDiscount = isGovBuyer ? subtotal * 0.20 : 0; // 20% discount for government buyers
+  const discount = couponDiscount + govBuyerDiscount;
+  const tax = isB2BAccount || isGSAAccount || isGovBuyer ? 0 : (subtotal - discount) * 0.08;
   const total = subtotal - discount + shippingCost + tax;
 
   // Initialize Stripe and create payment intent when entering payment step
@@ -344,6 +355,7 @@ export function CheckoutForm({
   const steps: { key: CheckoutStep; label: string }[] = [
     { key: 'shipping', label: 'Shipping' },
     { key: 'delivery', label: 'Delivery' },
+    { key: 'government', label: 'Gov Buyer' },
     { key: 'payment', label: 'Payment' },
     { key: 'review', label: 'Review' },
   ];
@@ -532,6 +544,13 @@ export function CheckoutForm({
         return selectedAddressId || showAddressForm;
       case 'delivery':
         return !!shippingMethod;
+      case 'government':
+        // Government step is optional, can always proceed
+        // If gov buyer is selected, validate required fields
+        if (isGovBuyer) {
+          return govBuyerInfo.agencyName.trim() !== '' && govBuyerInfo.contactEmail.trim() !== '';
+        }
+        return true;
       case 'payment':
         if (paymentMethod === 'card') {
           return isPaymentReady && !!clientSecret;
@@ -926,6 +945,130 @@ export function CheckoutForm({
           </div>
         )}
 
+        {/* Step: Government Buyer */}
+        {currentStep === 'government' && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <Building2 className="w-6 h-6 text-blue-600" />
+              <h2 className="text-xl font-bold text-black">Government Buyer</h2>
+            </div>
+
+            {/* Government Buyer Banner */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 mb-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <ShieldCheck className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-1">
+                    Are you a Government Buyer?
+                  </h3>
+                  <p className="text-sm text-blue-700 mb-3">
+                    Federal, State, and Local government agencies qualify for special pricing.
+                    Get <span className="font-bold text-blue-900">20% off</span> your entire order!
+                  </p>
+
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isGovBuyer}
+                      onChange={(e) => setIsGovBuyer(e.target.checked)}
+                      className="w-5 h-5 text-blue-600 border-2 border-blue-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="font-medium text-blue-900">
+                      Yes, I am purchasing for a government agency
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Government Buyer Form */}
+            {isGovBuyer && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-4">
+                <h4 className="font-semibold text-black flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-gray-600" />
+                  Agency Information
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Agency Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={govBuyerInfo.agencyName}
+                      onChange={(e) => setGovBuyerInfo({ ...govBuyerInfo, agencyName: e.target.value })}
+                      placeholder="e.g., Department of Defense"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contact Name
+                    </label>
+                    <input
+                      type="text"
+                      value={govBuyerInfo.contactName}
+                      onChange={(e) => setGovBuyerInfo({ ...govBuyerInfo, contactName: e.target.value })}
+                      placeholder="Your full name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Government Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={govBuyerInfo.contactEmail}
+                      onChange={(e) => setGovBuyerInfo({ ...govBuyerInfo, contactEmail: e.target.value })}
+                      placeholder="name@agency.gov"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contract/PO Number (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={govBuyerInfo.contractNumber}
+                      onChange={(e) => setGovBuyerInfo({ ...govBuyerInfo, contractNumber: e.target.value })}
+                      placeholder="Contract or PO number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Discount Preview */}
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Check className="w-5 h-5 text-green-600" />
+                      <span className="font-medium text-green-800">Government Discount Applied</span>
+                    </div>
+                    <span className="text-lg font-bold text-green-700">
+                      -${govBuyerDiscount.toFixed(2)} (20% off)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Skip option */}
+            {!isGovBuyer && (
+              <div className="text-center text-sm text-gray-500 mt-4">
+                Not a government buyer? No problem! Click &quot;Continue&quot; to proceed to payment.
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Step: Payment */}
         {currentStep === 'payment' && (
           <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -1275,10 +1418,16 @@ export function CheckoutForm({
               <span className="text-gray-600">Subtotal</span>
               <span className="font-medium">${subtotal.toFixed(2)}</span>
             </div>
-            {discount > 0 && (
+            {couponDiscount > 0 && (
               <div className="flex justify-between text-safety-green-600">
-                <span>Discount</span>
-                <span>-${discount.toFixed(2)}</span>
+                <span>Coupon Discount</span>
+                <span>-${couponDiscount.toFixed(2)}</span>
+              </div>
+            )}
+            {govBuyerDiscount > 0 && (
+              <div className="flex justify-between text-blue-600">
+                <span>Gov Buyer Discount (20%)</span>
+                <span>-${govBuyerDiscount.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between">
