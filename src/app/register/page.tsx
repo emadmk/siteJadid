@@ -305,17 +305,6 @@ export default function RegisterPage() {
                 );
               })}
             </div>
-
-            {/* Trust Badges */}
-            <div className="mt-16 text-center">
-              <p className="text-sm text-gray-500 mb-6">Trusted by thousands of customers nationwide</p>
-              <div className="flex flex-wrap items-center justify-center gap-8 opacity-60">
-                <Image src="/images/imagesite/gsa-logo-w.png" alt="GSA" width={80} height={40} className="h-8 w-auto" />
-                <Image src="/images/imagesite/fedmall.png" alt="FedMall" width={80} height={40} className="h-8 w-auto" />
-                <Image src="/images/imagesite/wosb.png" alt="WOSB" width={80} height={40} className="h-8 w-auto" />
-                <Image src="/images/imagesite/hubzone.png" alt="HubZone" width={80} height={40} className="h-8 w-auto" />
-              </div>
-            </div>
           </>
         ) : (
           // Registration Form
