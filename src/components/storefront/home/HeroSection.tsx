@@ -34,7 +34,7 @@ const buyerBanners = [
     title: 'Volume Buyers',
     subtitle: 'Bulk orders, bigger savings',
     description: 'Order in large quantities and unlock special volume discounts on all products.',
-    image: '/images/imagesite/cones.jpg',
+    image: '/uploads/ppe-rhn2syjhuk4f553vlfqcysr0quy8cnjai2hlg26xxc.jpg',
     link: '/register',
     bgColor: 'from-purple-700 to-purple-900',
     icon: Users,
