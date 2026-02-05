@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronRight, ChevronLeft, Star, X, Phone, Mail, Loader2, FileText } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Star, X, Phone, Mail, Loader2, FileText, Building2, Users, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getImageSize } from '@/lib/image-utils';
 
@@ -17,7 +17,39 @@ interface Product {
   brand?: { name: string };
 }
 
-export function FeaturedPromoSection() {
+// B2B buttons for Style 2
+const style2Buttons = [
+  {
+    id: 1,
+    title: 'B2B Buyers',
+    description: 'Special pricing & dedicated support for business owners',
+    icon: Building2,
+    color: 'from-blue-600 to-blue-700',
+    hoverColor: 'hover:from-blue-700 hover:to-blue-800',
+  },
+  {
+    id: 2,
+    title: 'Volume Buyers',
+    description: 'Bulk orders unlock bigger savings on all products',
+    icon: Users,
+    color: 'from-purple-600 to-purple-700',
+    hoverColor: 'hover:from-purple-700 hover:to-purple-800',
+  },
+  {
+    id: 3,
+    title: 'GSA Buyers',
+    description: 'Federal & Government agencies get exclusive GSA pricing',
+    icon: ShieldCheck,
+    color: 'from-safety-green-600 to-safety-green-700',
+    hoverColor: 'hover:from-safety-green-700 hover:to-safety-green-800',
+  },
+];
+
+interface FeaturedPromoSectionProps {
+  homeStyle?: 1 | 2 | 3;
+}
+
+export function FeaturedPromoSection({ homeStyle = 1 }: FeaturedPromoSectionProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -276,52 +308,92 @@ export function FeaturedPromoSection() {
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />
             </div>
 
-            {/* Content - Logo Left, Text Right */}
-            <div className="relative p-4 h-full flex items-center gap-4">
-              {/* Badge Image - Left Side Big */}
-              <div className="flex-shrink-0">
-                <Image
-                  src="/images/imagesite/badge copy.png"
-                  alt="ADA Supply Badge"
-                  width={140}
-                  height={140}
-                  className="object-contain"
-                  unoptimized
-                />
-              </div>
+            {/* Style 2: B2B Buttons */}
+            {homeStyle === 2 ? (
+              <div className="relative p-4 h-full flex items-center gap-4">
+                {/* Badge Image - Left Side */}
+                <div className="flex-shrink-0">
+                  <Image
+                    src="/images/imagesite/badge copy.png"
+                    alt="ADA Supply Badge"
+                    width={120}
+                    height={120}
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
 
-              {/* Text & Buttons - Right Side */}
-              <div className="flex-1 flex flex-col justify-center">
-                <p className="text-white text-base font-medium mb-3 leading-snug">
-                  Purchase on behalf of a company?<br />
-                  or need a personalised quote?<br />
-                  Let us show you why customers choose us.
-                </p>
-
-                {/* Buttons */}
-                <div className="flex flex-wrap gap-2">
-                  <Link
-                    href="/auth/signup?type=b2b"
-                    className="bg-white text-safety-green-700 px-3 py-2 rounded-lg font-semibold text-sm text-center hover:bg-gray-100 transition-colors"
-                  >
-                    Register B2B
-                  </Link>
-                  <button
-                    onClick={() => setShowQuoteModal(true)}
-                    className="bg-yellow-400 text-gray-900 px-3 py-2 rounded-lg font-semibold text-sm text-center hover:bg-yellow-300 transition-colors flex items-center gap-1"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Request Quote
-                  </button>
-                  <button
-                    onClick={() => setShowContactModal(true)}
-                    className="bg-white/20 text-white px-3 py-2 rounded-lg font-semibold text-sm text-center hover:bg-white/30 transition-colors border border-white/30"
-                  >
-                    Contact us
-                  </button>
+                {/* 3 Vertical Buttons - Right Side */}
+                <div className="flex-1 flex flex-col gap-2">
+                  {style2Buttons.map((btn) => {
+                    const IconComponent = btn.icon;
+                    return (
+                      <Link
+                        key={btn.id}
+                        href="/register"
+                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg bg-gradient-to-r ${btn.color} ${btn.hoverColor} transition-all group`}
+                      >
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <IconComponent className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-semibold text-sm">{btn.title}</h4>
+                          <p className="text-white/80 text-xs truncate">{btn.description}</p>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-white/70 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Style 1 & 3: Original Content */
+              <div className="relative p-4 h-full flex items-center gap-4">
+                {/* Badge Image - Left Side Big */}
+                <div className="flex-shrink-0">
+                  <Image
+                    src="/images/imagesite/badge copy.png"
+                    alt="ADA Supply Badge"
+                    width={140}
+                    height={140}
+                    className="object-contain"
+                    unoptimized
+                  />
+                </div>
+
+                {/* Text & Buttons - Right Side */}
+                <div className="flex-1 flex flex-col justify-center">
+                  <p className="text-white text-base font-medium mb-3 leading-snug">
+                    Purchase on behalf of a company?<br />
+                    or need a personalised quote?<br />
+                    Let us show you why customers choose us.
+                  </p>
+
+                  {/* Buttons */}
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href="/auth/signup?type=b2b"
+                      className="bg-white text-safety-green-700 px-3 py-2 rounded-lg font-semibold text-sm text-center hover:bg-gray-100 transition-colors"
+                    >
+                      Register B2B
+                    </Link>
+                    <button
+                      onClick={() => setShowQuoteModal(true)}
+                      className="bg-yellow-400 text-gray-900 px-3 py-2 rounded-lg font-semibold text-sm text-center hover:bg-yellow-300 transition-colors flex items-center gap-1"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Request Quote
+                    </button>
+                    <button
+                      onClick={() => setShowContactModal(true)}
+                      className="bg-white/20 text-white px-3 py-2 rounded-lg font-semibold text-sm text-center hover:bg-white/30 transition-colors border border-white/30"
+                    >
+                      Contact us
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Building2, Users, ShieldCheck, Award, ArrowRight } from 'lucide-react';
 import { FeaturedPromoSection } from './FeaturedPromoSection';
 
 interface Category {
@@ -17,7 +17,7 @@ interface Category {
   };
 }
 
-// Hero banners for the top slider
+// Hero banners for Style 1 & 2
 const heroBanners = [
   {
     id: 1,
@@ -48,7 +48,45 @@ const heroBanners = [
   },
 ];
 
-export function HeroSection() {
+// Hero banners for Style 3 - B2B focused
+const style3Banners = [
+  {
+    id: 1,
+    title: 'B2B Buyers',
+    subtitle: 'Partner with us for exclusive business offers',
+    description: 'Business owners get special pricing, dedicated support, and flexible payment terms.',
+    image: '/images/imagesite/ppenewphoto.jpg',
+    link: '/register',
+    bgColor: 'from-blue-700 to-blue-900',
+    icon: Building2,
+  },
+  {
+    id: 2,
+    title: 'Volume Buyers',
+    subtitle: 'Bulk orders, bigger savings',
+    description: 'Order in large quantities and unlock special volume discounts on all products.',
+    image: '/images/imagesite/cones.jpg',
+    link: '/register',
+    bgColor: 'from-purple-700 to-purple-900',
+    icon: Users,
+  },
+  {
+    id: 3,
+    title: 'GSA Buyers',
+    subtitle: 'Federal & Government pricing',
+    description: 'US Government agencies and contractors get exclusive GSA Schedule pricing.',
+    image: '/images/imagesite/gsa.jpg',
+    link: '/register',
+    bgColor: 'from-safety-green-700 to-safety-green-900',
+    icon: ShieldCheck,
+  },
+];
+
+interface HeroSectionProps {
+  homeStyle?: 1 | 2 | 3;
+}
+
+export function HeroSection({ homeStyle = 1 }: HeroSectionProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -79,9 +117,11 @@ export function HeroSection() {
     return () => clearInterval(timer);
   }, []);
 
+  const bannersToUse = homeStyle === 3 ? style3Banners : heroBanners;
+
   return (
     <section className="bg-white">
-      {/* Hero Banners */}
+      {/* Hero Banners - Style 1 & 2: Original, Style 3: B2B focused */}
       <div className="relative overflow-hidden">
         <div className="container mx-auto px-4 py-3">
           {/* Mobile: Single Banner Slider */}
@@ -91,25 +131,21 @@ export function HeroSection() {
                 className="flex transition-transform duration-500 ease-in-out"
                 style={{ transform: `translateX(-${currentBanner * 100}%)` }}
               >
-                {heroBanners.map((banner) => (
+                {bannersToUse.map((banner) => (
                   <Link
                     key={banner.id}
                     href={banner.link}
                     className="relative overflow-hidden rounded-lg h-36 w-full flex-shrink-0 group"
                   >
                     <div className={`absolute inset-0 bg-gradient-to-r ${banner.bgColor}`} />
-                    {banner.image && (
-                      <Image
-                        src={banner.image}
-                        alt={banner.title}
-                        fill
-                        className={`${banner.imageClass || 'object-cover'} opacity-40`}
-                        quality={100}
-                        unoptimized
-                      />
-                    )}
-                    <div className="absolute inset-0 p-5 flex flex-col justify-end">
-                      <h3 className="text-lg font-bold text-white mb-1">
+                    <Image
+                      src={banner.image}
+                      alt={banner.title}
+                      fill
+                      className={`object-cover opacity-40 group-hover:opacity-50 transition-opacity`}
+                    />
+                    <div className="absolute inset-0 p-4 flex flex-col justify-end">
+                      <h3 className="text-white font-bold text-lg leading-tight">
                         {banner.title}
                       </h3>
                       <p className="text-white/80 text-sm flex items-center gap-1">
@@ -121,58 +157,99 @@ export function HeroSection() {
                 ))}
               </div>
             </div>
-            {/* Dots Indicator */}
-            <div className="flex justify-center gap-2 mt-3">
-              {heroBanners.map((_, index) => (
+            {/* Mobile dots */}
+            <div className="flex justify-center gap-2 mt-2">
+              {bannersToUse.map((_, idx) => (
                 <button
-                  key={index}
-                  onClick={() => setCurrentBanner(index)}
+                  key={idx}
+                  onClick={() => setCurrentBanner(idx)}
                   className={`w-2 h-2 rounded-full transition-colors ${
-                    currentBanner === index ? 'bg-safety-green-600' : 'bg-gray-300'
+                    idx === currentBanner ? 'bg-safety-green-600' : 'bg-gray-300'
                   }`}
                 />
               ))}
             </div>
           </div>
 
-          {/* Desktop: 3 Banners Grid */}
-          <div className="hidden lg:grid lg:grid-cols-3 gap-3">
-            {heroBanners.map((banner) => (
-              <Link
-                key={banner.id}
-                href={banner.link}
-                className="relative overflow-hidden rounded-lg h-40 group"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-r ${banner.bgColor}`} />
-                {banner.image && (
+          {/* Desktop: Style 3 - B2B Focused Cards */}
+          {homeStyle === 3 && (
+            <div className="hidden lg:grid lg:grid-cols-3 gap-4">
+              {style3Banners.map((banner) => {
+                const IconComponent = banner.icon;
+                return (
+                  <Link
+                    key={banner.id}
+                    href={banner.link}
+                    className="relative overflow-hidden rounded-xl h-56 group"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${banner.bgColor}`} />
+                    <Image
+                      src={banner.image}
+                      alt={banner.title}
+                      fill
+                      className="object-cover opacity-20 group-hover:opacity-30 transition-opacity"
+                    />
+                    <div className="absolute inset-0 p-6 flex flex-col">
+                      <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-4">
+                        <IconComponent className="w-7 h-7 text-white" />
+                      </div>
+                      <h3 className="text-white font-bold text-xl mb-1">
+                        {banner.title}
+                      </h3>
+                      <p className="text-white/90 text-sm font-medium mb-2">
+                        {banner.subtitle}
+                      </p>
+                      <p className="text-white/70 text-sm flex-1">
+                        {banner.description}
+                      </p>
+                      <div className="flex items-center gap-2 text-white font-medium text-sm mt-3 group-hover:gap-3 transition-all">
+                        Register Now <ArrowRight className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Desktop: Style 1 & 2 - Original 3 Banners */}
+          {homeStyle !== 3 && (
+            <div className="hidden lg:grid lg:grid-cols-3 gap-4">
+              {heroBanners.map((banner) => (
+                <Link
+                  key={banner.id}
+                  href={banner.link}
+                  className="relative overflow-hidden rounded-lg h-24 group"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-r ${banner.bgColor}`} />
                   <Image
                     src={banner.image}
                     alt={banner.title}
                     fill
-                    className={`${banner.imageClass || 'object-cover'} opacity-40 group-hover:scale-105 transition-transform duration-500`}
-                    quality={100}
-                    unoptimized
+                    className={`${banner.imageClass} opacity-40 group-hover:opacity-50 transition-opacity`}
                   />
-                )}
-                <div className="absolute inset-0 p-5 flex flex-col justify-end">
-                  <h3 className="text-xl font-bold text-white mb-1">
-                    {banner.title}
-                  </h3>
-                  <p className="text-white/80 text-sm flex items-center gap-1">
-                    {banner.subtitle}
-                    <ChevronRight className="w-4 h-4" />
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
+                  <div className="absolute inset-0 p-4 flex flex-col justify-center">
+                    <h3 className="text-white font-bold text-lg leading-tight">
+                      {banner.title}
+                    </h3>
+                    <p className="text-white/80 text-sm flex items-center gap-1">
+                      {banner.subtitle}
+                      <ChevronRight className="w-4 h-4" />
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Featured Products & Business Promo */}
-      <FeaturedPromoSection />
+      {/* Featured Products & B2B Section - Style 1 & 2 only */}
+      {(homeStyle === 1 || homeStyle === 2) && (
+        <FeaturedPromoSection homeStyle={homeStyle} />
+      )}
 
-      {/* Shop by Category */}
+      {/* Categories Section */}
       <div className="container mx-auto px-4 py-6 lg:py-10">
         {/* Section Header */}
         <div className="flex items-center justify-between mb-6">
@@ -190,21 +267,21 @@ export function HeroSection() {
 
         {/* Categories Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
             {Array.from({ length: 14 }).map((_, i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-lg p-3 animate-pulse">
-                <div className="aspect-square bg-gray-100 rounded-lg mb-2" />
-                <div className="h-4 bg-gray-100 rounded w-3/4 mx-auto" />
+              <div key={i} className="animate-pulse">
+                <div className="aspect-square bg-gray-200 rounded-lg mb-2" />
+                <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
             {categories.map((category) => (
               <Link
                 key={category.id}
                 href={`/categories/${category.slug}`}
-                className="group bg-white border border-gray-200 rounded-lg p-3 hover:border-safety-green-400 hover:shadow-lg transition-all duration-200"
+                className="group"
               >
                 {/* Category Image */}
                 <div className="aspect-square bg-white rounded-lg mb-2 overflow-hidden flex items-center justify-center">
@@ -212,11 +289,9 @@ export function HeroSection() {
                     <Image
                       src={category.image}
                       alt={category.name}
-                      width={150}
-                      height={150}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                      quality={100}
-                      unoptimized
+                      width={120}
+                      height={120}
+                      className="object-contain w-full h-full p-2 group-hover:scale-105 transition-transform"
                     />
                   ) : (
                     <div className="w-16 h-16 flex items-center justify-center">
@@ -241,7 +316,7 @@ export function HeroSection() {
         )}
 
         {/* Mobile View All Button */}
-        <div className="mt-5 text-center md:hidden">
+        <div className="mt-6 md:hidden text-center">
           <Link
             href="/categories"
             className="inline-flex items-center gap-2 text-safety-green-600 font-medium text-sm"

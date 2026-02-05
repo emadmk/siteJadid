@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { CartProvider } from '@/contexts/CartContext';
 import { AuthModalProvider } from '@/contexts/AuthModalContext';
 import { SearchProvider } from '@/contexts/SearchContext';
+import { HomeStyleProvider } from '@/contexts/HomeStyleContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -28,7 +29,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <AuthModalProvider>
             <CartProvider>
               <SearchProvider>
-                {children}
+                <HomeStyleProvider>
+                  {children}
+                </HomeStyleProvider>
               </SearchProvider>
             </CartProvider>
           </AuthModalProvider>
