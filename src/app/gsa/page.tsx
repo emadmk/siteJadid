@@ -233,74 +233,8 @@ export default function GSAContractPage() {
       </div>
 
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Services Section */}
-          <div className="bg-safety-green-600 rounded-xl overflow-hidden shadow-lg">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-white text-center mb-6 tracking-wider">SERVICES</h2>
-              <ul className="space-y-3">
-                {services.map((service, index) => (
-                  <li key={index} className="flex items-center gap-3 text-white">
-                    <CheckCircle2 className="w-5 h-5 text-safety-green-200 flex-shrink-0" />
-                    <span className="text-sm font-medium uppercase tracking-wide">{service}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Products Section */}
-          <div className="bg-white rounded-xl overflow-hidden shadow-lg border-2 border-safety-green-500">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-safety-green-600 text-center mb-6 tracking-wider">PRODUCTS</h2>
-              <div className="grid grid-cols-2 gap-2">
-                {products.map((product, index) => (
-                  <div key={index} className="text-sm text-safety-green-700 font-medium uppercase tracking-wide">
-                    {product}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Major Accounts & NAICS Codes */}
-        <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Major Accounts */}
-          <div className="bg-safety-green-600 rounded-xl overflow-hidden shadow-lg">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-white text-center mb-6 tracking-wider">MAJOR ACCOUNTS</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {majorAccounts.map((account, index) => (
-                  <div key={index} className="flex items-start gap-2 text-white">
-                    <span className="text-safety-green-300">-</span>
-                    <span className="text-sm font-medium">{account}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* NAICS Codes */}
-          <div className="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-200">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 text-center mb-6 tracking-wider">NAICS CODES</h2>
-              <div className="grid grid-cols-5 gap-2">
-                {naicsCodes.map((code, index) => (
-                  <div
-                    key={index}
-                    className="text-center py-2 px-1 bg-gray-50 border border-gray-200 rounded text-sm font-medium text-gray-700"
-                  >
-                    {code}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Additional Info Cards */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Who Can Purchase */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">

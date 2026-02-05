@@ -328,6 +328,12 @@ export function StorefrontHeader() {
               About us
             </Link>
             <Link
+              href="/gsa"
+              className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
+            >
+              GSA
+            </Link>
+            <Link
               href="/contact"
               className="px-4 py-3 font-medium text-gray-700 hover:text-safety-green-600 hover:bg-gray-50 transition-colors"
             >
@@ -428,6 +434,13 @@ export function StorefrontHeader() {
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
                 >
                   About us
+                </Link>
+                <Link
+                  href="/gsa"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  GSA
                 </Link>
                 <Link
                   href="/contact"
