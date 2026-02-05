@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronRight, ChevronLeft, Building2, Users, ShieldCheck, Award, ArrowRight } from 'lucide-react';
+import { ChevronRight, Building2, Users, User, ArrowRight } from 'lucide-react';
 import { FeaturedPromoSection } from './FeaturedPromoSection';
 
 interface Category {
@@ -17,47 +17,16 @@ interface Category {
   };
 }
 
-// Hero banners for Style 1 & 2
-const heroBanners = [
+// Hero banners - 3 Buyer Types
+const buyerBanners = [
   {
     id: 1,
-    title: 'Personal Protective Equipment',
-    subtitle: 'Head to Toe Safety Products',
-    image: '/images/imagesite/ppenewphoto.jpg',
-    link: '/ppe',
-    bgColor: 'from-safety-green-700 to-safety-green-900',
-    imageClass: 'object-cover object-top',
-  },
-  {
-    id: 2,
-    title: 'Safety, Industrial Products & Tools',
-    subtitle: 'Professional equipment for every job',
-    image: '/images/imagesite/cones.jpg',
-    link: '/industrial',
-    bgColor: 'from-orange-600 to-orange-800',
-    imageClass: 'object-cover',
-  },
-  {
-    id: 3,
-    title: 'GSA Contract Holder',
-    subtitle: 'Federal buyers welcome',
+    title: 'Government Buyer',
+    subtitle: 'Federal & Government pricing',
+    description: 'US Government agencies and contractors get exclusive GSA Schedule pricing.',
     image: '/images/imagesite/gsa.jpg',
-    link: '/gsa',
-    bgColor: 'from-blue-700 to-blue-900',
-    imageClass: 'object-cover scale-125',
-  },
-];
-
-// Hero banners for Style 3 - B2B focused
-const style3Banners = [
-  {
-    id: 1,
-    title: 'B2B Buyers',
-    subtitle: 'Partner with us for exclusive business offers',
-    description: 'Business owners get special pricing, dedicated support, and flexible payment terms.',
-    image: '/images/imagesite/ppenewphoto.jpg',
     link: '/register',
-    bgColor: 'from-blue-700 to-blue-900',
+    bgColor: 'from-safety-green-700 to-safety-green-900',
     icon: Building2,
   },
   {
@@ -72,21 +41,17 @@ const style3Banners = [
   },
   {
     id: 3,
-    title: 'GSA Buyers',
-    subtitle: 'Federal & Government pricing',
-    description: 'US Government agencies and contractors get exclusive GSA Schedule pricing.',
-    image: '/images/imagesite/gsa.jpg',
+    title: 'Personal Buyer',
+    subtitle: 'Individual protection solutions',
+    description: 'Quality PPE and safety equipment for individual professionals and contractors.',
+    image: '/images/imagesite/ppenewphoto.jpg',
     link: '/register',
-    bgColor: 'from-safety-green-700 to-safety-green-900',
-    icon: ShieldCheck,
+    bgColor: 'from-blue-700 to-blue-900',
+    icon: User,
   },
 ];
 
-interface HeroSectionProps {
-  homeStyle?: 1 | 2 | 3;
-}
-
-export function HeroSection({ homeStyle = 1 }: HeroSectionProps) {
+export function HeroSection() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -112,16 +77,14 @@ export function HeroSection({ homeStyle = 1 }: HeroSectionProps) {
   // Auto-rotate banners for mobile
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentBanner((prev) => (prev + 1) % heroBanners.length);
+      setCurrentBanner((prev) => (prev + 1) % buyerBanners.length);
     }, 4000);
     return () => clearInterval(timer);
   }, []);
 
-  const bannersToUse = homeStyle === 3 ? style3Banners : heroBanners;
-
   return (
     <section className="bg-white">
-      {/* Hero Banners - Style 1 & 2: Original, Style 3: B2B focused */}
+      {/* Hero Banners - 3 Buyer Types */}
       <div className="relative overflow-hidden">
         <div className="container mx-auto px-4 py-3">
           {/* Mobile: Single Banner Slider */}
@@ -131,35 +94,46 @@ export function HeroSection({ homeStyle = 1 }: HeroSectionProps) {
                 className="flex transition-transform duration-500 ease-in-out"
                 style={{ transform: `translateX(-${currentBanner * 100}%)` }}
               >
-                {bannersToUse.map((banner) => (
-                  <Link
-                    key={banner.id}
-                    href={banner.link}
-                    className="relative overflow-hidden rounded-lg h-36 w-full flex-shrink-0 group"
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-r ${banner.bgColor}`} />
-                    <Image
-                      src={banner.image}
-                      alt={banner.title}
-                      fill
-                      className={`object-cover opacity-40 group-hover:opacity-50 transition-opacity`}
-                    />
-                    <div className="absolute inset-0 p-4 flex flex-col justify-end">
-                      <h3 className="text-white font-bold text-lg leading-tight">
-                        {banner.title}
-                      </h3>
-                      <p className="text-white/80 text-sm flex items-center gap-1">
-                        {banner.subtitle}
-                        <ChevronRight className="w-4 h-4" />
-                      </p>
-                    </div>
-                  </Link>
-                ))}
+                {buyerBanners.map((banner) => {
+                  const IconComponent = banner.icon;
+                  return (
+                    <Link
+                      key={banner.id}
+                      href={banner.link}
+                      className="relative overflow-hidden rounded-lg h-44 w-full flex-shrink-0 group"
+                    >
+                      <div className={`absolute inset-0 bg-gradient-to-br ${banner.bgColor}`} />
+                      <Image
+                        src={banner.image}
+                        alt={banner.title}
+                        fill
+                        className="object-cover opacity-30 group-hover:opacity-40 transition-opacity"
+                      />
+                      <div className="absolute inset-0 p-4 flex flex-col">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-3">
+                          <IconComponent className="w-6 h-6 text-white" />
+                        </div>
+                        <h3 className="text-white font-bold text-lg mb-1">
+                          {banner.title}
+                        </h3>
+                        <p className="text-white/90 text-sm font-medium mb-1">
+                          {banner.subtitle}
+                        </p>
+                        <p className="text-white/70 text-xs flex-1">
+                          {banner.description}
+                        </p>
+                        <div className="flex items-center gap-2 text-white font-medium text-sm mt-2">
+                          Register Now <ArrowRight className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
             {/* Mobile dots */}
             <div className="flex justify-center gap-2 mt-2">
-              {bannersToUse.map((_, idx) => (
+              {buyerBanners.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentBanner(idx)}
@@ -171,83 +145,49 @@ export function HeroSection({ homeStyle = 1 }: HeroSectionProps) {
             </div>
           </div>
 
-          {/* Desktop: Style 3 - B2B Focused Cards */}
-          {homeStyle === 3 && (
-            <div className="hidden lg:grid lg:grid-cols-3 gap-4">
-              {style3Banners.map((banner) => {
-                const IconComponent = banner.icon;
-                return (
-                  <Link
-                    key={banner.id}
-                    href={banner.link}
-                    className="relative overflow-hidden rounded-xl h-56 group"
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${banner.bgColor}`} />
-                    <Image
-                      src={banner.image}
-                      alt={banner.title}
-                      fill
-                      className="object-cover opacity-20 group-hover:opacity-30 transition-opacity"
-                    />
-                    <div className="absolute inset-0 p-6 flex flex-col">
-                      <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-4">
-                        <IconComponent className="w-7 h-7 text-white" />
-                      </div>
-                      <h3 className="text-white font-bold text-xl mb-1">
-                        {banner.title}
-                      </h3>
-                      <p className="text-white/90 text-sm font-medium mb-2">
-                        {banner.subtitle}
-                      </p>
-                      <p className="text-white/70 text-sm flex-1">
-                        {banner.description}
-                      </p>
-                      <div className="flex items-center gap-2 text-white font-medium text-sm mt-3 group-hover:gap-3 transition-all">
-                        Register Now <ArrowRight className="w-4 h-4" />
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Desktop: Style 1 & 2 - Original 3 Banners */}
-          {homeStyle !== 3 && (
-            <div className="hidden lg:grid lg:grid-cols-3 gap-4">
-              {heroBanners.map((banner) => (
+          {/* Desktop: 3 Buyer Type Cards */}
+          <div className="hidden lg:grid lg:grid-cols-3 gap-4">
+            {buyerBanners.map((banner) => {
+              const IconComponent = banner.icon;
+              return (
                 <Link
                   key={banner.id}
                   href={banner.link}
-                  className="relative overflow-hidden rounded-lg h-24 group"
+                  className="relative overflow-hidden rounded-xl h-56 group"
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-r ${banner.bgColor}`} />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${banner.bgColor}`} />
                   <Image
                     src={banner.image}
                     alt={banner.title}
                     fill
-                    className={`${banner.imageClass} opacity-40 group-hover:opacity-50 transition-opacity`}
+                    className="object-cover opacity-20 group-hover:opacity-30 transition-opacity"
                   />
-                  <div className="absolute inset-0 p-4 flex flex-col justify-center">
-                    <h3 className="text-white font-bold text-lg leading-tight">
+                  <div className="absolute inset-0 p-6 flex flex-col">
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-4">
+                      <IconComponent className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-1">
                       {banner.title}
                     </h3>
-                    <p className="text-white/80 text-sm flex items-center gap-1">
+                    <p className="text-white/90 text-sm font-medium mb-2">
                       {banner.subtitle}
-                      <ChevronRight className="w-4 h-4" />
                     </p>
+                    <p className="text-white/70 text-sm flex-1">
+                      {banner.description}
+                    </p>
+                    <div className="flex items-center gap-2 text-white font-medium text-sm mt-3 group-hover:gap-3 transition-all">
+                      Register Now <ArrowRight className="w-4 h-4" />
+                    </div>
                   </div>
                 </Link>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Featured Products & B2B Section - Style 1 & 2 only */}
-      {(homeStyle === 1 || homeStyle === 2) && (
-        <FeaturedPromoSection homeStyle={homeStyle} />
-      )}
+      {/* Featured Products & Badge Section */}
+      <FeaturedPromoSection />
 
       {/* Categories Section */}
       <div className="container mx-auto px-4 py-6 lg:py-10">
@@ -303,13 +243,6 @@ export function HeroSection({ homeStyle = 1 }: HeroSectionProps) {
                 <h3 className="text-xs lg:text-sm font-medium text-gray-800 text-center group-hover:text-safety-green-600 transition-colors line-clamp-2">
                   {category.name}
                 </h3>
-                {/* Temporarily hidden - item count
-                {category._count && category._count.products > 0 && (
-                  <p className="text-xs text-gray-500 text-center mt-0.5">
-                    {category._count.products.toLocaleString()} items
-                  </p>
-                )}
-                */}
               </Link>
             ))}
           </div>

@@ -26,7 +26,6 @@ import { QuickOrderPad } from './QuickOrderPad';
 import { useCart } from '@/contexts/CartContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 import { useSearch } from '@/contexts/SearchContext';
-import { useHomeStyle } from '@/contexts/HomeStyleContext';
 
 export function StorefrontHeader() {
   const { data: session, status } = useSession();
@@ -60,7 +59,6 @@ export function StorefrontHeader() {
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
   const isB2B = session?.user?.accountType === 'B2B';
   const isGSA = session?.user?.accountType === 'GSA';
-  const { homeStyle, setHomeStyle } = useHomeStyle();
 
   return (
     <header className={`sticky top-0 z-40 transition-shadow ${isScrolled ? 'shadow-md' : ''}`}>
@@ -264,23 +262,6 @@ export function StorefrontHeader() {
             >
               Home
             </Link>
-
-            {/* Style Toggle Buttons */}
-            <div className="flex items-center gap-1 px-2">
-              {[1, 2, 3].map((style) => (
-                <button
-                  key={style}
-                  onClick={() => setHomeStyle(style as 1 | 2 | 3)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                    homeStyle === style
-                      ? 'bg-safety-green-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  Style{style}
-                </button>
-              ))}
-            </div>
 
             {/* Quick Order */}
             <button
