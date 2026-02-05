@@ -41,8 +41,9 @@ export function HomeStyleProvider({ children }: { children: ReactNode }) {
 
 export function useHomeStyle() {
   const context = useContext(HomeStyleContext);
+  // Return default values if used outside provider (during SSR/build)
   if (context === undefined) {
-    throw new Error('useHomeStyle must be used within a HomeStyleProvider');
+    return { homeStyle: 1 as const, setHomeStyle: () => {} };
   }
   return context;
 }
