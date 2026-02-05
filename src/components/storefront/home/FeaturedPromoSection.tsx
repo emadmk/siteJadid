@@ -83,13 +83,13 @@ export function FeaturedPromoSection() {
           </div>
 
           {/* Products Display - 3 items */}
-          <div className="p-4 relative">
+          <div className="p-3 relative">
             {isLoading ? (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="aspect-square bg-gray-100 rounded-lg mb-2" />
-                    <div className="h-4 bg-gray-100 rounded w-3/4 mb-2" />
+                    <div className="h-24 bg-gray-100 rounded-lg mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-3/4 mb-1" />
                     <div className="h-3 bg-gray-100 rounded w-1/2" />
                   </div>
                 ))}
@@ -101,29 +101,29 @@ export function FeaturedPromoSection() {
                   <>
                     <button
                       onClick={prevSlide}
-                      className="absolute left-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-1.5 transition-all"
+                      className="absolute left-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-1 transition-all"
                     >
-                      <ChevronLeft className="w-4 h-4 text-gray-700" />
+                      <ChevronLeft className="w-3 h-3 text-gray-700" />
                     </button>
                     <button
                       onClick={nextSlide}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-1.5 transition-all"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-1 transition-all"
                     >
-                      <ChevronRight className="w-4 h-4 text-gray-700" />
+                      <ChevronRight className="w-3 h-3 text-gray-700" />
                     </button>
                   </>
                 )}
 
-                {/* 3 Product Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mx-6">
+                {/* 3 Product Cards Grid - Compact */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mx-5">
                   {currentProducts.map((product) => (
                     <Link
                       key={product.id}
                       href={`/products/${product.slug}`}
-                      className="group bg-white rounded-lg border border-gray-100 p-3 hover:border-safety-green-400 hover:shadow-md transition-all"
+                      className="group bg-white rounded-lg border border-gray-100 p-2 hover:border-safety-green-400 hover:shadow-md transition-all"
                     >
-                      {/* Product Image */}
-                      <div className="aspect-square bg-white rounded-lg overflow-hidden mb-3">
+                      {/* Product Image - Smaller */}
+                      <div className="h-24 bg-white rounded-lg overflow-hidden mb-2">
                         {product.images?.[0] ? (
                           <img
                             src={getImageSize(product.images[0], 'medium')}
@@ -132,33 +132,33 @@ export function FeaturedPromoSection() {
                           />
                         ) : (
                           <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
-                            <span className="text-3xl text-gray-300">📦</span>
+                            <span className="text-2xl text-gray-300">📦</span>
                           </div>
                         )}
                       </div>
 
-                      {/* Product Info */}
+                      {/* Product Info - Compact */}
                       <div>
                         {product.brand && (
-                          <span className="text-xs text-gray-500 uppercase tracking-wide">
+                          <span className="text-[10px] text-gray-500 uppercase tracking-wide">
                             {product.brand.name}
                           </span>
                         )}
-                        <h4 className="text-sm font-semibold text-gray-800 line-clamp-2 group-hover:text-safety-green-600 transition-colors leading-snug mt-0.5">
+                        <h4 className="text-xs font-semibold text-gray-800 line-clamp-2 group-hover:text-safety-green-600 transition-colors leading-tight mt-0.5">
                           {product.name}
                         </h4>
-                        <div className="mt-2 flex items-center gap-2">
+                        <div className="mt-1 flex items-center gap-1">
                           {product.salePrice ? (
                             <>
-                              <span className="text-lg font-bold text-safety-green-600">
+                              <span className="text-sm font-bold text-safety-green-600">
                                 ${Number(product.salePrice).toFixed(2)}
                               </span>
-                              <span className="text-sm text-gray-400 line-through">
+                              <span className="text-xs text-gray-400 line-through">
                                 ${Number(product.basePrice).toFixed(2)}
                               </span>
                             </>
                           ) : (
-                            <span className="text-lg font-bold text-gray-900">
+                            <span className="text-sm font-bold text-gray-900">
                               ${Number(product.basePrice).toFixed(2)}
                             </span>
                           )}
@@ -170,12 +170,12 @@ export function FeaturedPromoSection() {
 
                 {/* Dots Indicator */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center gap-1.5 mt-4">
+                  <div className="flex justify-center gap-1 mt-2">
                     {Array.from({ length: totalPages }).map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setCurrentIndex(idx)}
-                        className={`w-2 h-2 rounded-full transition-colors ${
+                        className={`w-1.5 h-1.5 rounded-full transition-colors ${
                           currentIndex === idx ? 'bg-safety-green-600' : 'bg-gray-300 hover:bg-gray-400'
                         }`}
                       />
@@ -184,31 +184,34 @@ export function FeaturedPromoSection() {
                 )}
               </>
             ) : (
-              <div className="text-center py-6 text-gray-500 text-sm">
+              <div className="text-center py-4 text-gray-500 text-sm">
                 No featured products available
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Box: 25 Years Badge Only - 20% width */}
-        <div className="hidden lg:flex w-1/5 bg-gradient-to-br from-safety-green-700 via-safety-green-600 to-safety-green-800 rounded-xl overflow-hidden shadow-sm items-center justify-center relative">
+        {/* Right Box: 25 Years Badge - 20% width */}
+        <div className="hidden lg:flex w-1/5 bg-gradient-to-br from-safety-green-700 via-safety-green-600 to-safety-green-800 rounded-xl overflow-hidden shadow-sm flex-col items-center justify-center relative">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-16 h-16 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />
           </div>
 
-          {/* Badge Image - Centered */}
-          <div className="relative p-4 flex items-center justify-center">
+          {/* Badge Image & Text */}
+          <div className="relative p-3 flex flex-col items-center justify-center text-center">
             <Image
               src="/images/imagesite/badge copy.png"
               alt="Celebrating 25 Years"
-              width={160}
-              height={160}
+              width={120}
+              height={120}
               className="object-contain drop-shadow-lg"
               unoptimized
             />
+            <p className="text-white/90 text-xs font-medium mt-2 italic leading-tight">
+              Serving the government<br />for over 25 years
+            </p>
           </div>
         </div>
       </div>
