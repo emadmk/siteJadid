@@ -74,12 +74,12 @@ export default function GSAContractPage() {
       {/* Hero Section - Centered Design */}
       <div className="relative bg-gray-900 overflow-hidden">
         {/* Background Image */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 overflow-hidden">
           <Image
             src="/images/imagesite/gsa.jpg"
-            alt="Military Personnel"
+            alt="US Flag"
             fill
-            className="object-cover opacity-40"
+            className="object-cover opacity-40 scale-[1.3] object-right"
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-900/60 to-gray-900/80" />
