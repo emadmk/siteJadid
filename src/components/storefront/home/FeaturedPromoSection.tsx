@@ -204,13 +204,13 @@ export function FeaturedPromoSection() {
             <Image
               src="/images/imagesite/badge copy.png"
               alt="Celebrating 25 Years"
-              width={120}
-              height={120}
+              width={160}
+              height={160}
               className="object-contain drop-shadow-lg"
               unoptimized
             />
             <p className="text-white/90 text-xs font-medium mt-2 italic leading-tight">
-              Serving the government<br />for over 25 years
+              Serving the government<br />and local community<br />for over 25 years
             </p>
           </div>
         </div>

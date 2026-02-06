@@ -113,12 +113,12 @@ export function BrandsSection() {
                   alt={brand.name}
                   width={100}
                   height={40}
-                  className="max-h-10 w-auto object-contain opacity-60 group-hover:opacity-100 transition-opacity"
+                  className="max-h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-110"
                   quality={100}
                   unoptimized
                 />
               ) : (
-                <span className="text-sm font-bold text-gray-400 group-hover:text-safety-green-600 transition-colors text-center">
+                <span className="text-sm font-bold text-gray-700 group-hover:text-safety-green-600 group-hover:scale-110 transition-all duration-200 text-center">
                   {brand.name}
                 </span>
               )}
