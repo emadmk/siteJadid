@@ -88,10 +88,15 @@ export default function GSAContractPage() {
         <div className="relative container mx-auto px-4 py-16">
           {/* Centered Content */}
           <div className="flex flex-col items-center text-center text-white">
-            {/* GSA Contract Holder Badge */}
-            <div className="inline-flex items-center gap-2 bg-safety-green-600 text-white px-4 py-2 rounded-full text-sm font-bold mb-8">
-              <Shield className="w-4 h-4" />
-              GSA Contract Holder
+            {/* US Flag - Zoomed 20% */}
+            <div className="mb-6">
+              <Image
+                src="/images/imagesite/ussmall.png"
+                alt="US Flag"
+                width={120}
+                height={80}
+                className="object-contain scale-[1.2]"
+              />
             </div>
 
             {/* Main Title - Centered and Large */}
@@ -186,16 +191,28 @@ export default function GSAContractPage() {
               </div>
             </div>
 
-            {/* Shop on GSA Button */}
-            <a
-              href="https://www.gsaadvantage.gov/advantage/ws/search/advantage_search?q=0:2GS21F0086U&db=0&searchType=1"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-safety-green-600 hover:bg-safety-green-700 text-white font-bold text-xl px-12 py-4 rounded-lg transition-colors shadow-lg"
-            >
-              SHOP ON GSA
-              <ExternalLink className="w-5 h-5" />
-            </a>
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-4 justify-center">
+              <a
+                href="https://www.gsaadvantage.gov/advantage/ws/search/advantage_search?q=0:2GS21F0086U&db=0&searchType=1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 bg-safety-green-600 hover:bg-safety-green-700 text-white font-bold text-lg px-8 py-3 rounded-lg transition-colors shadow-lg"
+              >
+                SHOP ON GSA
+                <ExternalLink className="w-5 h-5" />
+              </a>
+              <Link href="/contact">
+                <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100 font-bold px-8 h-[52px]">
+                  Request a Quote
+                </Button>
+              </Link>
+              <Link href="/products?taaApproved=true">
+                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-gray-900 font-bold px-8 h-[52px]">
+                  Browse TAA/BAA Products
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -344,48 +361,6 @@ export default function GSAContractPage() {
             <span>Monday - Friday: 8:00 AM - 5:00 PM EST</span>
           </div>
 
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link href="/auth/signup?type=gsa">
-              <Button size="lg" className="bg-safety-green-600 hover:bg-safety-green-700 text-white font-bold px-8">
-                Create GSA Account
-              </Button>
-            </Link>
-            <Link href="/contact">
-              <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100 font-bold px-8">
-                Request a Quote
-              </Button>
-            </Link>
-            <Link href="/products?taaApproved=true">
-              <Button size="lg" variant="outline" className="border-safety-green-400 text-safety-green-400 hover:bg-safety-green-400 hover:text-white px-8">
-                Browse TAA/BAA Products
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Footer Links */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>
-            View our products on{' '}
-            <a
-              href="https://www.gsaadvantage.gov"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-safety-green-600 hover:underline font-medium"
-            >
-              GSA Advantage
-            </a>
-            {' '}|{' '}
-            <a
-              href="https://fedmall.mil"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-safety-green-600 hover:underline font-medium"
-            >
-              FedMall
-            </a>
-            {' '}| Contract: GS-21F-0086U
-          </p>
         </div>
       </div>
     </div>
