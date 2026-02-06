@@ -88,17 +88,6 @@ export default function GSAContractPage() {
         <div className="relative container mx-auto px-4 py-16">
           {/* Centered Content */}
           <div className="flex flex-col items-center text-center text-white">
-            {/* US Flag - Zoomed 20% */}
-            <div className="mb-6">
-              <Image
-                src="/images/imagesite/ussmall.png"
-                alt="US Flag"
-                width={120}
-                height={80}
-                className="object-contain scale-[1.2]"
-              />
-            </div>
-
             {/* Main Title - Centered and Large */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6">
               <span className="text-safety-green-400">GSA MAS</span>
@@ -111,8 +100,8 @@ export default function GSAContractPage() {
               <Image
                 src="/images/imagesite/badge copy.png"
                 alt="25 Years Badge"
-                width={140}
-                height={140}
+                width={180}
+                height={180}
                 className="object-contain"
               />
             </div>
@@ -208,7 +197,7 @@ export default function GSAContractPage() {
                 </Button>
               </Link>
               <Link href="/products?taaApproved=true">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-gray-900 font-bold px-8 h-[52px]">
+                <Button size="lg" variant="outline" className="border-white bg-white text-gray-900 hover:bg-gray-100 font-bold px-8 h-[52px]">
                   Browse TAA/BAA Products
                 </Button>
               </Link>
