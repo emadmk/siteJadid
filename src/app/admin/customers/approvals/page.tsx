@@ -1,16 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Shield, Users, ArrowLeft, Check, X, Loader2, Mail, Building2 } from 'lucide-react';
-import useSWR, { mutate } from 'swr';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+interface PendingUser {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  companyName?: string;
+  accountType: string;
+  governmentDepartment?: string;
+  gsaDepartment?: string;
+  approvalStatus?: string;
+  gsaApprovalStatus?: string;
+  createdAt: string;
+}
 
 export default function ApprovalsPage() {
-  const { data, error, isLoading } = useSWR('/api/admin/pending-approvals', fetcher);
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const fetchPendingApprovals = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/pending-approvals');
+      if (res.ok) {
+        const data = await res.json();
+        setPendingUsers(data.users || []);
+      } else {
+        setError('Failed to load pending approvals');
+      }
+    } catch (err) {
+      setError('Failed to load pending approvals');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPendingApprovals();
+  }, [fetchPendingApprovals]);
 
   const handleApproval = async (userId: string, action: 'approve' | 'reject') => {
     setProcessingId(userId);
@@ -22,12 +55,13 @@ export default function ApprovalsPage() {
       });
 
       if (res.ok) {
-        mutate('/api/admin/pending-approvals');
+        // Refresh the list
+        await fetchPendingApprovals();
       } else {
         const data = await res.json();
         alert(data.error || 'Failed to process approval');
       }
-    } catch (error) {
+    } catch (err) {
       alert('Failed to process approval');
     } finally {
       setProcessingId(null);
@@ -46,13 +80,11 @@ export default function ApprovalsPage() {
     return (
       <div className="p-8">
         <div className="bg-red-50 text-red-600 p-4 rounded-lg">
-          Failed to load pending approvals
+          {error}
         </div>
       </div>
     );
   }
-
-  const pendingUsers = data?.users || [];
 
   return (
     <div className="p-8">
@@ -80,13 +112,13 @@ export default function ApprovalsPage() {
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="text-3xl font-bold text-purple-600 mb-1">
-            {pendingUsers.filter((u: any) => ['B2B', 'VOLUME_BUYER'].includes(u.accountType)).length}
+            {pendingUsers.filter((u) => ['B2B', 'VOLUME_BUYER'].includes(u.accountType)).length}
           </div>
           <div className="text-sm text-gray-600">Volume Buyers</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="text-3xl font-bold text-safety-green-600 mb-1">
-            {pendingUsers.filter((u: any) => ['GSA', 'GOVERNMENT'].includes(u.accountType)).length}
+            {pendingUsers.filter((u) => ['GSA', 'GOVERNMENT'].includes(u.accountType)).length}
           </div>
           <div className="text-sm text-gray-600">Government</div>
         </div>
@@ -101,7 +133,7 @@ export default function ApprovalsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {pendingUsers.map((user: any) => {
+          {pendingUsers.map((user) => {
             const isGovernment = ['GSA', 'GOVERNMENT'].includes(user.accountType);
             const department = user.governmentDepartment || user.gsaDepartment;
 
