@@ -29,22 +29,22 @@ import { signIn } from 'next-auth/react';
 // Buyer types with their details
 const buyerTypes = [
   {
-    id: 'GSA',
+    id: 'GOVERNMENT',
     title: 'Government Buyer',
     subtitle: 'Federal & Government Agencies',
-    description: 'Access exclusive GSA Schedule pricing and dedicated support for government procurement.',
+    description: 'Access exclusive Government pricing and dedicated support for government procurement.',
     icon: Building2,
     bgGradient: 'from-safety-green-600 via-safety-green-700 to-safety-green-800',
     iconBg: 'bg-safety-green-500/20',
     benefits: [
-      { icon: Shield, text: 'GSA Schedule Pricing' },
+      { icon: Shield, text: 'Government Pricing' },
       { icon: CheckCircle2, text: 'Government Contract Support' },
       { icon: Star, text: 'Priority Processing' },
     ],
     image: '/images/imagesite/gsa.jpg',
   },
   {
-    id: 'B2B',
+    id: 'VOLUME_BUYER',
     title: 'Volume Buyer',
     subtitle: 'Business & Bulk Orders',
     description: 'Unlock volume discounts and dedicated account management for your business needs.',
@@ -56,10 +56,10 @@ const buyerTypes = [
       { icon: Truck, text: 'Free Bulk Shipping' },
       { icon: Star, text: 'Dedicated Account Manager' },
     ],
-    image: '/uploads/ppe-rhn2syjhuk4f553vlfqcysr0quy8cnjai2hlg26xxc.jpg',
+    image: '/images/imagesite/ppenewphoto.jpg',
   },
   {
-    id: 'B2C',
+    id: 'PERSONAL',
     title: 'Personal Buyer',
     subtitle: 'Individual Professionals',
     description: 'Quality PPE and safety equipment for contractors and individual professionals.',
@@ -71,17 +71,18 @@ const buyerTypes = [
       { icon: Truck, text: 'Fast Home Delivery' },
       { icon: Star, text: 'Personal Account Dashboard' },
     ],
-    image: '/images/imagesite/ppenewphoto.jpg',
+    image: '/uploads/ppe-rhn2syjhuk4f553vlfqcysr0quy8cnjai2hlg26xxc.jpg',
   },
 ];
 
-// GSA Departments
-const GSA_DEPARTMENTS = [
+// Government Departments
+const GOVERNMENT_DEPARTMENTS = [
   { value: 'DOW', label: 'Department of War (DOW)' },
   { value: 'DLA', label: 'Defense Logistics Agency (DLA)' },
   { value: 'USDA', label: 'US Department of Agriculture (USDA)' },
   { value: 'NIH', label: 'National Institute of Health (NIH)' },
   { value: 'GCSS-Army', label: 'Global Combat Support System-Army (GCSS-Army)' },
+  { value: 'OTHER', label: 'Other Government Agency' },
 ];
 
 export default function RegisterPage() {
@@ -148,8 +149,8 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           accountType: selectedType,
-          companyName: selectedType !== 'B2C' ? formData.companyName : undefined,
-          gsaDepartment: selectedType === 'GSA' ? formData.gsaDepartment : undefined,
+          companyName: selectedType !== 'PERSONAL' ? formData.companyName : undefined,
+          governmentDepartment: selectedType === 'GOVERNMENT' ? formData.gsaDepartment : undefined,
         }),
       });
 
@@ -188,7 +189,7 @@ export default function RegisterPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Welcome to ADA Supplies!</h1>
           <p className="text-gray-600 mb-8">
             Your account has been created successfully.
-            {selectedType === 'GSA' && ' Your account is pending admin approval for GSA pricing access.'}
+            {(selectedType === 'GOVERNMENT' || selectedType === 'VOLUME_BUYER') && ' Your account is pending admin approval.'}
           </p>
           <div className="space-y-3">
             <Link
@@ -418,17 +419,17 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                {/* Company/Organization Information (for B2B and GSA) */}
-                {selectedType !== 'B2C' && (
+                {/* Company/Organization Information (for VOLUME_BUYER and GOVERNMENT) */}
+                {selectedType !== 'PERSONAL' && (
                   <div className="mb-8">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                       <Building2 className="w-5 h-5 text-safety-green-600" />
-                      {selectedType === 'GSA' ? 'Agency Information' : 'Company Information'}
+                      {selectedType === 'GOVERNMENT' ? 'Agency Information' : 'Company Information'}
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {selectedType === 'GSA' ? 'Agency Name *' : 'Company Name *'}
+                          {selectedType === 'GOVERNMENT' ? 'Agency Name *' : 'Company Name *'}
                         </label>
                         <input
                           type="text"
@@ -436,12 +437,12 @@ export default function RegisterPage() {
                           value={formData.companyName}
                           onChange={handleInputChange}
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent"
-                          placeholder={selectedType === 'GSA' ? 'Agency name' : 'Company name'}
+                          placeholder={selectedType === 'GOVERNMENT' ? 'Agency name' : 'Company name'}
                           required
                         />
                       </div>
 
-                      {selectedType === 'GSA' && (
+                      {selectedType === 'GOVERNMENT' && (
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
                           <select
@@ -452,7 +453,7 @@ export default function RegisterPage() {
                             required
                           >
                             <option value="">Select your department</option>
-                            {GSA_DEPARTMENTS.map((dept) => (
+                            {GOVERNMENT_DEPARTMENTS.map((dept) => (
                               <option key={dept.value} value={dept.value}>
                                 {dept.label}
                               </option>
@@ -477,7 +478,7 @@ export default function RegisterPage() {
                         </div>
                       </div>
 
-                      {selectedType === 'B2B' && (
+                      {selectedType === 'VOLUME_BUYER' && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Tax ID (Optional)</label>
                           <input

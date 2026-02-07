@@ -203,6 +203,15 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
   // Check if user is admin
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
 
+  // Check user account type and approval status for price visibility
+  const userAccountType = session?.user?.accountType;
+  const userApprovalStatus = (session?.user as any)?.approvalStatus || (session?.user as any)?.gsaApprovalStatus;
+  const isApproved = userApprovalStatus === 'APPROVED';
+  const isGovernmentUser = (userAccountType === 'GSA' || userAccountType === 'GOVERNMENT') && isApproved;
+  const isVolumeBuyer = (userAccountType === 'B2B' || userAccountType === 'VOLUME_BUYER') && isApproved;
+  const canSeeGovernmentPrice = isGovernmentUser || isAdmin;
+  const canSeeVolumeBuyerPrice = isVolumeBuyer || isAdmin;
+
   // Determine if product has variants
   const hasVariants = product.variants && product.variants.length > 0;
 
@@ -629,22 +638,22 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                 )}
               </div>
 
-              {/* GSA & B2B Pricing - Compact Inline */}
-              {(currentWholesalePrice || currentGsaPrice) && (
+              {/* Government & Volume Buyer Pricing - Only shown to eligible users */}
+              {((canSeeGovernmentPrice && currentGsaPrice) || (canSeeVolumeBuyerPrice && currentWholesalePrice)) && (
                 <div className="flex flex-wrap items-center gap-3">
-                  {currentGsaPrice && (
+                  {canSeeGovernmentPrice && currentGsaPrice && (
                     <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-medium">
                       <FileText className="w-4 h-4" />
                       Government Price: ${Number(currentGsaPrice).toFixed(2)}
                     </div>
                   )}
-                  {currentWholesalePrice && (
+                  {canSeeVolumeBuyerPrice && currentWholesalePrice && (
                     <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium">
                       <Building2 className="w-4 h-4" />
-                      B2B: ${Number(currentWholesalePrice).toFixed(2)}
+                      Volume Buyer: ${Number(currentWholesalePrice).toFixed(2)}
                     </div>
                   )}
-                  {currentGsaPrice && (
+                  {canSeeGovernmentPrice && currentGsaPrice && (
                     <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">
                       <ShieldCheck className="w-4 h-4" />
                       TAA/BAA Approved
@@ -760,7 +769,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
             </Button>
 
             {/* Trust Badges */}
-            <div className={`grid grid-cols-2 ${currentGsaPrice ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4 pt-4 border-t`}>
+            <div className={`grid grid-cols-2 ${canSeeGovernmentPrice && currentGsaPrice ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4 pt-4 border-t`}>
               <div className="flex items-start gap-3">
                 <Truck className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
                 <div>
@@ -782,7 +791,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                   <div className="text-xs text-gray-600">30-day policy</div>
                 </div>
               </div>
-              {currentGsaPrice && (
+              {canSeeGovernmentPrice && currentGsaPrice && (
                 <div className="flex items-start gap-3">
                   <Award className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
                   <div>

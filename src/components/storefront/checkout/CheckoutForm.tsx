@@ -186,11 +186,11 @@ export function CheckoutForm({
     isDefault: false,
   });
 
-  const isB2BAccount = accountType === 'B2B';
-  const isGSAAccount = accountType === 'GSA';
+  const isB2BAccount = accountType === 'B2B' || accountType === 'VOLUME_BUYER';
+  const isGSAAccount = accountType === 'GSA' || accountType === 'GOVERNMENT';
 
-  // Calculate totals
-  const subtotal = cartItems.reduce((sum, item) => {
+  // Calculate subtotal using regular prices
+  const regularSubtotal = cartItems.reduce((sum, item) => {
     let price = Number(item.product.salePrice || item.product.basePrice);
     if (isB2BAccount && item.product.wholesalePrice) {
       price = Number(item.product.wholesalePrice);
@@ -199,6 +199,21 @@ export function CheckoutForm({
     }
     return sum + price * item.quantity;
   }, 0);
+
+  // Calculate subtotal using government prices (for isGovBuyer option)
+  const governmentSubtotal = cartItems.reduce((sum, item) => {
+    // Use government price if available, otherwise fall back to regular price
+    const price = item.product.gsaPrice
+      ? Number(item.product.gsaPrice)
+      : Number(item.product.salePrice || item.product.basePrice);
+    return sum + price * item.quantity;
+  }, 0);
+
+  // Use government pricing if isGovBuyer is checked and not already a GSA account
+  const subtotal = isGovBuyer && !isGSAAccount ? governmentSubtotal : regularSubtotal;
+
+  // Calculate government discount (the difference between regular and government prices)
+  const govPriceSavings = isGovBuyer && !isGSAAccount ? regularSubtotal - governmentSubtotal : 0;
 
   // Fetch shipping settings
   useEffect(() => {
@@ -279,8 +294,8 @@ export function CheckoutForm({
       : baseShippingCost;
 
   const couponDiscount = appliedCoupon?.discount || 0;
-  const govBuyerDiscount = isGovBuyer ? subtotal * 0.20 : 0; // 20% discount for government buyers
-  const discount = couponDiscount + govBuyerDiscount;
+  // Government pricing is now applied through the subtotal calculation, not as a discount
+  const discount = couponDiscount;
   const tax = isB2BAccount || isGSAAccount || isGovBuyer ? 0 : (subtotal - discount) * 0.08;
   const total = subtotal - discount + shippingCost + tax;
 
@@ -1045,17 +1060,26 @@ export function CheckoutForm({
                   </div>
                 </div>
 
-                {/* Discount Preview */}
+                {/* Government Pricing Preview */}
                 <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Check className="w-5 h-5 text-green-600" />
-                      <span className="font-medium text-green-800">Government Discount Applied</span>
+                      <span className="font-medium text-green-800">Government Pricing Applied</span>
                     </div>
-                    <span className="text-lg font-bold text-green-700">
-                      -${govBuyerDiscount.toFixed(2)} (20% off)
-                    </span>
+                    {govPriceSavings > 0 ? (
+                      <span className="text-lg font-bold text-green-700">
+                        Saving ${govPriceSavings.toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-600">
+                        Tax exempt
+                      </span>
+                    )}
                   </div>
+                  <p className="text-xs text-green-700 mt-2">
+                    Prices adjusted to government contract rates. Tax exempt status applied.
+                  </p>
                 </div>
               </div>
             )}
@@ -1352,7 +1376,7 @@ export function CheckoutForm({
               let price = Number(item.product.salePrice || item.product.basePrice);
               if (isB2BAccount && item.product.wholesalePrice) {
                 price = Number(item.product.wholesalePrice);
-              } else if (isGSAAccount && item.product.gsaPrice) {
+              } else if ((isGSAAccount || (isGovBuyer && !isGSAAccount)) && item.product.gsaPrice) {
                 price = Number(item.product.gsaPrice);
               }
 
@@ -1424,10 +1448,10 @@ export function CheckoutForm({
                 <span>-${couponDiscount.toFixed(2)}</span>
               </div>
             )}
-            {govBuyerDiscount > 0 && (
+            {isGovBuyer && govPriceSavings > 0 && (
               <div className="flex justify-between text-blue-600">
-                <span>Gov Buyer Discount (20%)</span>
-                <span>-${govBuyerDiscount.toFixed(2)}</span>
+                <span>Government Pricing</span>
+                <span>Saving ${govPriceSavings.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between">
@@ -1446,7 +1470,7 @@ export function CheckoutForm({
                 <span className="font-medium">${tax.toFixed(2)}</span>
               </div>
             )}
-            {(isB2BAccount || isGSAAccount) && (
+            {(isB2BAccount || isGSAAccount || isGovBuyer) && (
               <div className="text-xs text-safety-green-600">Tax-exempt account</div>
             )}
           </div>

@@ -54,20 +54,22 @@ async function getCustomers(searchParams: {
 }
 
 async function getStats() {
-  const [total, b2c, b2b, gsa, pendingGsa] = await Promise.all([
+  const [total, personal, volumeBuyer, government, pendingApproval] = await Promise.all([
     db.user.count(),
-    db.user.count({ where: { accountType: 'B2C' } }),
-    db.user.count({ where: { accountType: 'B2B' } }),
-    db.user.count({ where: { accountType: 'GSA' } }),
+    db.user.count({ where: { accountType: { in: ['B2C', 'PERSONAL'] } } }),
+    db.user.count({ where: { accountType: { in: ['B2B', 'VOLUME_BUYER'] } } }),
+    db.user.count({ where: { accountType: { in: ['GSA', 'GOVERNMENT'] } } }),
     db.user.count({
       where: {
-        accountType: 'B2C',
-        gsaApprovalStatus: 'PENDING',
+        OR: [
+          { approvalStatus: 'PENDING' },
+          { gsaApprovalStatus: 'PENDING' },
+        ],
       },
     }),
   ]);
 
-  return { total, b2c, b2b, gsa, pendingGsa };
+  return { total, personal, volumeBuyer, government, pendingApproval };
 }
 
 export default async function CustomersPage({
@@ -82,8 +84,20 @@ export default async function CustomersPage({
 
   const accountTypeColors: Record<string, string> = {
     B2C: 'bg-blue-100 text-blue-800',
+    PERSONAL: 'bg-blue-100 text-blue-800',
     B2B: 'bg-purple-100 text-purple-800',
+    VOLUME_BUYER: 'bg-purple-100 text-purple-800',
     GSA: 'bg-safety-green-100 text-safety-green-800',
+    GOVERNMENT: 'bg-safety-green-100 text-safety-green-800',
+  };
+
+  const accountTypeLabels: Record<string, string> = {
+    B2C: 'Personal',
+    PERSONAL: 'Personal',
+    B2B: 'Volume Buyer',
+    VOLUME_BUYER: 'Volume Buyer',
+    GSA: 'Government',
+    GOVERNMENT: 'Government',
   };
 
   const roleColors: Record<string, string> = {
@@ -109,20 +123,20 @@ export default async function CustomersPage({
           <div className="text-sm text-gray-600">Total Customers</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-3xl font-bold text-blue-600 mb-1">{stats.b2c}</div>
-          <div className="text-sm text-gray-600">B2C Customers</div>
+          <div className="text-3xl font-bold text-blue-600 mb-1">{stats.personal}</div>
+          <div className="text-sm text-gray-600">Personal Buyers</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-3xl font-bold text-purple-600 mb-1">{stats.b2b}</div>
-          <div className="text-sm text-gray-600">B2B Customers</div>
+          <div className="text-3xl font-bold text-purple-600 mb-1">{stats.volumeBuyer}</div>
+          <div className="text-sm text-gray-600">Volume Buyers</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-3xl font-bold text-safety-green-600 mb-1">{stats.gsa}</div>
-          <div className="text-sm text-gray-600">GSA Customers</div>
+          <div className="text-3xl font-bold text-safety-green-600 mb-1">{stats.government}</div>
+          <div className="text-sm text-gray-600">Government</div>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-3xl font-bold text-orange-600 mb-1">{stats.pendingGsa}</div>
-          <div className="text-sm text-gray-600">Pending GSA</div>
+          <div className="text-3xl font-bold text-orange-600 mb-1">{stats.pendingApproval}</div>
+          <div className="text-sm text-gray-600">Pending Approval</div>
         </div>
       </div>
 
@@ -157,9 +171,9 @@ export default async function CustomersPage({
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
             >
               <option value="">All Types</option>
-              <option value="B2C">B2C</option>
-              <option value="B2B">B2B</option>
-              <option value="GSA">GSA</option>
+              <option value="PERSONAL">Personal</option>
+              <option value="VOLUME_BUYER">Volume Buyer</option>
+              <option value="GOVERNMENT">Government</option>
             </select>
           </div>
 
@@ -194,42 +208,55 @@ export default async function CustomersPage({
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <Link href="/admin/customers/b2b">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Link href="/admin/customers/personal">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-500 transition-colors cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <div className="font-semibold text-black">Personal Buyers</div>
+                <div className="text-sm text-gray-600">View personal accounts</div>
+              </div>
+            </div>
+          </div>
+        </Link>
+        <Link href="/admin/customers/volume-buyer">
           <div className="bg-white rounded-lg border border-gray-200 p-4 hover:border-purple-500 transition-colors cursor-pointer">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                 <Users className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <div className="font-semibold text-black">B2B Customers</div>
-                <div className="text-sm text-gray-600">View B2B accounts</div>
+                <div className="font-semibold text-black">Volume Buyers</div>
+                <div className="text-sm text-gray-600">View business accounts</div>
               </div>
             </div>
           </div>
         </Link>
-        <Link href="/admin/customers/gsa">
+        <Link href="/admin/customers/government">
           <div className="bg-white rounded-lg border border-gray-200 p-4 hover:border-safety-green-500 transition-colors cursor-pointer">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-safety-green-100 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-safety-green-600" />
               </div>
               <div>
-                <div className="font-semibold text-black">GSA Customers</div>
-                <div className="text-sm text-gray-600">View GSA accounts</div>
+                <div className="font-semibold text-black">Government</div>
+                <div className="text-sm text-gray-600">View government accounts</div>
               </div>
             </div>
           </div>
         </Link>
-        <Link href="/admin/customers/gsa-approvals">
+        <Link href="/admin/customers/approvals">
           <div className="bg-white rounded-lg border border-gray-200 p-4 hover:border-orange-500 transition-colors cursor-pointer">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-orange-600" />
               </div>
               <div>
-                <div className="font-semibold text-black">GSA Approvals</div>
-                <div className="text-sm text-gray-600">{stats.pendingGsa} pending</div>
+                <div className="font-semibold text-black">Pending Approvals</div>
+                <div className="text-sm text-gray-600">{stats.pendingApproval} pending</div>
               </div>
             </div>
           </div>
@@ -315,10 +342,10 @@ export default async function CustomersPage({
                       <td className="px-6 py-4">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            accountTypeColors[customer.accountType]
+                            accountTypeColors[customer.accountType] || 'bg-gray-100 text-gray-800'
                           }`}
                         >
-                          {customer.accountType}
+                          {accountTypeLabels[customer.accountType] || customer.accountType}
                         </span>
                       </td>
                       <td className="px-6 py-4">

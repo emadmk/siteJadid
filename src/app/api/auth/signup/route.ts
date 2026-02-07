@@ -3,25 +3,34 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
-// GSA Departments
-const GSA_DEPARTMENTS = ['DOW', 'DLA', 'USDA', 'NIH', 'GCSS-Army'] as const;
+// Government Departments
+const GOVERNMENT_DEPARTMENTS = ['DOW', 'DLA', 'USDA', 'NIH', 'GCSS-Army', 'OTHER'] as const;
 
-// Validation schema
+// Validation schema - Updated for new user types
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   phone: z.string().optional(),
-  accountType: z.enum(['B2C', 'B2B', 'GSA']).default('B2C'),
+  // Support both old and new account types for backward compatibility
+  accountType: z.enum(['B2C', 'B2B', 'GSA', 'PERSONAL', 'VOLUME_BUYER', 'GOVERNMENT']).default('PERSONAL'),
   companyName: z.string().optional(),
   taxId: z.string().optional(),
-  gsaDepartment: z.enum(GSA_DEPARTMENTS).optional(),
+  governmentDepartment: z.string().optional(),
+  // Legacy field support
+  gsaDepartment: z.enum(GOVERNMENT_DEPARTMENTS).optional(),
 });
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const validatedData = signupSchema.parse(body);
+
+    // Map old account types to new ones
+    let accountType = validatedData.accountType;
+    if (accountType === 'B2C') accountType = 'PERSONAL';
+    if (accountType === 'B2B') accountType = 'VOLUME_BUYER';
+    if (accountType === 'GSA') accountType = 'GOVERNMENT';
 
     // Check if user already exists
     const existingUser = await db.user.findUnique({
@@ -39,12 +48,15 @@ export async function POST(req: NextRequest) {
     const hashedPassword = await bcrypt.hash(validatedData.password, 12);
 
     // Determine user role based on account type
-    let role: 'CUSTOMER' | 'B2B_CUSTOMER' | 'GSA_CUSTOMER' = 'CUSTOMER';
-    if (validatedData.accountType === 'B2B') {
-      role = 'B2B_CUSTOMER';
-    } else if (validatedData.accountType === 'GSA') {
-      role = 'GSA_CUSTOMER';
+    let role: 'CUSTOMER' | 'PERSONAL_CUSTOMER' | 'VOLUME_BUYER_CUSTOMER' | 'GOVERNMENT_CUSTOMER' = 'PERSONAL_CUSTOMER';
+    if (accountType === 'VOLUME_BUYER') {
+      role = 'VOLUME_BUYER_CUSTOMER';
+    } else if (accountType === 'GOVERNMENT') {
+      role = 'GOVERNMENT_CUSTOMER';
     }
+
+    // Get government department from either new or legacy field
+    const governmentDept = validatedData.governmentDepartment || validatedData.gsaDepartment;
 
     // Create user
     const user = await db.user.create({
@@ -53,13 +65,18 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         name: validatedData.name,
         phone: validatedData.phone,
-        accountType: validatedData.accountType,
+        accountType: accountType as 'PERSONAL' | 'VOLUME_BUYER' | 'GOVERNMENT',
         role: role,
         isActive: true,
         emailVerified: null,
-        // GSA-specific fields
-        gsaDepartment: validatedData.accountType === 'GSA' ? validatedData.gsaDepartment : null,
-        gsaApprovalStatus: validatedData.accountType === 'GSA' ? 'PENDING' : null,
+        // Company name for Volume Buyer and Government users
+        companyName: accountType !== 'PERSONAL' ? validatedData.companyName : null,
+        // Government-specific fields
+        governmentDepartment: accountType === 'GOVERNMENT' ? governmentDept : null,
+        approvalStatus: (accountType === 'GOVERNMENT' || accountType === 'VOLUME_BUYER') ? 'PENDING' : null,
+        // Legacy GSA fields (for backward compatibility)
+        gsaDepartment: accountType === 'GOVERNMENT' ? governmentDept : null,
+        gsaApprovalStatus: accountType === 'GOVERNMENT' ? 'PENDING' : null,
       },
     });
 
@@ -73,16 +90,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Note: B2B and GSA profiles are created by admin during account approval
-    // This ensures all required fields (taxId, contractNumber, etc.) are properly collected
-
     // Return success (without password)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
 
     return NextResponse.json(
       {
         message: 'Account created successfully',
         user: userWithoutPassword,
+        accountType: accountType,
+        requiresApproval: accountType === 'GOVERNMENT' || accountType === 'VOLUME_BUYER',
       },
       { status: 201 }
     );

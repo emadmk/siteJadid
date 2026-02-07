@@ -16,34 +16,35 @@ export function AuthModal() {
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  // GSA Departments
-  const GSA_DEPARTMENTS = [
+  // Government Departments
+  const GOVERNMENT_DEPARTMENTS = [
     { value: 'DOW', label: 'Department of War (DOW)' },
     { value: 'DLA', label: 'Defense Logistics Agency (DLA)' },
     { value: 'USDA', label: 'US Department of Agriculture (USDA)' },
     { value: 'NIH', label: 'National Institute of Health (NIH)' },
     { value: 'GCSS-Army', label: 'Global Combat Support System-Army (GCSS-Army)' },
+    { value: 'OTHER', label: 'Other Government Agency' },
   ];
 
-  // Register form - Pre-select B2B if reason is 'b2b'
+  // Register form - Pre-select VOLUME_BUYER if reason is 'volume_buyer'
   const [registerData, setRegisterData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    accountType: (reason === 'b2b' ? 'B2B' : 'B2C') as 'B2C' | 'B2B' | 'GSA',
+    accountType: (reason === 'volume_buyer' ? 'VOLUME_BUYER' : 'PERSONAL') as 'PERSONAL' | 'VOLUME_BUYER' | 'GOVERNMENT',
     companyName: '',
-    gsaDepartment: '',
+    governmentDepartment: '',
   });
 
   // Forgot password form
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
 
-  // Pre-select B2B account type when reason is 'b2b'
+  // Pre-select VOLUME_BUYER account type when reason is 'volume_buyer'
   useEffect(() => {
-    if (reason === 'b2b') {
-      setRegisterData(prev => ({ ...prev, accountType: 'B2B' }));
+    if (reason === 'volume_buyer') {
+      setRegisterData(prev => ({ ...prev, accountType: 'VOLUME_BUYER' }));
     }
   }, [reason]);
 
@@ -99,8 +100,8 @@ export function AuthModal() {
           email: registerData.email,
           password: registerData.password,
           accountType: registerData.accountType,
-          companyName: registerData.accountType !== 'B2C' ? registerData.companyName : undefined,
-          gsaDepartment: registerData.accountType === 'GSA' ? registerData.gsaDepartment : undefined,
+          companyName: registerData.accountType !== 'PERSONAL' ? registerData.companyName : undefined,
+          governmentDepartment: registerData.accountType === 'GOVERNMENT' ? registerData.governmentDepartment : undefined,
         }),
       });
 
@@ -318,14 +319,14 @@ export function AuthModal() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { value: 'B2C', label: 'Personal' },
-                    { value: 'B2B', label: 'Business' },
-                    { value: 'GSA', label: 'Government' },
+                    { value: 'PERSONAL', label: 'Personal' },
+                    { value: 'VOLUME_BUYER', label: 'Business' },
+                    { value: 'GOVERNMENT', label: 'Government' },
                   ].map((type) => (
                     <button
                       key={type.value}
                       type="button"
-                      onClick={() => setRegisterData({ ...registerData, accountType: type.value as 'B2C' | 'B2B' | 'GSA' })}
+                      onClick={() => setRegisterData({ ...registerData, accountType: type.value as 'PERSONAL' | 'VOLUME_BUYER' | 'GOVERNMENT' })}
                       className={`py-2 px-3 rounded-lg border-2 text-sm font-medium transition-colors ${
                         registerData.accountType === type.value
                           ? 'border-safety-green-600 bg-safety-green-50 text-safety-green-700'
@@ -338,10 +339,10 @@ export function AuthModal() {
                 </div>
               </div>
 
-              {registerData.accountType !== 'B2C' && (
+              {registerData.accountType !== 'PERSONAL' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {registerData.accountType === 'GSA' ? 'Agency Name' : 'Company Name'}
+                    {registerData.accountType === 'GOVERNMENT' ? 'Agency Name' : 'Company Name'}
                   </label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -350,24 +351,24 @@ export function AuthModal() {
                       value={registerData.companyName}
                       onChange={(e) => setRegisterData({ ...registerData, companyName: e.target.value })}
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                      placeholder={registerData.accountType === 'GSA' ? 'Agency name' : 'Company name'}
+                      placeholder={registerData.accountType === 'GOVERNMENT' ? 'Agency name' : 'Company name'}
                       required
                     />
                   </div>
                 </div>
               )}
 
-              {registerData.accountType === 'GSA' && (
+              {registerData.accountType === 'GOVERNMENT' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
                   <select
-                    value={registerData.gsaDepartment}
-                    onChange={(e) => setRegisterData({ ...registerData, gsaDepartment: e.target.value })}
+                    value={registerData.governmentDepartment}
+                    onChange={(e) => setRegisterData({ ...registerData, governmentDepartment: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
                     required
                   >
                     <option value="">Select your department</option>
-                    {GSA_DEPARTMENTS.map((dept) => (
+                    {GOVERNMENT_DEPARTMENTS.map((dept) => (
                       <option key={dept.value} value={dept.value}>
                         {dept.label}
                       </option>

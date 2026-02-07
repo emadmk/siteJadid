@@ -15,12 +15,18 @@ enum UserRole {
   CUSTOMER = 'CUSTOMER',
   B2B_CUSTOMER = 'B2B_CUSTOMER',
   GSA_CUSTOMER = 'GSA_CUSTOMER',
+  PERSONAL_CUSTOMER = 'PERSONAL_CUSTOMER',
+  VOLUME_BUYER_CUSTOMER = 'VOLUME_BUYER_CUSTOMER',
+  GOVERNMENT_CUSTOMER = 'GOVERNMENT_CUSTOMER',
 }
 
 enum AccountType {
   B2C = 'B2C',
   B2B = 'B2B',
   GSA = 'GSA',
+  PERSONAL = 'PERSONAL',
+  VOLUME_BUYER = 'VOLUME_BUYER',
+  GOVERNMENT = 'GOVERNMENT',
 }
 
 export const authOptions: NextAuthOptions = {
@@ -76,6 +82,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           accountType: user.accountType,
           gsaApprovalStatus: user.gsaApprovalStatus,
+          approvalStatus: user.approvalStatus,
           image: user.image,
         };
       },
@@ -88,6 +95,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.accountType = user.accountType;
         token.gsaApprovalStatus = user.gsaApprovalStatus;
+        token.approvalStatus = user.approvalStatus;
       }
       return token;
     },
@@ -97,6 +105,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as UserRole;
         session.user.accountType = token.accountType as AccountType;
         session.user.gsaApprovalStatus = token.gsaApprovalStatus as any;
+        session.user.approvalStatus = token.approvalStatus as any;
       }
       return session;
     },
@@ -155,11 +164,19 @@ export const permissions = {
   },
 
   canAccessB2BPricing: (accountType: AccountType) => {
-    return accountType === AccountType.B2B;
+    return accountType === AccountType.B2B || accountType === AccountType.VOLUME_BUYER;
   },
 
   canAccessGSAPricing: (accountType: AccountType) => {
-    return accountType === AccountType.GSA;
+    return accountType === AccountType.GSA || accountType === AccountType.GOVERNMENT;
+  },
+
+  canAccessVolumeBuyerPricing: (accountType: AccountType) => {
+    return accountType === AccountType.B2B || accountType === AccountType.VOLUME_BUYER;
+  },
+
+  canAccessGovernmentPricing: (accountType: AccountType) => {
+    return accountType === AccountType.GSA || accountType === AccountType.GOVERNMENT;
   },
 };
 
