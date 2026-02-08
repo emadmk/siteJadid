@@ -131,6 +131,7 @@ interface ProductDetailProps {
     defaultSupplierId: string | null;
     defaultWarehouseId: string | null;
     complianceCertifications: string[];
+    taaApproved: boolean;
     categoryHierarchy: CategoryBreadcrumb[];
     category: {
       id: string;
@@ -639,7 +640,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
               </div>
 
               {/* Government & Volume Buyer Pricing - Only shown to eligible users */}
-              {((canSeeGovernmentPrice && currentGsaPrice) || (canSeeVolumeBuyerPrice && currentWholesalePrice)) && (
+              {((canSeeGovernmentPrice && currentGsaPrice) || (canSeeVolumeBuyerPrice && currentWholesalePrice) || product.taaApproved) && (
                 <div className="flex flex-wrap items-center gap-3">
                   {canSeeGovernmentPrice && currentGsaPrice && (
                     <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-medium">
@@ -653,7 +654,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                       Volume Buyer: ${Number(currentWholesalePrice).toFixed(2)}
                     </div>
                   )}
-                  {canSeeGovernmentPrice && currentGsaPrice && (
+                  {product.taaApproved && (
                     <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm">
                       <ShieldCheck className="w-4 h-4" />
                       TAA/BAA Approved
@@ -769,7 +770,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
             </Button>
 
             {/* Trust Badges */}
-            <div className={`grid grid-cols-2 ${canSeeGovernmentPrice && currentGsaPrice ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4 pt-4 border-t`}>
+            <div className={`grid grid-cols-2 ${product.taaApproved ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4 pt-4 border-t`}>
               <div className="flex items-start gap-3">
                 <Truck className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
                 <div>
@@ -791,7 +792,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                   <div className="text-xs text-gray-600">30-day policy</div>
                 </div>
               </div>
-              {canSeeGovernmentPrice && currentGsaPrice && (
+              {product.taaApproved && (
                 <div className="flex items-start gap-3">
                   <Award className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
                   <div>

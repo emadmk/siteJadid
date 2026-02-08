@@ -128,6 +128,7 @@ async function getProduct(slug: string) {
     defaultSupplierId: product.defaultSupplierId,
     defaultWarehouseId: product.defaultWarehouseId,
     complianceCertifications: product.complianceCertifications as string[],
+    taaApproved: product.taaApproved,
     categoryHierarchy,
     category: product.category
       ? {
