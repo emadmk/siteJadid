@@ -13,6 +13,12 @@ export async function GET() {
     }
 
     const settings = await db.userTypeDiscountSettings.findMany({
+      include: {
+        category: { select: { id: true, name: true } },
+        brand: { select: { id: true, name: true } },
+        supplier: { select: { id: true, name: true } },
+        warehouse: { select: { id: true, name: true } },
+      },
       orderBy: [
         { accountType: 'asc' },
         { createdAt: 'asc' },
@@ -26,7 +32,7 @@ export async function GET() {
   }
 }
 
-// POST /api/admin/discount-settings - Update discount settings
+// POST /api/admin/discount-settings - Update discount settings (batch)
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -56,6 +62,72 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating discount settings:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PUT /api/admin/discount-settings - Create new discount setting
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const {
+      accountType,
+      discountPercentage,
+      minimumOrderAmount,
+      isActive,
+      categoryId,
+      brandId,
+      supplierId,
+      warehouseId,
+    } = body;
+
+    if (!accountType || !['PERSONAL', 'VOLUME_BUYER', 'GOVERNMENT'].includes(accountType)) {
+      return NextResponse.json({ error: 'Invalid account type' }, { status: 400 });
+    }
+
+    // Check if this exact combination already exists
+    const existing = await db.userTypeDiscountSettings.findFirst({
+      where: {
+        accountType,
+        categoryId: categoryId || null,
+        brandId: brandId || null,
+        supplierId: supplierId || null,
+        warehouseId: warehouseId || null,
+      },
+    });
+
+    if (existing) {
+      return NextResponse.json({ error: 'A discount with this combination already exists' }, { status: 400 });
+    }
+
+    const newSetting = await db.userTypeDiscountSettings.create({
+      data: {
+        accountType,
+        discountPercentage: discountPercentage || 0,
+        minimumOrderAmount: minimumOrderAmount || 0,
+        isActive: isActive ?? true,
+        categoryId: categoryId || null,
+        brandId: brandId || null,
+        supplierId: supplierId || null,
+        warehouseId: warehouseId || null,
+      },
+      include: {
+        category: { select: { id: true, name: true } },
+        brand: { select: { id: true, name: true } },
+        supplier: { select: { id: true, name: true } },
+        warehouse: { select: { id: true, name: true } },
+      },
+    });
+
+    return NextResponse.json(newSetting, { status: 201 });
+  } catch (error) {
+    console.error('Error creating discount setting:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { calculateProductDiscount } from '@/lib/discounts';
 
 // GET /api/orders - Get user's orders
 export async function GET(request: NextRequest) {
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
       notes,
     } = body;
 
-    // Get cart with product details including supplier and warehouse
+    // Get cart with product details including supplier, warehouse, category, brand
     const cart = await db.cart.findFirst({
       where: { userId: session.user.id },
       include: {
@@ -138,6 +139,12 @@ export async function POST(request: NextRequest) {
                   select: { id: true, name: true },
                 },
                 defaultWarehouse: {
+                  select: { id: true, name: true },
+                },
+                category: {
+                  select: { id: true, name: true },
+                },
+                brand: {
                   select: { id: true, name: true },
                 },
               },
@@ -157,7 +164,7 @@ export async function POST(request: NextRequest) {
     // Get user account type and B2B membership
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { accountType: true },
+      select: { accountType: true, gsaApprovalStatus: true },
     });
 
     const b2bMembership = await db.b2BAccountMember.findFirst({
@@ -178,20 +185,38 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Calculate totals
+    // Map account type for discount calculation
+    const isApprovedGSA = user?.accountType === 'GSA' && user?.gsaApprovalStatus === 'APPROVED';
+    let accountType = user?.accountType || 'B2C';
+    if (isApprovedGSA) {
+      accountType = 'GOVERNMENT';
+    } else if (accountType === 'B2B') {
+      accountType = 'VOLUME_BUYER';
+    } else if (accountType === 'B2C') {
+      accountType = 'PERSONAL';
+    }
+
+    // Calculate totals with discount system
     let subtotal = 0;
-    const orderItems = cart.items.map((item: any) => {
-      let price = Number(item.product.salePrice || item.product.basePrice);
+    const orderItemsPromises = cart.items.map(async (item: any) => {
+      // Calculate discount for this product
+      const discountResult = await calculateProductDiscount(
+        {
+          id: item.product.id,
+          categoryId: item.product.categoryId,
+          brandId: item.product.brandId,
+          defaultSupplierId: item.product.defaultSupplierId,
+          defaultWarehouseId: item.product.defaultWarehouseId,
+          basePrice: parseFloat(item.product.basePrice.toString()),
+          salePrice: item.product.salePrice ? parseFloat(item.product.salePrice.toString()) : null,
+          wholesalePrice: item.product.wholesalePrice ? parseFloat(item.product.wholesalePrice.toString()) : null,
+          gsaPrice: item.product.gsaPrice ? parseFloat(item.product.gsaPrice.toString()) : null,
+        },
+        accountType as any
+      );
 
-      // Apply B2B/GSA pricing
-      if (user?.accountType === 'B2B' && item.product.wholesalePrice) {
-        price = Number(item.product.wholesalePrice);
-      } else if (user?.accountType === 'GSA' && item.product.gsaPrice) {
-        price = Number(item.product.gsaPrice);
-      }
-
+      const price = discountResult.discountedPrice;
       const itemTotal = price * item.quantity;
-      subtotal += itemTotal;
 
       // Determine stock source based on availability
       let stockSource: 'OUR_WAREHOUSE' | 'SUPPLIER_STOCK' | 'BACKORDER' = 'OUR_WAREHOUSE';
@@ -219,6 +244,12 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    // Await all order items
+    const orderItems = await Promise.all(orderItemsPromises);
+
+    // Calculate subtotal from order items
+    subtotal = orderItems.reduce((sum, item) => sum + item.total, 0);
+
     const totalWeight = cart.items.reduce((sum: number, item: any) => {
       return sum + (item.product.weight || 0) * item.quantity;
     }, 0);
@@ -232,7 +263,7 @@ export async function POST(request: NextRequest) {
       shippingCost = subtotal >= 99 ? 0 : totalWeight > 20 ? 35 : 15;
     }
 
-    const tax = user?.accountType === 'B2B' || user?.accountType === 'GSA' ? 0 : subtotal * 0.08;
+    const tax = user?.accountType === 'B2B' || user?.accountType === 'GSA' || accountType === 'GOVERNMENT' ? 0 : subtotal * 0.08;
     const total = subtotal + shippingCost + tax;
 
     // Generate order number

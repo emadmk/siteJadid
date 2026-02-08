@@ -101,8 +101,10 @@ export default async function CartPage() {
     );
   }
 
+  // Use the stored price from cart item (includes discounts applied when added)
   const subtotal = cart.items.reduce((sum: number, item: any) => {
-    const price = Number(item.product.salePrice || item.product.basePrice);
+    // Use the stored price if available, otherwise fallback to product prices
+    const price = item.price ? Number(item.price) : Number(item.product.salePrice || item.product.basePrice);
     return sum + price * item.quantity;
   }, 0);
 
@@ -136,7 +138,10 @@ export default async function CartPage() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {cart.items.map((item: any, index: number) => {
-                const price = Number(item.product.salePrice || item.product.basePrice);
+                // Use stored discounted price if available
+                const price = item.price ? Number(item.price) : Number(item.product.salePrice || item.product.basePrice);
+                const originalPrice = Number(item.product.salePrice || item.product.basePrice);
+                const hasDiscount = item.price && Number(item.price) < originalPrice;
                 const images = (item.product.images as string[]) || [];
                 const minOrderQty = item.product.minimumOrderQty || 1;
 

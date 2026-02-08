@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { calculateProductDiscount } from '@/lib/discounts';
 
 // GET /api/cart - Get user's cart
 export async function GET(request: NextRequest) {
@@ -99,9 +100,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
     }
 
-    // Get product
+    // Get product with category and brand for discount calculation
     const product = await db.product.findUnique({
       where: { id: productId },
+      include: {
+        category: { select: { id: true } },
+        brand: { select: { id: true } },
+      },
     });
 
     if (!product) {
@@ -137,7 +142,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Determine price based on user account type
+    // Determine price based on user account type and applicable discounts
     const user = await db.user.findUnique({
       where: { id: session.user.id },
       include: { b2bProfile: true, gsaProfile: true },
@@ -146,26 +151,52 @@ export async function POST(request: NextRequest) {
     // Check if user is approved GSA (must have accountType GSA AND gsaApprovalStatus APPROVED)
     const isApprovedGSA = user?.accountType === 'GSA' && user?.gsaApprovalStatus === 'APPROVED';
 
+    // Map account type for discount calculation
+    let accountType = user?.accountType || 'B2C';
+    if (isApprovedGSA) {
+      accountType = 'GOVERNMENT';
+    } else if (accountType === 'B2B') {
+      accountType = 'VOLUME_BUYER';
+    } else if (accountType === 'B2C') {
+      accountType = 'PERSONAL';
+    }
+
     // Use variant prices if variant is selected, otherwise use product prices
     let price: number;
     if (variant) {
-      // Use variant prices
-      if (user?.accountType === 'B2B' && variant.wholesalePrice) {
-        price = parseFloat(variant.wholesalePrice.toString());
-      } else if (isApprovedGSA && variant.gsaPrice) {
-        price = parseFloat(variant.gsaPrice.toString());
-      } else {
-        price = parseFloat(variant.salePrice?.toString() || variant.basePrice.toString());
-      }
+      // Calculate discount for variant
+      const discountResult = await calculateProductDiscount(
+        {
+          id: variant.id,
+          categoryId: product.categoryId,
+          brandId: product.brandId,
+          defaultSupplierId: product.defaultSupplierId,
+          defaultWarehouseId: product.defaultWarehouseId,
+          basePrice: parseFloat(variant.basePrice.toString()),
+          salePrice: variant.salePrice ? parseFloat(variant.salePrice.toString()) : null,
+          wholesalePrice: variant.wholesalePrice ? parseFloat(variant.wholesalePrice.toString()) : null,
+          gsaPrice: variant.gsaPrice ? parseFloat(variant.gsaPrice.toString()) : null,
+        },
+        accountType as any
+      );
+      price = discountResult.discountedPrice;
     } else {
-      // Use product prices
-      if (user?.accountType === 'B2B' && product.wholesalePrice) {
-        price = parseFloat(product.wholesalePrice.toString());
-      } else if (isApprovedGSA && product.gsaPrice) {
-        price = parseFloat(product.gsaPrice.toString());
-      } else {
-        price = parseFloat(product.salePrice?.toString() || product.basePrice.toString());
-      }
+      // Calculate discount for product
+      const discountResult = await calculateProductDiscount(
+        {
+          id: product.id,
+          categoryId: product.categoryId,
+          brandId: product.brandId,
+          defaultSupplierId: product.defaultSupplierId,
+          defaultWarehouseId: product.defaultWarehouseId,
+          basePrice: parseFloat(product.basePrice.toString()),
+          salePrice: product.salePrice ? parseFloat(product.salePrice.toString()) : null,
+          wholesalePrice: product.wholesalePrice ? parseFloat(product.wholesalePrice.toString()) : null,
+          gsaPrice: product.gsaPrice ? parseFloat(product.gsaPrice.toString()) : null,
+        },
+        accountType as any
+      );
+      price = discountResult.discountedPrice;
     }
 
     // Get or create cart

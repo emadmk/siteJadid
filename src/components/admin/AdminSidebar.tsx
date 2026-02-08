@@ -185,6 +185,7 @@ const menuItems: MenuItem[] = [
     icon: Tag,
     permissions: ['marketing.view'],
     children: [
+      { title: 'Discounts', href: '/admin/marketing/discounts', icon: Percent, permissions: ['marketing.view'] },
       { title: 'Coupons', href: '/admin/coupons', icon: Percent, permissions: ['marketing.view'] },
       { title: 'Banners', href: '/admin/marketing/banners', icon: Image, permissions: ['marketing.view'] },
       { title: 'Emails', href: '/admin/marketing/emails', icon: Mail, permissions: ['marketing.view'] },
