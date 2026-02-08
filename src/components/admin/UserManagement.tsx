@@ -23,9 +23,13 @@ interface UserManagementProps {
 }
 
 const ROLES = ['USER', 'ADMIN', 'SUPER_ADMIN'];
-const ACCOUNT_TYPES = ['B2C', 'B2B', 'GSA'];
-const GSA_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
-const GSA_DEPARTMENTS = ['DOW', 'DLA', 'USDA', 'NIH', 'GCSS-Army'];
+const ACCOUNT_TYPES = [
+  { value: 'PERSONAL', label: 'Personal' },
+  { value: 'VOLUME_BUYER', label: 'Volume Buyer' },
+  { value: 'GOVERNMENT', label: 'Government' },
+];
+const APPROVAL_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
+const GOVERNMENT_DEPARTMENTS = ['DOD', 'DLA', 'USDA', 'NIH', 'GSA', 'VA', 'State', 'Local'];
 
 export function UserManagement({ user, currentUserRole }: UserManagementProps) {
   const router = useRouter();
@@ -63,9 +67,9 @@ export function UserManagement({ user, currentUserRole }: UserManagementProps) {
           phone: formData.phone || null,
           role: formData.role,
           accountType: formData.accountType,
-          gsaApprovalStatus: formData.accountType === 'GSA' ? formData.gsaApprovalStatus || null : null,
-          gsaNumber: formData.accountType === 'GSA' ? formData.gsaNumber || null : null,
-          gsaDepartment: formData.accountType === 'GSA' ? formData.gsaDepartment || null : null,
+          gsaApprovalStatus: ['GSA', 'GOVERNMENT', 'B2B', 'VOLUME_BUYER'].includes(formData.accountType) ? formData.gsaApprovalStatus || null : null,
+          gsaNumber: ['GSA', 'GOVERNMENT'].includes(formData.accountType) ? formData.gsaNumber || null : null,
+          gsaDepartment: ['GSA', 'GOVERNMENT'].includes(formData.accountType) ? formData.gsaDepartment || null : null,
         }),
       });
 
@@ -244,30 +248,30 @@ export function UserManagement({ user, currentUserRole }: UserManagementProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
             >
               {ACCOUNT_TYPES.map((type) => (
-                <option key={type} value={type}>{type}</option>
+                <option key={type.value} value={type.value}>{type.label}</option>
               ))}
             </select>
           </div>
 
-          {/* GSA Fields - Only shown for GSA accounts */}
-          {formData.accountType === 'GSA' && (
+          {/* Government Fields - Only shown for Government accounts */}
+          {(formData.accountType === 'GOVERNMENT' || formData.accountType === 'GSA') && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">GSA Department</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Government Department</label>
                 <select
                   value={formData.gsaDepartment}
                   onChange={(e) => setFormData({ ...formData, gsaDepartment: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
                 >
                   <option value="">Select Department</option>
-                  {GSA_DEPARTMENTS.map((dept) => (
+                  {GOVERNMENT_DEPARTMENTS.map((dept) => (
                     <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">GSA Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Government ID Number</label>
                 <input
                   type="text"
                   value={formData.gsaNumber}
@@ -277,19 +281,36 @@ export function UserManagement({ user, currentUserRole }: UserManagementProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">GSA Approval Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Approval Status</label>
                 <select
                   value={formData.gsaApprovalStatus}
                   onChange={(e) => setFormData({ ...formData, gsaApprovalStatus: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
                 >
                   <option value="">Select Status</option>
-                  {GSA_STATUSES.map((status) => (
+                  {APPROVAL_STATUSES.map((status) => (
                     <option key={status} value={status}>{status}</option>
                   ))}
                 </select>
               </div>
             </>
+          )}
+
+          {/* Volume Buyer Fields - Only shown for Volume Buyer accounts */}
+          {(formData.accountType === 'VOLUME_BUYER' || formData.accountType === 'B2B') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Approval Status</label>
+              <select
+                value={formData.gsaApprovalStatus}
+                onChange={(e) => setFormData({ ...formData, gsaApprovalStatus: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+              >
+                <option value="">Select Status</option>
+                {APPROVAL_STATUSES.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
 

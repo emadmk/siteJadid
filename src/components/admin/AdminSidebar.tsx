@@ -125,8 +125,8 @@ const menuItems: MenuItem[] = [
     permissions: ['customers.view'],
     children: [
       { title: 'All Customers', href: '/admin/customers', icon: Users, permissions: ['customers.view'] },
-      { title: 'B2B Customers', href: '/admin/customers/b2b', icon: Building2, permissions: ['customers.view'] },
-      { title: 'GSA Customers', href: '/admin/customers/gsa', icon: BadgeCheck, permissions: ['customers.view'] },
+      { title: 'Volume Buyers', href: '/admin/customers/volume-buyer', icon: Building2, permissions: ['customers.view'] },
+      { title: 'Government', href: '/admin/customers/government', icon: BadgeCheck, permissions: ['customers.view'] },
       { title: 'Customer Groups', href: '/admin/customers/groups', icon: Users, permissions: ['customers.view'] },
     ],
   },

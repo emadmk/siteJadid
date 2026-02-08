@@ -367,13 +367,19 @@ export function CheckoutForm({
 
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
-  const steps: { key: CheckoutStep; label: string }[] = [
+  // Build steps dynamically - skip Government step if user is already a Government account
+  const allSteps: { key: CheckoutStep; label: string }[] = [
     { key: 'shipping', label: 'Shipping' },
     { key: 'delivery', label: 'Delivery' },
-    { key: 'government', label: 'Gov Buyer' },
+    { key: 'government', label: 'Government' },
     { key: 'payment', label: 'Payment' },
     { key: 'review', label: 'Review' },
   ];
+
+  // Filter out the government step if user is already a Government account
+  const steps = isGSAAccount
+    ? allSteps.filter(step => step.key !== 'government')
+    : allSteps;
 
   const currentStepIndex = steps.findIndex((s) => s.key === currentStep);
 
@@ -1457,7 +1463,9 @@ export function CheckoutForm({
             <div className="flex justify-between">
               <span className="text-gray-600">Shipping</span>
               <span className="font-medium">
-                {shippingCost === 0 ? (
+                {currentStep === 'shipping' && !selectedRate ? (
+                  <span className="text-gray-500 text-sm">Calculated in next step</span>
+                ) : shippingCost === 0 ? (
                   <span className="text-safety-green-600">FREE</span>
                 ) : (
                   `$${shippingCost.toFixed(2)}`
@@ -1478,7 +1486,14 @@ export function CheckoutForm({
           <div className="border-t border-gray-200 mt-4 pt-4">
             <div className="flex justify-between items-center">
               <span className="text-lg font-semibold text-black">Total</span>
-              <span className="text-2xl font-bold text-black">${total.toFixed(2)}</span>
+              {currentStep === 'shipping' && !selectedRate ? (
+                <div className="text-right">
+                  <span className="text-xl font-bold text-black">${(subtotal - discount + tax).toFixed(2)}</span>
+                  <div className="text-xs text-gray-500">+ shipping</div>
+                </div>
+              ) : (
+                <span className="text-2xl font-bold text-black">${total.toFixed(2)}</span>
+              )}
             </div>
           </div>
 

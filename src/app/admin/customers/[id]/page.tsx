@@ -74,8 +74,20 @@ export default async function CustomerDetailPage({
 
   const accountTypeColors: Record<string, string> = {
     B2C: 'bg-blue-100 text-blue-800',
+    PERSONAL: 'bg-blue-100 text-blue-800',
     B2B: 'bg-purple-100 text-purple-800',
+    VOLUME_BUYER: 'bg-purple-100 text-purple-800',
     GSA: 'bg-safety-green-100 text-safety-green-800',
+    GOVERNMENT: 'bg-safety-green-100 text-safety-green-800',
+  };
+
+  const accountTypeLabels: Record<string, string> = {
+    B2C: 'Personal',
+    PERSONAL: 'Personal',
+    B2B: 'Volume Buyer',
+    VOLUME_BUYER: 'Volume Buyer',
+    GSA: 'Government',
+    GOVERNMENT: 'Government',
   };
 
   const roleColors: Record<string, string> = {
@@ -113,10 +125,10 @@ export default async function CustomerDetailPage({
           <div className="flex gap-2">
             <span
               className={`px-3 py-1 rounded-full text-sm font-medium ${
-                accountTypeColors[customer.accountType]
+                accountTypeColors[customer.accountType] || 'bg-gray-100 text-gray-800'
               }`}
             >
-              {customer.accountType}
+              {accountTypeLabels[customer.accountType] || customer.accountType}
             </span>
             <span
               className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -302,10 +314,10 @@ export default async function CustomerDetailPage({
                 <div className="text-xs text-gray-600 mb-1">Account Type</div>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    accountTypeColors[customer.accountType]
+                    accountTypeColors[customer.accountType] || 'bg-gray-100 text-gray-800'
                   }`}
                 >
-                  {customer.accountType}
+                  {accountTypeLabels[customer.accountType] || customer.accountType}
                 </span>
               </div>
               <div>
@@ -329,22 +341,56 @@ export default async function CustomerDetailPage({
             </div>
           </div>
 
-          {/* GSA Information */}
-          {customer.accountType === 'GSA' && (
+          {/* Government Information */}
+          {['GSA', 'GOVERNMENT'].includes(customer.accountType) && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-safety-green-600" />
-                GSA Information
+                Government Information
               </h2>
               <div className="space-y-3">
                 {customer.gsaNumber && (
                   <div>
-                    <div className="text-xs text-gray-600 mb-1">GSA Number</div>
+                    <div className="text-xs text-gray-600 mb-1">Government ID</div>
                     <div className="text-sm font-mono text-black">
                       {customer.gsaNumber}
                     </div>
                   </div>
                 )}
+                {customer.gsaDepartment && (
+                  <div>
+                    <div className="text-xs text-gray-600 mb-1">Department</div>
+                    <div className="text-sm text-black">
+                      {customer.gsaDepartment}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-xs text-gray-600 mb-1">Approval Status</div>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      customer.gsaApprovalStatus === 'APPROVED'
+                        ? 'bg-safety-green-100 text-safety-green-800'
+                        : customer.gsaApprovalStatus === 'PENDING'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {customer.gsaApprovalStatus || 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Volume Buyer Information */}
+          {['B2B', 'VOLUME_BUYER'].includes(customer.accountType) && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-purple-600" />
+                Volume Buyer Information
+              </h2>
+              <div className="space-y-3">
                 <div>
                   <div className="text-xs text-gray-600 mb-1">Approval Status</div>
                   <span

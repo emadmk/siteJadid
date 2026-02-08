@@ -57,11 +57,28 @@ export function StorefrontHeader() {
   }, [status]);
 
   const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
-  const isB2B = session?.user?.accountType === 'B2B';
-  const isGSA = session?.user?.accountType === 'GSA';
+  const isB2B = session?.user?.accountType === 'B2B' || session?.user?.accountType === 'VOLUME_BUYER';
+  const isGSA = session?.user?.accountType === 'GSA' || session?.user?.accountType === 'GOVERNMENT';
+  const accountType = session?.user?.accountType;
+  const approvalStatus = (session?.user as any)?.approvalStatus || (session?.user as any)?.gsaApprovalStatus;
+  const isPendingApproval = (isB2B || isGSA) && approvalStatus === 'PENDING';
 
   return (
     <header className={`sticky top-0 z-40 transition-shadow ${isScrolled ? 'shadow-md' : ''}`}>
+      {/* Pending Approval Warning Banner */}
+      {isPendingApproval && (
+        <div className="bg-yellow-500 text-yellow-900 py-2 px-4">
+          <div className="container mx-auto flex items-center justify-center gap-2 text-sm font-medium">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            Your {isGSA ? 'Government' : 'Volume Buyer'} account is pending approval. Some features may be limited.
+            <Link href="/account" className="underline hover:no-underline ml-2">
+              View Status
+            </Link>
+          </div>
+        </div>
+      )}
       <AnnouncementBar />
 
       {/* Main Header */}
@@ -166,9 +183,14 @@ export function StorefrontHeader() {
                           <p className="text-sm text-gray-500 truncate">{session.user?.email}</p>
                           {(isB2B || isGSA) && (
                             <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded ${
-                              isGSA ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                              isGSA ? 'bg-safety-green-100 text-safety-green-700' : 'bg-purple-100 text-purple-700'
                             }`}>
-                              {isGSA ? 'GSA Account' : 'B2B Account'}
+                              {isGSA ? 'Government' : 'Volume Buyer'}
+                            </span>
+                          )}
+                          {isPendingApproval && (
+                            <span className="inline-block mt-1 ml-1 px-2 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-700">
+                              Pending Approval
                             </span>
                           )}
                         </div>

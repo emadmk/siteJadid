@@ -3,10 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-type AccountType = 'B2C' | 'B2B' | 'GSA';
+type AccountType = 'PERSONAL' | 'VOLUME_BUYER' | 'GOVERNMENT';
 type LoyaltyTier = 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
 
-const ACCOUNT_TYPES: AccountType[] = ['B2C', 'B2B', 'GSA'];
+const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
+  { value: 'PERSONAL', label: 'Personal' },
+  { value: 'VOLUME_BUYER', label: 'Volume Buyer' },
+  { value: 'GOVERNMENT', label: 'Government' },
+];
 const LOYALTY_TIERS: LoyaltyTier[] = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM'];
 
 export default function CustomerGroupForm() {
@@ -92,7 +96,7 @@ export default function CustomerGroupForm() {
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="e.g., GSA Customers, Wholesale, VIP"
+            placeholder="e.g., Government, Wholesale, VIP"
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-safety-green-500 focus:ring-safety-green-500"
           />
         </div>
@@ -135,15 +139,15 @@ export default function CustomerGroupForm() {
           </label>
           <div className="space-y-2">
             {ACCOUNT_TYPES.map((type) => (
-              <label key={type} className="flex items-center">
+              <label key={type.value} className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={formData.accountTypes.includes(type)}
-                  onChange={() => handleAccountTypeToggle(type)}
+                  checked={formData.accountTypes.includes(type.value)}
+                  onChange={() => handleAccountTypeToggle(type.value)}
                   className="h-4 w-4 text-safety-green-600 focus:ring-safety-green-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm text-gray-700">
-                  {type.replace('_', ' ')}
+                  {type.label}
                 </span>
               </label>
             ))}
