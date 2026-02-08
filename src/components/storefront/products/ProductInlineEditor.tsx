@@ -69,6 +69,7 @@ interface ProductData {
   defaultSupplierId: string | null;
   defaultWarehouseId: string | null;
   complianceCertifications: string[];
+  taaApproved: boolean;
 }
 
 interface Variant {
@@ -136,6 +137,7 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
     isFeatured: product.isFeatured ?? false,
     isBestSeller: product.isBestSeller ?? false,
     isNewArrival: product.isNewArrival ?? false,
+    taaApproved: (product as any).taaApproved ?? false,
     metaTitle: product.metaTitle || '',
     metaDescription: product.metaDescription || '',
     metaKeywords: product.metaKeywords || '',
@@ -199,6 +201,7 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
       isFeatured: product.isFeatured ?? false,
       isBestSeller: product.isBestSeller ?? false,
       isNewArrival: product.isNewArrival ?? false,
+      taaApproved: (product as any).taaApproved ?? false,
       metaTitle: product.metaTitle || '',
       metaDescription: product.metaDescription || '',
       metaKeywords: product.metaKeywords || '',
@@ -304,6 +307,7 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
           height: formData.height ? parseFloat(formData.height) : null,
           categoryId: formData.categoryId || null,
           brandId: formData.brandId || null,
+          taaApproved: formData.taaApproved,
           images,
         }),
       });
@@ -588,6 +592,17 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
                     className="w-4 h-4 text-safety-green-600 border-gray-300 rounded focus:ring-safety-green-500"
                   />
                   <span className="text-sm text-gray-700">New Arrival</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.taaApproved}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, taaApproved: e.target.checked }))
+                    }
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">TAA/BAA Approved</span>
                 </label>
               </div>
             </div>

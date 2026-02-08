@@ -67,6 +67,7 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
     isFeatured: product?.isFeatured ?? false,
     isBestSeller: product?.isBestSeller ?? false,
     isNewArrival: product?.isNewArrival ?? false,
+    taaApproved: product?.taaApproved ?? false,
 
     // SEO
     metaTitle: product?.metaTitle || '',
@@ -279,6 +280,7 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
           brandId: formData.brandId || null,
           defaultSupplierId: formData.defaultSupplierId || null,
           defaultWarehouseId: formData.defaultWarehouseId || null,
+          taaApproved: formData.taaApproved,
           images,
           tierPricing,
         }),
@@ -873,7 +875,7 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
             </select>
           </div>
 
-          <div className="md:col-span-3 flex gap-4">
+          <div className="md:col-span-3 flex flex-wrap gap-4">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -900,6 +902,15 @@ export function ProductForm({ product, categories, brands = [], suppliers = [], 
                 className="w-4 h-4 text-safety-green-600 border-gray-300 rounded focus:ring-safety-green-500"
               />
               <span className="text-sm text-gray-700">New Arrival</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.taaApproved}
+                onChange={(e) => setFormData(prev => ({ ...prev, taaApproved: e.target.checked }))}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">TAA/BAA Approved</span>
             </label>
           </div>
         </div>
