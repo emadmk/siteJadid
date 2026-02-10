@@ -179,7 +179,7 @@ export function StorefrontFooter() {
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-3 mb-6">
               <img
-                src="/images/logo.png"
+                src="/images/imagesite/logo.png"
                 alt="AdaSupply Logo"
                 className="h-10 w-auto"
               />
