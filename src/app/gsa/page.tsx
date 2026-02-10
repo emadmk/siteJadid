@@ -113,68 +113,90 @@ export default function GSAContractPage() {
 
             {/* Partner Logos Row */}
             <div className="flex flex-wrap justify-center gap-4 mb-8">
-              {/* WOSB */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+              {/* SBA WOSB Certified */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
                 <Image
-                  src="/images/imagesite/1.jpeg"
-                  alt="WOSB Certified"
-                  width={100}
-                  height={60}
+                  src="/uploads/logos (4).png"
+                  alt="SBA WOSB Certified"
+                  width={130}
+                  height={78}
                   className="object-contain max-w-full max-h-full"
                 />
               </div>
 
               {/* FedMall */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
                 <Image
-                  src="/images/imagesite/02.jpg"
+                  src="/uploads/logos (2).jpeg"
                   alt="FedMall"
-                  width={100}
-                  height={60}
+                  width={130}
+                  height={78}
                   className="object-contain max-w-full max-h-full"
                 />
               </div>
 
               {/* GSA */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
                 <Image
-                  src="/images/imagesite/01.jpg"
+                  src="/uploads/logos (3).png"
                   alt="GSA"
-                  width={100}
-                  height={60}
+                  width={130}
+                  height={78}
                   className="object-contain max-w-full max-h-full"
                 />
               </div>
 
-              {/* AbilityOne & MRO */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+              {/* AbilityOne Program */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
                 <Image
-                  src="/images/imagesite/03.png"
-                  alt="AbilityOne & MRO"
-                  width={100}
-                  height={60}
+                  src="/uploads/logos (1).png"
+                  alt="AbilityOne Program"
+                  width={130}
+                  height={78}
                   className="object-contain max-w-full max-h-full"
                 />
               </div>
 
-              {/* HubZone */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+              {/* HUBZone Certified */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
                 <Image
-                  src="/images/imagesite/2.jpeg"
-                  alt="HubZone Certified"
-                  width={100}
-                  height={60}
+                  src="/uploads/logos (3).jpeg"
+                  alt="HUBZone Certified"
+                  width={130}
+                  height={78}
+                  className="object-contain max-w-full max-h-full"
+                />
+              </div>
+
+              {/* Defense Logistics Agency */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
+                <Image
+                  src="/uploads/logos (1).jpg"
+                  alt="Defense Logistics Agency"
+                  width={130}
+                  height={78}
+                  className="object-contain max-w-full max-h-full"
+                />
+              </div>
+
+              {/* MRO Xpress */}
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
+                <Image
+                  src="/uploads/logos (2).png"
+                  alt="MRO Xpress"
+                  width={130}
+                  height={78}
                   className="object-contain max-w-full max-h-full"
                 />
               </div>
 
               {/* Tunnel to Towers */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[120px] h-[80px] overflow-hidden">
+              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
                 <Image
-                  src="/images/imagesite/t2t.jpg"
+                  src="/uploads/logos (1).jpeg"
                   alt="Tunnel to Towers Foundation"
-                  width={100}
-                  height={60}
+                  width={130}
+                  height={78}
                   className="object-contain max-w-full max-h-full"
                 />
               </div>

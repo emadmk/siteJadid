@@ -212,27 +212,6 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-safety-green-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">A</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">ADA Supplies</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 hidden sm:block">Already have an account?</span>
-            <Link
-              href="/auth/signin"
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors"
-            >
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 md:py-12">
         {!selectedType ? (
@@ -651,23 +630,6 @@ export default function RegisterPage() {
           </div>
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-200 mt-16">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-safety-green-600" />
-              <span className="text-sm text-gray-600">Your information is secure with 256-bit SSL encryption</span>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-gray-500">
-              <Link href="/privacy" className="hover:text-gray-700">Privacy Policy</Link>
-              <Link href="/terms" className="hover:text-gray-700">Terms of Service</Link>
-              <Link href="/contact" className="hover:text-gray-700">Contact Support</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

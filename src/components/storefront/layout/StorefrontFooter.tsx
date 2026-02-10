@@ -177,14 +177,13 @@ export function StorefrontFooter() {
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-6">
-              <div className="w-10 h-10 bg-safety-green-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">A</span>
-              </div>
-              <div>
-                <span className="text-xl font-bold text-white">Ada</span>
-                <span className="text-xl font-bold text-safety-green-400">Supply</span>
-              </div>
+            <Link href="/" className="flex items-center gap-3 mb-6">
+              <img
+                src="/images/logo.png"
+                alt="AdaSupply Logo"
+                className="h-10 w-auto"
+              />
+              <span className="text-xl font-bold text-white">AdaSupply.com</span>
             </Link>
             <p className="text-gray-400 mb-6 max-w-sm">
               Your trusted source for professional safety equipment. ANSI certified products for industrial,

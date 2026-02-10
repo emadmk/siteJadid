@@ -64,7 +64,7 @@ export function Header() {
               Compliance
             </Link>
             <Link href="/gsa" className="text-gray-700 hover:text-safety-green-600 font-medium transition-colors">
-              GSA Contract
+              Government Buyer
             </Link>
             <Link href="/contact" className="text-gray-700 hover:text-safety-green-600 font-medium transition-colors">
               Contact
@@ -183,7 +183,7 @@ export function Header() {
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                GSA Contract
+                Government Buyer
               </Link>
               <Link
                 href="/contact"
