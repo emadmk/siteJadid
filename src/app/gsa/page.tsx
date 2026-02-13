@@ -114,13 +114,13 @@ export default function GSAContractPage() {
             {/* Partner Logos Row */}
             <div className="flex flex-wrap justify-center gap-4 mb-8">
               {/* SBA WOSB Certified */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
+              <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
                 <Image
                   src="/uploads/logos (4).png"
                   alt="SBA WOSB Certified"
-                  width={130}
-                  height={78}
-                  className="object-contain max-w-full max-h-full"
+                  width={156}
+                  height={104}
+                  className="object-cover w-full h-full"
                 />
               </div>
 

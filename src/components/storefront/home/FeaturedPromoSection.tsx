@@ -210,7 +210,7 @@ export function FeaturedPromoSection() {
               unoptimized
             />
             <p className="text-white/90 text-xs font-medium mt-2 italic leading-tight">
-              Serving the government<br />and local community<br />for over 25 years
+              Serving the government<br />and our community<br />for over 25 years
             </p>
           </div>
         </div>
