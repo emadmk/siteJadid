@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
@@ -82,10 +82,21 @@ type CheckoutStep = 'shipping' | 'delivery' | 'government' | 'payment' | 'review
 function StripePaymentElement({
   onReady,
   onError,
+  onStripeReady,
 }: {
   onReady: () => void;
   onError: (error: string) => void;
+  onStripeReady: (stripe: any, elements: any) => void;
 }) {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  useEffect(() => {
+    if (stripe && elements) {
+      onStripeReady(stripe, elements);
+    }
+  }, [stripe, elements, onStripeReady]);
+
   return (
     <PaymentElement
       onReady={onReady}
@@ -170,7 +181,15 @@ export function CheckoutForm({
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [stripeError, setStripeError] = useState<string | null>(null);
   const [isPaymentReady, setIsPaymentReady] = useState(false);
+  const [stripeInstance, setStripeInstance] = useState<any>(null);
+  const [stripeElements, setStripeElements] = useState<any>(null);
   const [saveCard, setSaveCard] = useState(false);
+
+  // Callback for when Stripe elements are ready
+  const handleStripeReady = useCallback((stripe: any, elements: any) => {
+    setStripeInstance(stripe);
+    setStripeElements(elements);
+  }, []);
 
   // New address form
   const [newAddress, setNewAddress] = useState({
@@ -453,10 +472,9 @@ export function CheckoutForm({
     try {
       // For card payments, we need to confirm with Stripe first
       if (paymentMethod === 'card' && clientSecret) {
-        // Get Stripe instance
-        const stripeInstance = await stripePromise;
-        if (!stripeInstance) {
-          throw new Error('Payment system not ready');
+        // Check Stripe instance and elements
+        if (!stripeInstance || !stripeElements) {
+          throw new Error('Payment system not ready. Please wait for the payment form to load.');
         }
 
         // Create order first to get orderId
@@ -504,7 +522,7 @@ export function CheckoutForm({
 
         // Confirm the payment with Stripe using redirect
         const { error: stripeErr } = await stripeInstance.confirmPayment({
-          clientSecret,
+          elements: stripeElements,
           confirmParams: {
             return_url: `${window.location.origin}/orders/${orderResult.orderNumber}?new=true`,
             receipt_email: userEmail,
@@ -1191,6 +1209,7 @@ export function CheckoutForm({
                     <StripePaymentElement
                       onReady={() => setIsPaymentReady(true)}
                       onError={(err) => setStripeError(err)}
+                      onStripeReady={handleStripeReady}
                     />
                   </Elements>
                 )}
