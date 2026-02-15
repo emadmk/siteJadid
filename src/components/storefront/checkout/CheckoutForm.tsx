@@ -1117,9 +1117,9 @@ export function CheckoutForm({
           </div>
         )}
 
-        {/* Step: Payment */}
-        {currentStep === 'payment' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+        {/* Step: Payment - keep mounted on review step so Stripe Elements stays in DOM */}
+        {(currentStep === 'payment' || (currentStep === 'review' && paymentMethod === 'card')) && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6" style={{ display: currentStep === 'payment' ? undefined : 'none' }}>
             <div className="flex items-center gap-3 mb-6">
               <Wallet className="w-6 h-6 text-safety-green-600" />
               <h2 className="text-xl font-bold text-black">Payment Method</h2>
