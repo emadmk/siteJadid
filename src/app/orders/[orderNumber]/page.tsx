@@ -154,9 +154,38 @@ export default async function OrderDetailPage({
                 <h2 className="text-xl font-bold text-red-900 mb-1">
                   Payment Failed
                 </h2>
-                <p className="text-red-700">
+                <p className="text-red-700 mb-3">
                   Your payment could not be processed. Please try again or use a different payment method.
                 </p>
+                <Link href="/checkout">
+                  <Button className="bg-red-600 hover:bg-red-700 text-white">
+                    Retry Payment
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Failed - show retry for orders with failed payment status */}
+        {!paymentFailed && order.paymentStatus === 'FAILED' && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6 mb-8">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-red-900 mb-1">
+                  Payment Required
+                </h2>
+                <p className="text-red-700 mb-3">
+                  This order has an unpaid balance. Please complete your payment.
+                </p>
+                <Link href="/checkout">
+                  <Button className="bg-red-600 hover:bg-red-700 text-white">
+                    Complete Payment
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

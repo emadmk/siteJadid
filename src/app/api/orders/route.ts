@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
       paymentIntentId: providedPaymentIntentId,
       costCenterId,
       notes,
+      couponCode,
     } = body;
 
     // Get cart with product details including supplier, warehouse, category, brand
@@ -160,6 +161,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Calculate raw subtotal for minimum order discount checks
+    const rawSubtotal = cart.items.reduce((sum: number, item: any) => {
+      const price = Number(item.product.salePrice || item.product.basePrice);
+      return sum + price * item.quantity;
+    }, 0);
 
     // Get user account type and B2B membership
     const user = await db.user.findUnique({
@@ -212,7 +219,8 @@ export async function POST(request: NextRequest) {
           wholesalePrice: item.product.wholesalePrice ? parseFloat(item.product.wholesalePrice.toString()) : null,
           gsaPrice: item.product.gsaPrice ? parseFloat(item.product.gsaPrice.toString()) : null,
         },
-        accountType as any
+        accountType as any,
+        rawSubtotal
       );
 
       const price = discountResult.discountedPrice;
@@ -250,6 +258,42 @@ export async function POST(request: NextRequest) {
     // Calculate subtotal from order items
     subtotal = orderItems.reduce((sum, item) => sum + item.total, 0);
 
+    // Fix #2: Validate and apply coupon discount server-side
+    let couponDiscount = 0;
+    let validatedCoupon: any = null;
+    if (couponCode) {
+      validatedCoupon = await db.coupon.findFirst({
+        where: {
+          code: couponCode.toUpperCase(),
+          isActive: true,
+          startsAt: { lte: new Date() },
+          OR: [
+            { endsAt: null },
+            { endsAt: { gte: new Date() } },
+          ],
+        },
+      });
+
+      if (validatedCoupon) {
+        // Check usage limits
+        const withinUsageLimit = !validatedCoupon.usageLimit || validatedCoupon.usageCount < validatedCoupon.usageLimit;
+        const meetsMinPurchase = !validatedCoupon.minPurchase || subtotal >= Number(validatedCoupon.minPurchase);
+
+        if (withinUsageLimit && meetsMinPurchase) {
+          if (validatedCoupon.type === 'PERCENTAGE') {
+            couponDiscount = subtotal * (Number(validatedCoupon.value) / 100);
+            if (validatedCoupon.maxDiscount) {
+              couponDiscount = Math.min(couponDiscount, Number(validatedCoupon.maxDiscount));
+            }
+          } else if (validatedCoupon.type === 'FIXED_AMOUNT') {
+            couponDiscount = Math.min(Number(validatedCoupon.value), subtotal);
+          } else if (validatedCoupon.type === 'FREE_SHIPPING') {
+            // Will be handled in shipping cost
+          }
+        }
+      }
+    }
+
     const totalWeight = cart.items.reduce((sum: number, item: any) => {
       return sum + (item.product.weight || 0) * item.quantity;
     }, 0);
@@ -263,8 +307,18 @@ export async function POST(request: NextRequest) {
       shippingCost = subtotal >= 99 ? 0 : totalWeight > 20 ? 35 : 15;
     }
 
-    const tax = user?.accountType === 'B2B' || user?.accountType === 'GSA' || accountType === 'GOVERNMENT' ? 0 : subtotal * 0.08;
-    const total = subtotal + shippingCost + tax;
+    // Handle FREE_SHIPPING coupon
+    if (validatedCoupon?.type === 'FREE_SHIPPING') {
+      shippingCost = 0;
+    }
+
+    // Fix #7: Use only normalized accountType for tax calculation
+    const isTaxExempt = accountType === 'GOVERNMENT' || accountType === 'VOLUME_BUYER';
+    const taxableAmount = subtotal - couponDiscount;
+    const tax = isTaxExempt ? 0 : taxableAmount * 0.08;
+
+    // Fix #2: Apply coupon discount to total
+    const total = subtotal - couponDiscount + shippingCost + tax;
 
     // Generate order number
     const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
@@ -283,78 +337,95 @@ export async function POST(request: NextRequest) {
         ? 'PENDING' // Card payments will be confirmed via Stripe webhook
         : 'PENDING';
 
-    // Create order
-    const order = await db.order.create({
-      data: {
-        orderNumber,
-        userId: session.user.id,
-        accountType: user?.accountType || 'B2C',
-        ...(b2bMembership && { createdByMemberId: b2bMembership.id }),
-        status: requiresApproval ? 'ON_HOLD' : 'PENDING',
-        paymentStatus: initialPaymentStatus,
-        paymentMethod: paymentMethod || 'CREDIT_CARD',
-        paymentIntentId: providedPaymentIntentId || null,
-        shippingMethod: shippingServiceName || shippingMethod || 'GROUND',
-        shippingCarrier: shippingCarrier || null,
-        subtotal,
-        shipping: shippingCost,
-        tax,
-        total,
-        shippingAddressId,
-        billingAddressId,
-        costCenterId: costCenterId || b2bMembership?.costCenterId,
-        customerNotes: notes,
-        items: {
-          create: orderItems,
+    // Fix #9: Use transaction for order creation + inventory update
+    const order = await db.$transaction(async (tx) => {
+      // Create order
+      const newOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          userId: session.user.id,
+          accountType: user?.accountType || 'B2C',
+          ...(b2bMembership && { createdByMemberId: b2bMembership.id }),
+          status: requiresApproval ? 'ON_HOLD' : 'PENDING',
+          paymentStatus: initialPaymentStatus,
+          paymentMethod: paymentMethod || 'CREDIT_CARD',
+          paymentIntentId: providedPaymentIntentId || null,
+          shippingMethod: shippingServiceName || shippingMethod || 'GROUND',
+          shippingCarrier: shippingCarrier || null,
+          subtotal,
+          shipping: shippingCost,
+          tax,
+          taxAmount: tax,
+          shippingCost: shippingCost,
+          totalAmount: total,
+          discount: couponDiscount,
+          total,
+          shippingAddressId,
+          billingAddressId,
+          costCenterId: costCenterId || b2bMembership?.costCenterId,
+          customerNotes: notes,
+          items: {
+            create: orderItems,
+          },
         },
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                sku: true,
-                images: true,
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
+                  images: true,
+                },
               },
             },
           },
-        },
-        shippingAddress: true,
-        billingAddress: true,
-      },
-    });
-
-    // Create approval request if needed
-    if (requiresApproval && b2bMembership?.b2bProfile.members[0]) {
-      await db.orderApproval.create({
-        data: {
-          orderId: order.id,
-          requestedById: b2bMembership.id,
-          approverId: b2bMembership.b2bProfile.members[0].id,
-          orderTotal: total,
-          status: 'PENDING',
+          shippingAddress: true,
+          billingAddress: true,
         },
       });
-    }
 
-    // Clear cart
-    await db.cartItem.deleteMany({
-      where: { cartId: cart.id },
-    });
-
-    // Update inventory
-    for (const item of cart.items) {
-      await db.product.update({
-        where: { id: item.productId },
-        data: {
-          stockQuantity: {
-            decrement: item.quantity,
+      // Create approval request if needed
+      if (requiresApproval && b2bMembership?.b2bProfile.members[0]) {
+        await tx.orderApproval.create({
+          data: {
+            orderId: newOrder.id,
+            requestedById: b2bMembership.id,
+            approverId: b2bMembership.b2bProfile.members[0].id,
+            orderTotal: total,
+            status: 'PENDING',
           },
-        },
+        });
+      }
+
+      // Increment coupon usage count
+      if (validatedCoupon) {
+        await tx.coupon.update({
+          where: { id: validatedCoupon.id },
+          data: { usageCount: { increment: 1 } },
+        });
+      }
+
+      // Clear cart
+      await tx.cartItem.deleteMany({
+        where: { cartId: cart.id },
       });
-    }
+
+      // Update inventory
+      for (const item of cart.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stockQuantity: {
+              decrement: item.quantity,
+            },
+          },
+        });
+      }
+
+      return newOrder;
+    });
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {

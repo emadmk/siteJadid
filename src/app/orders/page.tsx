@@ -64,6 +64,31 @@ async function getOrders(userId: string) {
   return orders;
 }
 
+// Fix #17: Cancel order helper
+async function cancelOrder(orderNumber: string, userId: string) {
+  'use server';
+  const order = await db.order.findFirst({
+    where: { orderNumber, userId },
+    include: { items: true },
+  });
+  if (!order || !['PENDING', 'PROCESSING'].includes(order.status)) return;
+
+  await db.order.update({
+    where: { id: order.id },
+    data: { status: 'CANCELLED' },
+  });
+  // Restore inventory
+  for (const item of order.items) {
+    await db.product.update({
+      where: { id: item.productId },
+      data: { stockQuantity: { increment: item.quantity } },
+    });
+  }
+  await db.orderStatusHistory.create({
+    data: { orderId: order.id, status: 'CANCELLED', notes: 'Cancelled by customer', changedBy: userId },
+  });
+}
+
 export default async function OrdersPage() {
   const session = await getServerSession(authOptions);
 
@@ -223,16 +248,27 @@ export default async function OrdersPage() {
                       </Button>
                     )}
                     {(order.status === 'PENDING' || order.status === 'PROCESSING') && (
-                      <Button variant="outline" size="sm" className="border-red-500 text-red-500 hover:bg-red-50">
-                        Cancel Order
-                      </Button>
+                      <form action={async () => {
+                        'use server';
+                        const { redirect: redir } = await import('next/navigation');
+                        await cancelOrder(order.orderNumber, session.user.id);
+                        redir('/orders');
+                      }}>
+                        <Button type="submit" variant="outline" size="sm" className="border-red-500 text-red-500 hover:bg-red-50">
+                          Cancel Order
+                        </Button>
+                      </form>
                     )}
-                    <Button variant="outline" size="sm" className="border-black text-black hover:bg-black hover:text-white">
-                      Download Invoice
-                    </Button>
-                    <Button variant="outline" size="sm" className="border-black text-black hover:bg-black hover:text-white">
-                      Reorder
-                    </Button>
+                    <a href={`/api/admin/invoices/${order.id}/pdf`} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm" className="border-black text-black hover:bg-black hover:text-white">
+                        Download Invoice
+                      </Button>
+                    </a>
+                    <Link href={`/orders/${order.orderNumber}`}>
+                      <Button variant="outline" size="sm" className="border-black text-black hover:bg-black hover:text-white">
+                        Reorder
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               );

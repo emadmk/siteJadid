@@ -110,6 +110,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
       }
 
+      // Fix #1: Validate payment amount matches order total (prevent amount tampering)
+      const orderTotalCents = Math.round(Number(order.total) * 100);
+      const requestAmountCents = Math.round(amount * 100);
+      if (orderTotalCents !== requestAmountCents) {
+        return NextResponse.json(
+          { error: 'Payment amount does not match order total' },
+          { status: 400 }
+        );
+      }
+
       // If order already has a payment intent, update it instead
       if (order.paymentIntentId) {
         const updateResult = await updatePaymentIntent(order.paymentIntentId, {
@@ -146,7 +156,7 @@ export async function POST(request: NextRequest) {
       currency,
       customerId: stripeCustomerId || undefined,
       orderId: order?.id,
-      description: order ? `Order ${order.orderNumber}` : 'Checkout payment',
+      description: order ? `Order ${order.orderNumber}` : metadata?.orderNumber ? `Order ${metadata.orderNumber}` : 'Checkout payment',
       receiptEmail: user.email!,
       setupFutureUsage: saveCard ? 'off_session' : undefined,
       metadata: {

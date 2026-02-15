@@ -230,6 +230,22 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
           changedBy: 'system',
         },
       });
+
+      // Fix #3: Restore inventory for failed payments
+      const orderWithItems = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+      if (orderWithItems) {
+        for (const item of orderWithItems.items) {
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: {
+              stockQuantity: { increment: item.quantity },
+            },
+          });
+        }
+      }
     } catch (error) {
       console.error('Error updating order for payment failure:', error);
     }
@@ -259,6 +275,22 @@ async function handlePaymentIntentCanceled(paymentIntent: Stripe.PaymentIntent) 
           paymentStatus: 'FAILED',
         },
       });
+
+      // Fix #3: Restore inventory for canceled payments
+      const orderWithItems = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+      if (orderWithItems) {
+        for (const item of orderWithItems.items) {
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: {
+              stockQuantity: { increment: item.quantity },
+            },
+          });
+        }
+      }
     } catch (error) {
       console.error('Error updating order for payment cancellation:', error);
     }
@@ -298,14 +330,22 @@ async function handlePaymentIntentRequiresAction(paymentIntent: Stripe.PaymentIn
 async function handleChargeSucceeded(charge: Stripe.Charge) {
   console.log(`Charge succeeded: ${charge.id}`);
 
-  // Update transaction with receipt URL
+  // Fix #6: Extract and store Stripe fee
   if (charge.payment_intent) {
+    const fee = charge.balance_transaction
+      ? (typeof charge.balance_transaction === 'object'
+          ? (charge.balance_transaction as any).fee / 100
+          : 0)
+      : 0;
+
     await prisma.paymentTransaction.updateMany({
       where: { transactionId: charge.payment_intent as string },
       data: {
         metadata: JSON.stringify({
           chargeId: charge.id,
           receiptUrl: charge.receipt_url,
+          stripeFee: fee,
+          netAmount: (charge.amount - (typeof charge.balance_transaction === 'object' ? (charge.balance_transaction as any).fee : 0)) / 100,
         }),
       },
     });

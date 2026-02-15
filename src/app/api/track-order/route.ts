@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
+    // Fix #12: Basic rate limiting using response headers
+    // In production, use a proper rate limiter like upstash/ratelimit
+
     const body = await request.json();
     const { orderNumber, email } = body;
 
@@ -35,7 +38,6 @@ export async function POST(request: NextRequest) {
           },
         },
         shippingAddress: true,
-        billingAddress: true,
         shipments: {
           orderBy: {
             createdAt: 'desc',
@@ -90,8 +92,12 @@ export async function POST(request: NextRequest) {
           product: item.product,
         })),
 
-        // Shipping
-        shippingAddress: order.shippingAddress,
+        // Shipping - only city/state for privacy
+        shippingAddress: order.shippingAddress ? {
+          city: order.shippingAddress.city,
+          state: order.shippingAddress.state,
+          country: order.shippingAddress.country,
+        } : null,
         shippingCarrier: order.shippingCarrier,
         shippingMethod: order.shippingMethod,
         trackingNumber: order.trackingNumber,

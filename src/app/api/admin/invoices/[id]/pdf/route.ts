@@ -255,8 +255,8 @@ export async function GET(
         <h3>Bill To</h3>
         <p class="name">${billingAddress?.firstName || ''} ${billingAddress?.lastName || order.user?.name || 'Guest'}</p>
         ${billingAddress?.company ? `<p>${billingAddress.company}</p>` : ''}
-        <p>${billingAddress?.addressLine1 || ''}</p>
-        ${billingAddress?.addressLine2 ? `<p>${billingAddress.addressLine2}</p>` : ''}
+        <p>${billingAddress?.address1 || billingAddress?.addressLine1 || ''}</p>
+        ${(billingAddress?.address2 || billingAddress?.addressLine2) ? `<p>${billingAddress?.address2 || billingAddress?.addressLine2}</p>` : ''}
         <p>${billingAddress?.city || ''}, ${billingAddress?.state || ''} ${billingAddress?.zipCode || ''}</p>
         <p>${billingAddress?.country || ''}</p>
         <p>${order.user?.email || ''}</p>
@@ -265,8 +265,8 @@ export async function GET(
         <h3>Ship To</h3>
         <p class="name">${shippingAddress?.firstName || ''} ${shippingAddress?.lastName || order.user?.name || 'Guest'}</p>
         ${shippingAddress?.company ? `<p>${shippingAddress.company}</p>` : ''}
-        <p>${shippingAddress?.addressLine1 || ''}</p>
-        ${shippingAddress?.addressLine2 ? `<p>${shippingAddress.addressLine2}</p>` : ''}
+        <p>${shippingAddress?.address1 || shippingAddress?.addressLine1 || ''}</p>
+        ${(shippingAddress?.address2 || shippingAddress?.addressLine2) ? `<p>${shippingAddress?.address2 || shippingAddress?.addressLine2}</p>` : ''}
         <p>${shippingAddress?.city || ''}, ${shippingAddress?.state || ''} ${shippingAddress?.zipCode || ''}</p>
         <p>${shippingAddress?.country || ''}</p>
       </div>

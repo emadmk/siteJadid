@@ -7,6 +7,32 @@
 
 import { prisma } from '@/lib/prisma';
 
+// Apply shipping markup from database
+async function applyShippingMarkup(rates: ShippingRate[]): Promise<ShippingRate[]> {
+  try {
+    const markupSettings = await prisma.shippingService.findMany({
+      select: { markupType: true, markupValue: true },
+      take: 1,
+    });
+
+    if (markupSettings.length === 0) return rates;
+
+    const { markupType, markupValue } = markupSettings[0];
+    const markup = Number(markupValue);
+
+    if (!markup || markup === 0) return rates;
+
+    return rates.map(rate => ({
+      ...rate,
+      cost: markupType === 'percentage'
+        ? Math.round((rate.cost * (1 + markup / 100)) * 100) / 100
+        : Math.round((rate.cost + markup) * 100) / 100,
+    }));
+  } catch {
+    return rates; // If markup lookup fails, return original rates
+  }
+}
+
 // Shippo API Base URLs
 const SHIPPO_API_URL = 'https://api.goshippo.com';
 
@@ -144,6 +170,10 @@ export async function getShippingRates(
   fromAddress?: ShippoAddress
 ): Promise<{ rates: ShippingRate[]; error?: string }> {
   const apiKey = await getShippoApiKey();
+  const testMode = await isTestMode();
+  if (testMode) {
+    console.log('Shippo: Running in test mode');
+  }
 
   if (!apiKey) {
     return { rates: [], error: 'Shippo API key not configured' };
@@ -197,9 +227,11 @@ export async function getShippingRates(
         estimatedDays: rate.estimated_days || null,
         arrivesBy: rate.arrives_by || null,
       }))
-      .sort((a, b) => a.cost - b.cost); // Sort by price
+      .sort((a, b) => a.cost - b.cost);
 
-    return { rates };
+    // Fix #5: Apply shipping markup
+    const markedUpRates = await applyShippingMarkup(rates);
+    return { rates: markedUpRates };
   } catch (error: any) {
     console.error('Shippo service error:', error);
     return { rates: [], error: error.message || 'Failed to connect to Shippo' };

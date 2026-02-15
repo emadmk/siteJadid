@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     // Build destination address for Shippo
     const toAddress: ShippoAddress = {
       name: data.toAddress.name || 'Customer',
-      street1: data.toAddress.street1 || '123 Main St', // Shippo requires street for rates
+      street1: data.toAddress.street1 || '', // Street address is optional for rate estimation
       street2: data.toAddress.street2,
       city: data.toAddress.city,
       state: data.toAddress.state,
@@ -102,6 +102,11 @@ export async function POST(request: NextRequest) {
       country: data.toAddress.country || 'US',
       phone: data.toAddress.phone,
     };
+
+    // Fix #15: Warn if street address is missing (rates will be estimated)
+    if (!data.toAddress.street1) {
+      console.warn('Shipping rates requested without street address - results may be estimated');
+    }
 
     // Get rates from Shippo
     const { rates, error } = await getShippingRates(toAddress, [parcel]);
@@ -111,7 +116,7 @@ export async function POST(request: NextRequest) {
       console.warn('Shippo rate error, using fallback:', error);
 
       // Return fallback flat rates
-      const fallbackRates: ShippingRate[] = getFallbackRates(totalWeight);
+      const fallbackRates: ShippingRate[] = await getFallbackRates(totalWeight);
 
       return NextResponse.json({
         rates: fallbackRates,
@@ -122,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     if (rates.length === 0) {
       // No rates from Shippo, return fallback
-      const fallbackRates: ShippingRate[] = getFallbackRates(totalWeight);
+      const fallbackRates: ShippingRate[] = await getFallbackRates(totalWeight);
 
       return NextResponse.json({
         rates: fallbackRates,
@@ -141,43 +146,65 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Fallback rates when Shippo is not available
-function getFallbackRates(totalWeight: number): ShippingRate[] {
-  const groundCost = totalWeight > 20 ? 35 : totalWeight > 10 ? 25 : 15;
+async function getFallbackRates(totalWeight: number): Promise<ShippingRate[]> {
+  // Try to get rates from DB settings
+  try {
+    const settings = await prisma.setting.findMany({
+      where: {
+        key: { in: ['shipping.standardRate', 'shipping.expressRate', 'shipping.overnightRate'] },
+      },
+    });
+    const settingsMap: Record<string, number> = {};
+    settings.forEach(s => {
+      settingsMap[s.key] = Number(s.value) || 0;
+    });
 
-  return [
-    {
-      id: 'fallback_ground',
-      carrier: 'Standard Shipping',
-      carrierLogo: '',
-      serviceName: 'Ground',
-      serviceCode: 'GROUND',
-      cost: groundCost,
-      currency: 'USD',
-      estimatedDays: 7,
-      arrivesBy: null,
-    },
-    {
-      id: 'fallback_express',
-      carrier: 'Express Shipping',
-      carrierLogo: '',
-      serviceName: '2-Day Express',
-      serviceCode: 'EXPRESS',
-      cost: 29.99,
-      currency: 'USD',
-      estimatedDays: 3,
-      arrivesBy: null,
-    },
-    {
-      id: 'fallback_overnight',
-      carrier: 'Priority Shipping',
-      carrierLogo: '',
-      serviceName: 'Overnight',
-      serviceCode: 'OVERNIGHT',
-      cost: 49.99,
-      currency: 'USD',
-      estimatedDays: 1,
-      arrivesBy: null,
-    },
-  ];
+    const groundCost = settingsMap['shipping.standardRate'] || (totalWeight > 20 ? 35 : totalWeight > 10 ? 25 : 15);
+    const expressCost = settingsMap['shipping.expressRate'] || 29.99;
+    const overnightCost = settingsMap['shipping.overnightRate'] || 49.99;
+
+    return [
+      {
+        id: 'fallback_ground',
+        carrier: 'Standard Shipping',
+        carrierLogo: '',
+        serviceName: 'Ground',
+        serviceCode: 'GROUND',
+        cost: groundCost,
+        currency: 'USD',
+        estimatedDays: 7,
+        arrivesBy: null,
+      },
+      {
+        id: 'fallback_express',
+        carrier: 'Express Shipping',
+        carrierLogo: '',
+        serviceName: '2-Day Express',
+        serviceCode: 'EXPRESS',
+        cost: expressCost,
+        currency: 'USD',
+        estimatedDays: 3,
+        arrivesBy: null,
+      },
+      {
+        id: 'fallback_overnight',
+        carrier: 'Priority Shipping',
+        carrierLogo: '',
+        serviceName: 'Overnight',
+        serviceCode: 'OVERNIGHT',
+        cost: overnightCost,
+        currency: 'USD',
+        estimatedDays: 1,
+        arrivesBy: null,
+      },
+    ];
+  } catch {
+    // Hardcoded fallback if DB read fails
+    const groundCost = totalWeight > 20 ? 35 : totalWeight > 10 ? 25 : 15;
+    return [
+      { id: 'fallback_ground', carrier: 'Standard Shipping', carrierLogo: '', serviceName: 'Ground', serviceCode: 'GROUND', cost: groundCost, currency: 'USD', estimatedDays: 7, arrivesBy: null },
+      { id: 'fallback_express', carrier: 'Express Shipping', carrierLogo: '', serviceName: '2-Day Express', serviceCode: 'EXPRESS', cost: 29.99, currency: 'USD', estimatedDays: 3, arrivesBy: null },
+      { id: 'fallback_overnight', carrier: 'Priority Shipping', carrierLogo: '', serviceName: 'Overnight', serviceCode: 'OVERNIGHT', cost: 49.99, currency: 'USD', estimatedDays: 1, arrivesBy: null },
+    ];
+  }
 }

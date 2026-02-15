@@ -37,7 +37,7 @@ async function getRevenueData(period: '7d' | '30d' | '90d' | '1y' = '30d') {
       previousStartDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
   }
 
-  const [currentRevenue, previousRevenue, refunds, pending] = await Promise.all([
+  const [currentRevenue, previousRevenue, refunds, pending, costData, stripeFees] = await Promise.all([
     db.order.aggregate({
       _sum: { totalAmount: true, taxAmount: true, shippingCost: true },
       where: {
@@ -68,6 +68,26 @@ async function getRevenueData(period: '7d' | '30d' | '90d' | '1y' = '30d') {
         status: { in: ['PENDING', 'ON_HOLD'] },
       },
     }),
+    // Fix #14: Get product cost data for profit calculation
+    db.orderItem.aggregate({
+      _sum: { total: true },
+      where: {
+        order: {
+          createdAt: { gte: startDate },
+          status: { in: ['DELIVERED', 'SHIPPED', 'PROCESSING', 'CONFIRMED'] },
+        },
+      },
+    }),
+    // Get Stripe fee estimates (2.9% + $0.30 per transaction)
+    db.order.aggregate({
+      _count: { id: true },
+      _sum: { total: true },
+      where: {
+        createdAt: { gte: startDate },
+        paymentStatus: 'PAID',
+        paymentMethod: { not: 'net30' },
+      },
+    }),
   ]);
 
   const revenue = Number(currentRevenue._sum.totalAmount || 0);
@@ -75,15 +95,23 @@ async function getRevenueData(period: '7d' | '30d' | '90d' | '1y' = '30d') {
   const revenueChange =
     prevRevenue > 0 ? ((revenue - prevRevenue) / prevRevenue) * 100 : 0;
 
+  // Fix #14: Calculate estimated Stripe fees and profit
+  const stripeTransactionCount = stripeFees._count.id || 0;
+  const stripeTransactionTotal = Number(stripeFees._sum.total || 0);
+  const estimatedStripeFees = (stripeTransactionTotal * 0.029) + (stripeTransactionCount * 0.30);
+  const shippingCosts = Number(currentRevenue._sum.shippingCost || 0);
+
   return {
     revenue,
     revenueChange,
     tax: Number(currentRevenue._sum.taxAmount || 0),
-    shipping: Number(currentRevenue._sum.shippingCost || 0),
+    shipping: shippingCosts,
     refunds: Number(refunds._sum.totalAmount || 0),
     refundCount: refunds._count.id,
     pending: Number(pending._sum.totalAmount || 0),
     pendingCount: pending._count.id,
+    estimatedStripeFees,
+    estimatedProfit: revenue - Number(refunds._sum.totalAmount || 0) - estimatedStripeFees,
   };
 }
 
@@ -186,7 +214,7 @@ export default async function RevenuePage({
     ]);
 
   const netRevenue =
-    revenueData.revenue - revenueData.refunds + revenueData.pending;
+    revenueData.revenue - revenueData.refunds;
 
   const accountTypeColors: Record<string, string> = {
     B2C: 'bg-blue-100 text-blue-800',
@@ -264,6 +292,55 @@ export default async function RevenuePage({
       </div>
 
       {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-4">
+        {/* Estimated Profit */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mb-3">
+            <TrendingUp className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div className="text-3xl font-bold text-emerald-600 mb-1">
+            ${revenueData.estimatedProfit.toFixed(2)}
+          </div>
+          <div className="text-sm text-gray-600">Estimated Profit</div>
+          <div className="text-xs text-gray-400 mt-1">Revenue - Refunds - Stripe Fees</div>
+        </div>
+
+        {/* Stripe Fees */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mb-3">
+            <DollarSign className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div className="text-3xl font-bold text-indigo-600 mb-1">
+            ${revenueData.estimatedStripeFees.toFixed(2)}
+          </div>
+          <div className="text-sm text-gray-600">Stripe Fees (est.)</div>
+          <div className="text-xs text-gray-400 mt-1">2.9% + $0.30 per transaction</div>
+        </div>
+
+        {/* Shipping Costs */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mb-3">
+            <DollarSign className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="text-3xl font-bold text-amber-600 mb-1">
+            ${revenueData.shipping.toFixed(2)}
+          </div>
+          <div className="text-sm text-gray-600">Shipping Revenue</div>
+        </div>
+
+        {/* Net Revenue */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
+            <TrendingUp className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="text-3xl font-bold text-black mb-1">
+            ${netRevenue.toFixed(2)}
+          </div>
+          <div className="text-sm text-gray-600">Net Revenue</div>
+          <div className="text-xs text-gray-400 mt-1">Gross - Refunds</div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-3">
@@ -289,16 +366,6 @@ export default async function RevenuePage({
             ${revenueData.revenue.toFixed(2)}
           </div>
           <div className="text-sm text-gray-600">Gross Revenue</div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
-            <TrendingUp className="w-5 h-5 text-blue-600" />
-          </div>
-          <div className="text-3xl font-bold text-black mb-1">
-            ${netRevenue.toFixed(2)}
-          </div>
-          <div className="text-sm text-gray-600">Net Revenue</div>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 p-6">
