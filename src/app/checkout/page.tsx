@@ -7,6 +7,44 @@ import { authOptions } from '@/lib/auth';
 import { CheckoutForm } from '@/components/storefront/checkout/CheckoutForm';
 import { Button } from '@/components/ui/button';
 
+function normalizeAccountType(accountType: string): 'PERSONAL' | 'VOLUME_BUYER' | 'GOVERNMENT' {
+  switch (accountType) {
+    case 'B2B':
+    case 'VOLUME_BUYER':
+      return 'VOLUME_BUYER';
+    case 'GSA':
+    case 'GOVERNMENT':
+      return 'GOVERNMENT';
+    default:
+      return 'PERSONAL';
+  }
+}
+
+async function getDiscountTiers(accountType: string) {
+  const normalizedType = normalizeAccountType(accountType);
+  const discounts = await db.userTypeDiscountSettings.findMany({
+    where: {
+      accountType: normalizedType,
+      isActive: true,
+      categoryId: null,
+      brandId: null,
+      supplierId: null,
+      warehouseId: null,
+    },
+    orderBy: { minimumOrderAmount: 'asc' },
+    select: {
+      id: true,
+      discountPercentage: true,
+      minimumOrderAmount: true,
+    },
+  });
+  return discounts.map((d) => ({
+    id: d.id,
+    discountPercentage: Number(d.discountPercentage),
+    minimumOrderAmount: Number(d.minimumOrderAmount),
+  }));
+}
+
 async function getCheckoutData(userId: string) {
   const [cart, addresses, user, b2bMembership, costCenters] = await Promise.all([
     db.cart.findFirst({
@@ -108,6 +146,11 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   if (!cart || cart.items.length === 0) {
     redirect('/cart');
   }
+
+  const userAccountType = user?.accountType || 'B2C';
+  const discountTiers = await getDiscountTiers(userAccountType);
+  const normalizedType = normalizeAccountType(userAccountType);
+  const discountAccountLabel = normalizedType === 'VOLUME_BUYER' ? 'Volume Buyer' : normalizedType === 'GOVERNMENT' ? 'Government' : 'Member';
 
   const isB2BQuote = searchParams.quote === 'true';
 
@@ -245,6 +288,8 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
           accountType={user?.accountType || 'INDIVIDUAL'}
           b2bMembership={formattedB2BMembership}
           costCenters={formattedCostCenters}
+          discountTiers={discountTiers}
+          discountAccountLabel={discountAccountLabel}
         />
       </div>
     </div>

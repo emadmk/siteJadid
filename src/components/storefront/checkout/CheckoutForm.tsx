@@ -60,6 +60,12 @@ interface CostCenter {
   currentSpent: number;
 }
 
+interface DiscountTier {
+  id: string;
+  discountPercentage: number;
+  minimumOrderAmount: number;
+}
+
 interface CheckoutFormProps {
   cartItems: CartItem[];
   addresses: Address[];
@@ -74,6 +80,8 @@ interface CheckoutFormProps {
     companyName: string;
   } | null;
   costCenters: CostCenter[];
+  discountTiers?: DiscountTier[];
+  discountAccountLabel?: string;
 }
 
 type CheckoutStep = 'shipping' | 'delivery' | 'government' | 'payment' | 'review';
@@ -121,6 +129,8 @@ export function CheckoutForm({
   accountType,
   b2bMembership,
   costCenters,
+  discountTiers: serverDiscountTiers = [],
+  discountAccountLabel: serverDiscountAccountLabel = 'Member',
 }: CheckoutFormProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('shipping');
@@ -175,9 +185,9 @@ export function CheckoutForm({
     freeThreshold: 100,
   });
 
-  // Discount tiers
-  const [discountTiers, setDiscountTiers] = useState<{ id: string; discountPercentage: number; minimumOrderAmount: number }[]>([]);
-  const [discountAccountLabel, setDiscountAccountLabel] = useState('');
+  // Discount tiers from server props
+  const discountTiers = serverDiscountTiers;
+  const discountAccountLabel = serverDiscountAccountLabel;
 
   // Stripe state
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
@@ -238,7 +248,7 @@ export function CheckoutForm({
   // Calculate government discount (the difference between regular and government prices)
   const govPriceSavings = isGovBuyer && !isGSAAccount ? regularSubtotal - governmentSubtotal : 0;
 
-  // Fetch shipping settings and discount tiers
+  // Fetch shipping settings
   useEffect(() => {
     fetch('/api/storefront/settings/shipping')
       .then((res) => res.json())
@@ -247,19 +257,6 @@ export function CheckoutForm({
           freeShippingEnabled: data.freeShippingEnabled ?? false,
           freeThreshold: data.freeThreshold ?? 100,
         });
-      })
-      .catch(() => {});
-
-    fetch('/api/storefront/discount-tiers')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.tiers?.length > 0) {
-          setDiscountTiers(data.tiers);
-        }
-        const at = data.userAccountType || '';
-        setDiscountAccountLabel(
-          at === 'B2B' || at === 'VOLUME_BUYER' ? 'Volume Buyer' : at === 'GSA' || at === 'GOVERNMENT' ? 'Government' : 'Member'
-        );
       })
       .catch(() => {});
   }, []);

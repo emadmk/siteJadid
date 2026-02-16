@@ -23,7 +23,7 @@ export function CartDrawer() {
   // Check if cart has any GSA priced items
   const hasGSAItems = cart?.items?.some(item => item.product.gsaPrice !== null) || false;
 
-  // Fetch shipping settings and discount tiers
+  // Fetch shipping settings on mount
   useEffect(() => {
     fetch('/api/storefront/settings/shipping')
       .then(res => res.json())
@@ -36,7 +36,11 @@ export function CartDrawer() {
         }
       })
       .catch(() => {});
+  }, []);
 
+  // Fetch discount tiers when cart opens or session changes
+  useEffect(() => {
+    if (!isCartOpen || !session?.user) return;
     fetch('/api/storefront/discount-tiers')
       .then(res => res.json())
       .then(data => {
@@ -48,7 +52,7 @@ export function CartDrawer() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [isCartOpen, session?.user]);
 
   if (!isCartOpen) return null;
 
