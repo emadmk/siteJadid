@@ -38,10 +38,11 @@ export function CartDrawer() {
       .catch(() => {});
   }, []);
 
-  // Fetch discount tiers when cart opens or session changes
+  // Fetch discount tiers when cart opens
   useEffect(() => {
-    if (!isCartOpen || !session?.user) return;
-    fetch('/api/storefront/discount-tiers')
+    if (!isCartOpen) return;
+    const at = session?.user?.accountType || 'B2C';
+    fetch(`/api/storefront/discount-tiers?accountType=${encodeURIComponent(at)}`)
       .then(res => res.json())
       .then(data => {
         if (data.tiers?.length > 0) {
@@ -52,7 +53,7 @@ export function CartDrawer() {
         }
       })
       .catch(() => {});
-  }, [isCartOpen, session?.user]);
+  }, [isCartOpen, session?.user?.accountType]);
 
   if (!isCartOpen) return null;
 

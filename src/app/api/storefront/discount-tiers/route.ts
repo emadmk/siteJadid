@@ -1,19 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 
 // GET /api/storefront/discount-tiers - Get discount tiers for current user's account type
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    const url = new URL(request.url);
+    const queryAccountType = url.searchParams.get('accountType');
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ tiers: [] });
-    }
-
-    // Map account type to discount system types
-    const accountType = session.user.accountType;
+    // Use session account type first, fall back to query parameter
+    const accountType = session?.user?.accountType || queryAccountType || 'B2C';
     let normalizedType: 'PERSONAL' | 'VOLUME_BUYER' | 'GOVERNMENT';
 
     switch (accountType) {
