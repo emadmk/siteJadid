@@ -69,6 +69,47 @@ async function getShippingSettings() {
   return defaults;
 }
 
+// Map account type to normalized type for discount lookup
+function normalizeAccountType(accountType: string): 'PERSONAL' | 'VOLUME_BUYER' | 'GOVERNMENT' {
+  switch (accountType) {
+    case 'B2B':
+    case 'VOLUME_BUYER':
+      return 'VOLUME_BUYER';
+    case 'GSA':
+    case 'GOVERNMENT':
+      return 'GOVERNMENT';
+    default:
+      return 'PERSONAL';
+  }
+}
+
+async function getDiscountTiers(accountType: string) {
+  const normalizedType = normalizeAccountType(accountType);
+
+  const discounts = await db.userTypeDiscountSettings.findMany({
+    where: {
+      accountType: normalizedType,
+      isActive: true,
+      categoryId: null,
+      brandId: null,
+      supplierId: null,
+      warehouseId: null,
+    },
+    orderBy: { minimumOrderAmount: 'asc' },
+    select: {
+      id: true,
+      discountPercentage: true,
+      minimumOrderAmount: true,
+    },
+  });
+
+  return discounts.map((d) => ({
+    id: d.id,
+    discountPercentage: Number(d.discountPercentage),
+    minimumOrderAmount: Number(d.minimumOrderAmount),
+  }));
+}
+
 export default async function CartPage() {
   const session = await getServerSession(authOptions);
 
@@ -76,9 +117,12 @@ export default async function CartPage() {
     redirect('/auth/signin?callbackUrl=/cart');
   }
 
-  const [cart, shippingSettings] = await Promise.all([
+  const accountType = (session.user as any).accountType || 'B2C';
+
+  const [cart, shippingSettings, discountTiers] = await Promise.all([
     getCart(session.user.id),
     getShippingSettings(),
+    getDiscountTiers(accountType),
   ]);
 
   if (!cart || cart.items.length === 0) {
@@ -133,6 +177,178 @@ export default async function CartPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Discount Savings Banner */}
+        {discountTiers.length > 0 && (() => {
+          // Find current active tier (highest tier where subtotal >= minimumOrderAmount)
+          const activeTier = [...discountTiers]
+            .reverse()
+            .find((t) => subtotal >= t.minimumOrderAmount && t.discountPercentage > 0);
+
+          // Find next tier to unlock
+          const nextTier = discountTiers.find(
+            (t) => subtotal < t.minimumOrderAmount && t.discountPercentage > 0
+          );
+
+          // Calculate current savings
+          const currentSavings = activeTier
+            ? (subtotal * activeTier.discountPercentage) / 100
+            : 0;
+
+          // Calculate potential savings at next tier
+          const nextTierSavings = nextTier
+            ? (subtotal * nextTier.discountPercentage) / 100
+            : 0;
+
+          const amountToNextTier = nextTier
+            ? nextTier.minimumOrderAmount - subtotal
+            : 0;
+
+          const progressToNext = nextTier
+            ? Math.min((subtotal / nextTier.minimumOrderAmount) * 100, 100)
+            : 100;
+
+          const accountLabel =
+            normalizeAccountType(accountType) === 'VOLUME_BUYER'
+              ? 'Volume Buyer'
+              : normalizeAccountType(accountType) === 'GOVERNMENT'
+              ? 'Government'
+              : 'Member';
+
+          return (
+            <div className="mb-8 rounded-2xl overflow-hidden shadow-lg">
+              {/* Gradient header */}
+              <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 px-6 py-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                      <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-bold text-lg">
+                        {accountLabel} Exclusive Savings
+                      </h3>
+                      <p className="text-emerald-100 text-sm">
+                        {activeTier
+                          ? `You're saving ${activeTier.discountPercentage}% on your order!`
+                          : 'Unlock volume discounts on your order'}
+                      </p>
+                    </div>
+                  </div>
+                  {activeTier && currentSavings > 0 && (
+                    <div className="text-right">
+                      <div className="text-emerald-100 text-xs uppercase tracking-wide font-medium">Your Savings</div>
+                      <div className="text-white text-2xl font-bold">
+                        ${currentSavings.toFixed(2)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tiers display */}
+              <div className="bg-white px-6 py-5">
+                {/* Tier steps */}
+                <div className="flex items-center gap-3 mb-4">
+                  {discountTiers.filter(t => t.discountPercentage > 0).map((tier, index, arr) => {
+                    const isActive = subtotal >= tier.minimumOrderAmount;
+                    const isCurrent = activeTier?.id === tier.id;
+
+                    return (
+                      <div key={tier.id} className="flex items-center gap-3 flex-1">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div
+                              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                                isActive
+                                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                                  : 'bg-gray-200 text-gray-500'
+                              }`}
+                            >
+                              {isActive ? (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                index + 1
+                              )}
+                            </div>
+                            <div>
+                              <span className={`text-sm font-semibold ${isActive ? 'text-emerald-700' : 'text-gray-500'}`}>
+                                {tier.discountPercentage}% Off
+                              </span>
+                              {isCurrent && (
+                                <span className="ml-2 text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <p className={`text-xs ${isActive ? 'text-emerald-600' : 'text-gray-400'}`}>
+                            {tier.minimumOrderAmount > 0
+                              ? `Orders $${tier.minimumOrderAmount.toLocaleString()}+`
+                              : 'All orders'}
+                          </p>
+                        </div>
+                        {index < arr.length - 1 && (
+                          <div className={`w-8 h-0.5 ${isActive ? 'bg-emerald-400' : 'bg-gray-200'}`} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Next tier progress */}
+                {nextTier && amountToNextTier > 0 && (
+                  <div className="mt-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        <span className="text-sm font-semibold text-amber-800">
+                          Add ${amountToNextTier.toFixed(2)} more to unlock {nextTier.discountPercentage}% discount!
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold text-amber-700">
+                        Save ${nextTierSavings.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="w-full bg-amber-200 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-amber-500 to-orange-500 h-2.5 rounded-full transition-all duration-500"
+                        style={{ width: `${progressToNext}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1.5">
+                      <span className="text-[11px] text-amber-600 font-medium">${subtotal.toFixed(0)}</span>
+                      <span className="text-[11px] text-amber-600 font-medium">${nextTier.minimumOrderAmount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* All tiers unlocked */}
+                {!nextTier && activeTier && (
+                  <div className="mt-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span className="text-sm font-semibold text-emerald-800">Maximum discount unlocked!</span>
+                      <p className="text-xs text-emerald-600">
+                        You're getting the best {activeTier.discountPercentage}% discount on your entire order.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2">

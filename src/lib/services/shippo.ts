@@ -7,30 +7,98 @@
 
 import { prisma } from '@/lib/prisma';
 
-// Apply shipping markup from database
-async function applyShippingMarkup(rates: ShippingRate[]): Promise<ShippingRate[]> {
-  try {
-    const markupSettings = await prisma.shippingService.findMany({
+// ============ In-Memory Settings Cache ============
+// Cache shipping settings for 5 minutes to avoid repeated DB queries
+interface CachedSettings {
+  apiKey: string | null;
+  testMode: boolean;
+  origin: ShippoAddress | null;
+  markupType: string | null;
+  markupValue: number;
+  cachedAt: number;
+}
+
+let settingsCache: CachedSettings | null = null;
+const SETTINGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Rates cache: key = zip code, value = { rates, cachedAt }
+const ratesCache = new Map<string, { rates: ShippingRate[]; cachedAt: number }>();
+const RATES_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+async function getCachedSettings(): Promise<CachedSettings> {
+  if (settingsCache && (Date.now() - settingsCache.cachedAt) < SETTINGS_CACHE_TTL) {
+    return settingsCache;
+  }
+
+  // Batch ALL settings + markup into 2 queries instead of 6
+  const [allSettings, markupSettings] = await Promise.all([
+    prisma.setting.findMany({
+      where: {
+        key: {
+          in: [
+            'shipping.shippoApiKey',
+            'shipping.shippoTestMode',
+            'shipping.originName',
+            'shipping.originStreet',
+            'shipping.originCity',
+            'shipping.originState',
+            'shipping.originZip',
+            'shipping.originCountry',
+            'shipping.originPhone',
+          ],
+        },
+      },
+    }),
+    prisma.shippingService.findMany({
       select: { markupType: true, markupValue: true },
       take: 1,
-    });
+    }),
+  ]);
 
-    if (markupSettings.length === 0) return rates;
+  const map: Record<string, string> = {};
+  allSettings.forEach((s) => {
+    map[s.key] = s.value;
+  });
 
-    const { markupType, markupValue } = markupSettings[0];
-    const markup = Number(markupValue);
+  const hasOrigin =
+    map['shipping.originStreet'] &&
+    map['shipping.originCity'] &&
+    map['shipping.originState'] &&
+    map['shipping.originZip'];
 
-    if (!markup || markup === 0) return rates;
+  settingsCache = {
+    apiKey: map['shipping.shippoApiKey'] || null,
+    testMode: map['shipping.shippoTestMode'] === 'true',
+    origin: hasOrigin
+      ? {
+          name: map['shipping.originName'] || 'Warehouse',
+          street1: map['shipping.originStreet'],
+          city: map['shipping.originCity'],
+          state: map['shipping.originState'],
+          zip: map['shipping.originZip'],
+          country: map['shipping.originCountry'] || 'US',
+          phone: map['shipping.originPhone'],
+        }
+      : null,
+    markupType: markupSettings.length > 0 ? (markupSettings[0].markupType as string) : null,
+    markupValue: markupSettings.length > 0 ? Number(markupSettings[0].markupValue) : 0,
+    cachedAt: Date.now(),
+  };
 
-    return rates.map(rate => ({
-      ...rate,
-      cost: markupType === 'percentage'
-        ? Math.round((rate.cost * (1 + markup / 100)) * 100) / 100
-        : Math.round((rate.cost + markup) * 100) / 100,
-    }));
-  } catch {
-    return rates; // If markup lookup fails, return original rates
-  }
+  return settingsCache;
+}
+
+// Apply shipping markup using cached settings
+function applyShippingMarkupSync(rates: ShippingRate[], markupType: string | null, markupValue: number): ShippingRate[] {
+  if (!markupType || !markupValue || markupValue === 0) return rates;
+
+  return rates.map((rate) => ({
+    ...rate,
+    cost:
+      markupType === 'percentage'
+        ? Math.round(rate.cost * (1 + markupValue / 100) * 100) / 100
+        : Math.round((rate.cost + markupValue) * 100) / 100,
+  }));
 }
 
 // Shippo API Base URLs
@@ -105,109 +173,74 @@ export interface ShippoTransaction {
   rate: string;
 }
 
-// Helper to get Shippo API key from database settings
+// Legacy helpers kept for non-rate functions (label, tracking, etc.)
 async function getShippoApiKey(): Promise<string | null> {
-  const setting = await prisma.setting.findUnique({
-    where: { key: 'shipping.shippoApiKey' }
-  });
-  return setting?.value || null;
-}
-
-// Helper to check if in test mode
-async function isTestMode(): Promise<boolean> {
-  const setting = await prisma.setting.findUnique({
-    where: { key: 'shipping.shippoTestMode' }
-  });
-  return setting?.value === 'true';
-}
-
-// Helper to get origin/warehouse address from settings
-async function getOriginAddress(): Promise<ShippoAddress | null> {
-  const settings = await prisma.setting.findMany({
-    where: {
-      key: {
-        in: [
-          'shipping.originName',
-          'shipping.originStreet',
-          'shipping.originCity',
-          'shipping.originState',
-          'shipping.originZip',
-          'shipping.originCountry',
-          'shipping.originPhone',
-        ]
-      }
-    }
-  });
-
-  const settingsMap: Record<string, string> = {};
-  settings.forEach(s => {
-    const shortKey = s.key.replace('shipping.', '');
-    settingsMap[shortKey] = s.value;
-  });
-
-  // Check if we have required fields
-  if (!settingsMap.originStreet || !settingsMap.originCity || !settingsMap.originState || !settingsMap.originZip) {
-    return null;
-  }
-
-  return {
-    name: settingsMap.originName || 'Warehouse',
-    street1: settingsMap.originStreet,
-    city: settingsMap.originCity,
-    state: settingsMap.originState,
-    zip: settingsMap.originZip,
-    country: settingsMap.originCountry || 'US',
-    phone: settingsMap.originPhone,
-  };
+  const cached = await getCachedSettings();
+  return cached.apiKey;
 }
 
 /**
  * Create a Shippo shipment and get rates
+ * Uses caching for settings (5min) and rates by ZIP (30min)
+ * Includes 8-second timeout for Shippo API
  */
 export async function getShippingRates(
   toAddress: ShippoAddress,
   parcels: ShippoParcel[],
   fromAddress?: ShippoAddress
-): Promise<{ rates: ShippingRate[]; error?: string }> {
-  const apiKey = await getShippoApiKey();
-  const testMode = await isTestMode();
-  if (testMode) {
+): Promise<{ rates: ShippingRate[]; error?: string; cached?: boolean }> {
+  // Load all settings in one batched call (cached for 5 min)
+  const settings = await getCachedSettings();
+
+  if (settings.testMode) {
     console.log('Shippo: Running in test mode');
   }
 
-  if (!apiKey) {
+  if (!settings.apiKey) {
     return { rates: [], error: 'Shippo API key not configured' };
   }
 
-  // Get origin address from settings if not provided
-  const origin = fromAddress || await getOriginAddress();
+  const origin = fromAddress || settings.origin;
 
   if (!origin) {
     return { rates: [], error: 'Origin address not configured. Please set warehouse address in admin settings.' };
   }
 
+  // Check rates cache by destination ZIP + parcel weight
+  const cacheKey = `${toAddress.zip}_${toAddress.state}_${parcels.map(p => p.weight).join('-')}`;
+  const cachedRates = ratesCache.get(cacheKey);
+  if (cachedRates && (Date.now() - cachedRates.cachedAt) < RATES_CACHE_TTL) {
+    return { rates: cachedRates.rates, cached: true };
+  }
+
   try {
-    // Create shipment to get rates
+    // Create shipment to get rates - with 8 second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     const response = await fetch(`${SHIPPO_API_URL}/shipments`, {
       method: 'POST',
       headers: {
-        'Authorization': `ShippoToken ${apiKey}`,
+        'Authorization': `ShippoToken ${settings.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         address_from: origin,
         address_to: toAddress,
         parcels: parcels,
-        async: false, // Wait for rates synchronously
+        async: false,
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Shippo API error:', errorData);
       return {
         rates: [],
-        error: errorData.detail || errorData.error || 'Failed to get shipping rates from Shippo'
+        error: errorData.detail || errorData.error || 'Failed to get shipping rates from Shippo',
       };
     }
 
@@ -215,8 +248,8 @@ export async function getShippingRates(
 
     // Convert Shippo rates to our format
     const rates: ShippingRate[] = shipment.rates
-      .filter(rate => rate.amount) // Only include rates with prices
-      .map(rate => ({
+      .filter((rate) => rate.amount)
+      .map((rate) => ({
         id: rate.object_id,
         carrier: rate.provider,
         carrierLogo: rate.provider_image_75,
@@ -229,10 +262,18 @@ export async function getShippingRates(
       }))
       .sort((a, b) => a.cost - b.cost);
 
-    // Fix #5: Apply shipping markup
-    const markedUpRates = await applyShippingMarkup(rates);
+    // Apply shipping markup using cached settings (no extra DB call)
+    const markedUpRates = applyShippingMarkupSync(rates, settings.markupType, settings.markupValue);
+
+    // Cache these rates for 30 minutes
+    ratesCache.set(cacheKey, { rates: markedUpRates, cachedAt: Date.now() });
+
     return { rates: markedUpRates };
   } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error('Shippo API timeout after 8 seconds');
+      return { rates: [], error: 'Shipping rate calculation timed out. Using estimated rates.' };
+    }
     console.error('Shippo service error:', error);
     return { rates: [], error: error.message || 'Failed to connect to Shippo' };
   }

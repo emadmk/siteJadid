@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
@@ -249,10 +249,22 @@ export function CheckoutForm({
       });
   }, []);
 
-  // Fetch shipping rates when address is selected
-  const fetchShippingRates = async (address: Address) => {
+  // Debounce and abort controller refs for shipping rates
+  const ratesFetchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const ratesAbortRef = useRef<AbortController | null>(null);
+
+  // Fetch shipping rates when address is selected (with debounce + abort)
+  const fetchShippingRates = useCallback(async (address: Address) => {
+    // Abort any in-flight request
+    if (ratesAbortRef.current) {
+      ratesAbortRef.current.abort();
+    }
+
     setLoadingRates(true);
     setRatesError(null);
+
+    const controller = new AbortController();
+    ratesAbortRef.current = controller;
 
     try {
       const response = await fetch('/api/shipping/rates', {
@@ -274,6 +286,7 @@ export function CheckoutForm({
             quantity: item.quantity,
           })),
         }),
+        signal: controller.signal,
       });
 
       const data = await response.json();
@@ -288,21 +301,34 @@ export function CheckoutForm({
       } else {
         setRatesError(data.error || 'Failed to fetch shipping rates');
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'AbortError') return; // Silently ignore aborted requests
       console.error('Error fetching rates:', err);
       setRatesError('Failed to fetch shipping rates');
     } finally {
       setLoadingRates(false);
     }
-  };
+  }, [cartItems]);
 
-  // Fetch rates when address changes
+  // Fetch rates when address changes (debounced 300ms)
   useEffect(() => {
     const address = addresses.find(a => a.id === selectedAddressId);
-    if (address) {
-      fetchShippingRates(address);
+    if (!address) return;
+
+    if (ratesFetchTimerRef.current) {
+      clearTimeout(ratesFetchTimerRef.current);
     }
-  }, [selectedAddressId]);
+
+    ratesFetchTimerRef.current = setTimeout(() => {
+      fetchShippingRates(address);
+    }, 300);
+
+    return () => {
+      if (ratesFetchTimerRef.current) {
+        clearTimeout(ratesFetchTimerRef.current);
+      }
+    };
+  }, [selectedAddressId, fetchShippingRates]);
 
   // Get shipping cost from selected rate or fallback
   const selectedRate = shippingRates.find(r => r.id === selectedRateId);
