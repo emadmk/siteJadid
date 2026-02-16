@@ -71,11 +71,40 @@ export async function GET(request: NextRequest) {
       return sum + parseFloat(item.price.toString()) * item.quantity;
     }, 0);
 
+    // Fetch discount tiers for this user
+    const userAccountType = session.user.accountType || 'B2C';
+    let normalizedType: 'PERSONAL' | 'VOLUME_BUYER' | 'GOVERNMENT' = 'PERSONAL';
+    if (userAccountType === 'B2B' || userAccountType === 'VOLUME_BUYER') normalizedType = 'VOLUME_BUYER';
+    else if (userAccountType === 'GSA' || userAccountType === 'GOVERNMENT') normalizedType = 'GOVERNMENT';
+
+    const discountSettings = await db.userTypeDiscountSettings.findMany({
+      where: {
+        accountType: normalizedType,
+        isActive: true,
+        categoryId: null,
+        brandId: null,
+        supplierId: null,
+        warehouseId: null,
+      },
+      orderBy: { minimumOrderAmount: 'asc' },
+      select: { id: true, discountPercentage: true, minimumOrderAmount: true },
+    });
+
+    const discountTiers = discountSettings.map((d) => ({
+      id: d.id,
+      discountPercentage: Number(d.discountPercentage),
+      minimumOrderAmount: Number(d.minimumOrderAmount),
+    }));
+
+    const discountAccountLabel = normalizedType === 'VOLUME_BUYER' ? 'Volume Buyer' : normalizedType === 'GOVERNMENT' ? 'Government' : 'Member';
+
     const result = {
       ...cart,
       items: enrichedItems,
       subtotal,
       itemCount: enrichedItems.reduce((sum: number, item: any) => sum + item.quantity, 0),
+      discountTiers,
+      discountAccountLabel,
     };
 
     return NextResponse.json(result);

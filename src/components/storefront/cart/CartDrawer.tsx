@@ -14,8 +14,10 @@ export function CartDrawer() {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [freeShippingEnabled, setFreeShippingEnabled] = useState(false);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(100);
-  const [discountTiers, setDiscountTiers] = useState<{ id: string; discountPercentage: number; minimumOrderAmount: number }[]>([]);
-  const [discountAccountType, setDiscountAccountType] = useState('');
+
+  // Discount tiers from cart API response (no separate fetch needed)
+  const discountTiers = cart?.discountTiers || [];
+  const discountAccountLabel = cart?.discountAccountLabel || 'Member';
 
   // Check if user is GSA approved
   const isGSAApproved = session?.user?.accountType === 'GSA' && session?.user?.gsaApprovalStatus === 'APPROVED';
@@ -37,23 +39,6 @@ export function CartDrawer() {
       })
       .catch(() => {});
   }, []);
-
-  // Fetch discount tiers when cart opens
-  useEffect(() => {
-    if (!isCartOpen) return;
-    const at = session?.user?.accountType || 'B2C';
-    fetch(`/api/storefront/discount-tiers?accountType=${encodeURIComponent(at)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.tiers?.length > 0) {
-          setDiscountTiers(data.tiers);
-        }
-        if (data.userAccountType) {
-          setDiscountAccountType(data.userAccountType);
-        }
-      })
-      .catch(() => {});
-  }, [isCartOpen, session?.user?.accountType]);
 
   if (!isCartOpen) return null;
 
@@ -351,7 +336,7 @@ export function CartDrawer() {
               const currentSavings = activeTier ? (subtotal * activeTier.discountPercentage) / 100 : 0;
               const amountToNextTier = nextTier ? nextTier.minimumOrderAmount - subtotal : 0;
               const progressToNext = nextTier ? Math.min((subtotal / nextTier.minimumOrderAmount) * 100, 100) : 100;
-              const accountLabel = discountAccountType === 'B2B' || discountAccountType === 'VOLUME_BUYER' ? 'Volume Buyer' : discountAccountType === 'GSA' || discountAccountType === 'GOVERNMENT' ? 'Government' : 'Member';
+              const accountLabel = discountAccountLabel;
 
               return (
                 <div className="mx-4 mt-3 mb-1 rounded-xl overflow-hidden shadow-md">

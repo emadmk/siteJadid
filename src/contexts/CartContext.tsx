@@ -36,11 +36,19 @@ interface CartItem {
   } | null;
 }
 
+interface DiscountTier {
+  id: string;
+  discountPercentage: number;
+  minimumOrderAmount: number;
+}
+
 interface Cart {
   id: string;
   items: CartItem[];
   subtotal: number;
   itemCount: number;
+  discountTiers?: DiscountTier[];
+  discountAccountLabel?: string;
 }
 
 interface CartContextType {
