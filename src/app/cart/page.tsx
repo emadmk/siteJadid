@@ -451,6 +451,97 @@ export default async function CartPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-4">
               <h2 className="text-xl font-bold text-black mb-6">Order Summary</h2>
 
+              {/* Discount Savings - Compact Sidebar Version */}
+              {discountTiers.length > 0 && (() => {
+                const activeTier = [...discountTiers]
+                  .reverse()
+                  .find((t) => subtotal >= t.minimumOrderAmount && t.discountPercentage > 0);
+                const nextTier = discountTiers.find(
+                  (t) => subtotal < t.minimumOrderAmount && t.discountPercentage > 0
+                );
+                const currentSavings = activeTier ? (subtotal * activeTier.discountPercentage) / 100 : 0;
+                const amountToNextTier = nextTier ? nextTier.minimumOrderAmount - subtotal : 0;
+                const progressToNext = nextTier ? Math.min((subtotal / nextTier.minimumOrderAmount) * 100, 100) : 100;
+                const accountLabel = normalizeAccountType(accountType) === 'VOLUME_BUYER' ? 'Volume Buyer' : normalizeAccountType(accountType) === 'GOVERNMENT' ? 'Government' : 'Member';
+
+                return (
+                  <div className="mb-6 rounded-xl overflow-hidden shadow-md border border-gray-100">
+                    <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <h4 className="text-white font-bold text-sm">{accountLabel} Savings</h4>
+                            <p className="text-emerald-100 text-[10px]">
+                              {activeTier ? `Saving ${activeTier.discountPercentage}%!` : 'Unlock volume discounts'}
+                            </p>
+                          </div>
+                        </div>
+                        {activeTier && currentSavings > 0 && (
+                          <div className="text-right">
+                            <div className="text-emerald-100 text-[9px] uppercase tracking-wide">Savings</div>
+                            <div className="text-white text-lg font-bold">${currentSavings.toFixed(2)}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-white px-4 py-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        {discountTiers.filter(t => t.discountPercentage > 0).map((tier, index, arr) => {
+                          const isActive = subtotal >= tier.minimumOrderAmount;
+                          const isCurrent = activeTier?.id === tier.id;
+                          return (
+                            <div key={tier.id} className="flex items-center gap-2 flex-1">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-1">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${isActive ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                    {isActive ? (
+                                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    ) : index + 1}
+                                  </div>
+                                  <span className={`text-xs font-semibold ${isActive ? 'text-emerald-700' : 'text-gray-400'}`}>
+                                    {tier.discountPercentage}%
+                                    {isCurrent && <span className="ml-1 text-[8px] bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded-full">Active</span>}
+                                  </span>
+                                </div>
+                                <p className={`text-[9px] ${isActive ? 'text-emerald-600' : 'text-gray-400'}`}>
+                                  ${tier.minimumOrderAmount.toLocaleString()}+
+                                </p>
+                              </div>
+                              {index < arr.length - 1 && (
+                                <div className={`w-4 h-0.5 ${isActive ? 'bg-emerald-400' : 'bg-gray-200'}`} />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {nextTier && amountToNextTier > 0 && (
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-2.5 mt-2">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[11px] font-semibold text-amber-800">
+                              Add ${amountToNextTier.toFixed(2)} for {nextTier.discountPercentage}% off
+                            </span>
+                          </div>
+                          <div className="w-full bg-amber-200 rounded-full h-1.5 overflow-hidden">
+                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progressToNext}%` }} />
+                          </div>
+                        </div>
+                      )}
+                      {!nextTier && activeTier && (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 mt-2 flex items-center gap-2">
+                          <svg className="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          <span className="text-[11px] font-semibold text-emerald-800">Max discount unlocked!</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-gray-700">
                   <span>Subtotal ({cart.items.length} items)</span>
@@ -536,6 +627,7 @@ export default async function CartPage() {
                   <div className="px-2 py-1 border border-gray-300 rounded">Discover</div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
