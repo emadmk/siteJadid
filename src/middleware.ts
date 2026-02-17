@@ -6,9 +6,6 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = request.nextUrl;
 
-  // Generate CSP nonce for this request
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-
   // Public routes that don't require authentication
   const publicRoutes = [
     '/',
@@ -34,10 +31,10 @@ export async function middleware(request: NextRequest) {
   // CSRF: Set CSRF cookie on page loads (not API routes)
   const response = NextResponse.next();
 
-  // Set CSP header with nonce
+  // Set CSP header
   const cspHeader = [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' https://js.stripe.com`,
+    `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: https:`,
     `font-src 'self' data:`,
@@ -46,7 +43,6 @@ export async function middleware(request: NextRequest) {
   ].join('; ');
 
   response.headers.set('Content-Security-Policy', cspHeader);
-  response.headers.set('X-CSP-Nonce', nonce);
 
   // Set CSRF cookie on page loads
   if (!request.nextUrl.pathname.startsWith('/api/')) {
