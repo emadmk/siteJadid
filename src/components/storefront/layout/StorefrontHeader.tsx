@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   Search,
   ShoppingCart,
@@ -29,12 +29,11 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 import { useSearch } from '@/contexts/SearchContext';
 
-function StorefrontHeaderInner() {
+export function StorefrontHeader() {
   const { data: session, status, update: updateSession } = useSession();
   const { cart, openCart } = useCart();
   const { openModal: openAuthModal } = useAuthModal();
   const { openSearch } = useSearch();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
@@ -56,7 +55,8 @@ function StorefrontHeaderInner() {
 
   // Handle email verification redirect - refresh session immediately
   useEffect(() => {
-    const verified = searchParams?.get('email-verified');
+    const params = new URLSearchParams(window.location.search);
+    const verified = params.get('email-verified');
     if (verified === 'true') {
       setEmailJustVerified(true);
       // Force session refresh to get updated emailVerified
@@ -68,7 +68,7 @@ function StorefrontHeaderInner() {
       // Hide success message after 8 seconds
       setTimeout(() => setEmailJustVerified(false), 8000);
     }
-  }, [searchParams, updateSession, router]);
+  }, [updateSession, router]);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -579,13 +579,5 @@ function StorefrontHeaderInner() {
         </div>
       )}
     </header>
-  );
-}
-
-export function StorefrontHeader() {
-  return (
-    <Suspense>
-      <StorefrontHeaderInner />
-    </Suspense>
   );
 }

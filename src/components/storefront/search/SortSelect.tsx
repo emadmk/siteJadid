@@ -37,7 +37,11 @@ function SortSelectInner() {
 
 export function SortSelect() {
   return (
-    <Suspense>
+    <Suspense fallback={
+      <select className="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+        <option value="">Sort by: Latest</option>
+      </select>
+    }>
       <SortSelectInner />
     </Suspense>
   );

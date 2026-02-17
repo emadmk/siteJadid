@@ -58,7 +58,15 @@ function SearchBarInner() {
 
 export function SearchBar() {
   return (
-    <Suspense>
+    <Suspense fallback={
+      <form className="flex gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input type="text" placeholder="Search by name, SKU, or description..." className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg" />
+        </div>
+        <Button className="gap-2 bg-safety-green-600 hover:bg-safety-green-700"><Search className="w-4 h-4" /> Search</Button>
+      </form>
+    }>
       <SearchBarInner />
     </Suspense>
   );

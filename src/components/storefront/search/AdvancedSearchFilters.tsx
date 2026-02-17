@@ -254,7 +254,7 @@ function AdvancedSearchFiltersInner({ categories, priceRange }: AdvancedSearchFi
 
 export function AdvancedSearchFilters(props: AdvancedSearchFiltersProps) {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="space-y-4 animate-pulse"><div className="h-10 bg-gray-200 rounded" /><div className="h-10 bg-gray-200 rounded" /></div>}>
       <AdvancedSearchFiltersInner {...props} />
     </Suspense>
   );

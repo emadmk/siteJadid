@@ -930,7 +930,11 @@ function ProductsListingInner({
 
 export function ProductsListing(props: ProductsListingProps) {
   return (
-    <Suspense>
+    <Suspense fallback={
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-safety-green-600" />
+      </div>
+    }>
       <ProductsListingInner {...props} />
     </Suspense>
   );
