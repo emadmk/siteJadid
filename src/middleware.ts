@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
       const csrfToken = crypto.randomUUID();
       response.cookies.set('__csrf', csrfToken, {
         httpOnly: false, // Must be readable by JS for double-submit
-        secure: process.env.NODE_ENV === 'production',
+        secure: request.nextUrl.protocol === 'https:',
         sameSite: 'strict',
         path: '/',
         maxAge: 7 * 24 * 60 * 60, // 7 days
