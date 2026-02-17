@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
@@ -309,14 +309,16 @@ export function StorefrontHeader() {
                           )}
                         </nav>
                         <div className="border-t border-gray-100 pt-1">
-                          <Link
-                            href="/api/auth/signout"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50"
+                          <button
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              signOut({ callbackUrl: window.location.origin });
+                            }}
+                            className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 w-full"
                           >
                             <LogOut className="w-4 h-4" />
                             Sign Out
-                          </Link>
+                          </button>
                         </div>
                       </div>
                     </>
@@ -573,14 +575,16 @@ export function StorefrontHeader() {
                       Admin Panel
                     </Link>
                   )}
-                  <Link
-                    href="/api/auth/signout"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg"
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      signOut({ callbackUrl: window.location.origin });
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg w-full"
                   >
                     <LogOut className="w-5 h-5" />
                     Sign Out
-                  </Link>
+                  </button>
                 </div>
               )}
             </nav>

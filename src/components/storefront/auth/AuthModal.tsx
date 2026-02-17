@@ -286,13 +286,13 @@ export function AuthModal() {
 
               <p className="text-center text-sm text-gray-600">
                 Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setView('register')}
+                <a
+                  href="/register"
+                  onClick={() => closeModal()}
                   className="text-safety-green-600 hover:text-safety-green-700 font-medium"
                 >
                   Create one
-                </button>
+                </a>
               </p>
             </form>
           )}

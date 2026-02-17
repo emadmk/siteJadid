@@ -128,8 +128,28 @@ export default function RegisterPage() {
       return;
     }
 
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (formData.password.length < 12) {
+      setError('Password must be at least 12 characters');
+      return;
+    }
+
+    if (!/[A-Z]/.test(formData.password)) {
+      setError('Password must contain at least one uppercase letter');
+      return;
+    }
+
+    if (!/[a-z]/.test(formData.password)) {
+      setError('Password must contain at least one lowercase letter');
+      return;
+    }
+
+    if (!/[0-9]/.test(formData.password)) {
+      setError('Password must contain at least one number');
+      return;
+    }
+
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(formData.password)) {
+      setError('Password must contain at least one special character (!@#$%^&*...)');
       return;
     }
 
@@ -148,9 +168,11 @@ export default function RegisterPage() {
           name: `${formData.firstName} ${formData.lastName}`,
           email: formData.email,
           password: formData.password,
+          phone: formData.phone || undefined,
           accountType: selectedType,
           companyName: selectedType !== 'PERSONAL' ? formData.companyName : undefined,
           governmentDepartment: selectedType === 'GOVERNMENT' ? formData.gsaDepartment : undefined,
+          taxId: selectedType === 'VOLUME_BUYER' ? formData.taxId : undefined,
         }),
       });
 
@@ -243,7 +265,7 @@ export default function RegisterPage() {
                         src={type.image}
                         alt={type.title}
                         fill
-                        className="object-cover opacity-20 group-hover:opacity-30 transition-opacity"
+                        className={`object-cover opacity-20 group-hover:opacity-30 transition-opacity ${type.id === 'GOVERNMENT' ? 'scale-[1.3]' : ''}`}
                       />
                       <div className="absolute inset-0 p-6 flex flex-col justify-end">
                         <div className={`w-14 h-14 ${type.iconBg} backdrop-blur rounded-xl flex items-center justify-center mb-3`}>
@@ -305,12 +327,12 @@ export default function RegisterPage() {
               {/* Form Header */}
               {selectedBuyerType && (
                 <div className={`relative bg-gradient-to-br ${selectedBuyerType.bgGradient} p-6 md:p-8`}>
-                  <div className="absolute inset-0 opacity-10">
+                  <div className="absolute inset-0 opacity-10 overflow-hidden">
                     <Image
                       src={selectedBuyerType.image}
                       alt={selectedBuyerType.title}
                       fill
-                      className="object-cover"
+                      className={`object-cover ${selectedType === 'GOVERNMENT' ? 'scale-[1.3]' : ''}`}
                     />
                   </div>
                   <div className="relative flex items-center gap-4">
@@ -547,9 +569,9 @@ export default function RegisterPage() {
                           value={formData.password}
                           onChange={handleInputChange}
                           className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent"
-                          placeholder="At least 8 characters"
+                          placeholder="Min 12 chars, A-Z, 0-9, @#$..."
                           required
-                          minLength={8}
+                          minLength={12}
                         />
                         <button
                           type="button"
@@ -558,6 +580,26 @@ export default function RegisterPage() {
                         >
                           {showPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
                         </button>
+                      </div>
+                      <div className="mt-1.5 text-xs text-gray-500 space-y-0.5">
+                        <p className="font-medium text-gray-600">Password requirements:</p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          <li className={formData.password.length >= 12 ? 'text-green-600' : ''}>
+                            At least 12 characters
+                          </li>
+                          <li className={/[A-Z]/.test(formData.password) ? 'text-green-600' : ''}>
+                            At least one uppercase letter (A-Z)
+                          </li>
+                          <li className={/[a-z]/.test(formData.password) ? 'text-green-600' : ''}>
+                            At least one lowercase letter (a-z)
+                          </li>
+                          <li className={/[0-9]/.test(formData.password) ? 'text-green-600' : ''}>
+                            At least one number (0-9)
+                          </li>
+                          <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(formData.password) ? 'text-green-600' : ''}>
+                            At least one special character (!@#$%...)
+                          </li>
+                        </ul>
                       </div>
                     </div>
                     <div>
