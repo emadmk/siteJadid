@@ -19,6 +19,7 @@ import {
   Building2,
   LayoutGrid,
   Home,
+  Mail,
 } from 'lucide-react';
 import { AnnouncementBar } from './AnnouncementBar';
 import { MegaMenu } from './MegaMenu';
@@ -38,6 +39,8 @@ export function StorefrontHeader() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationResent, setVerificationResent] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,9 +65,49 @@ export function StorefrontHeader() {
   const accountType = session?.user?.accountType;
   const approvalStatus = (session?.user as any)?.approvalStatus || (session?.user as any)?.gsaApprovalStatus;
   const isPendingApproval = (isB2B || isGSA) && approvalStatus === 'PENDING';
+  const isEmailUnverified = status === 'authenticated' && !(session?.user as any)?.emailVerified;
+
+  const handleResendVerification = async () => {
+    if (resendingVerification || !session?.user?.email) return;
+    setResendingVerification(true);
+    try {
+      await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: session.user.email }),
+      });
+      setVerificationResent(true);
+      setTimeout(() => setVerificationResent(false), 10000);
+    } catch {
+      // silently fail
+    } finally {
+      setResendingVerification(false);
+    }
+  };
 
   return (
     <header className={`sticky top-0 z-40 transition-shadow ${isScrolled ? 'shadow-md' : ''}`}>
+      {/* Email Verification Warning Banner */}
+      {isEmailUnverified && (
+        <div className="bg-orange-500 text-white py-2.5 px-4">
+          <div className="container mx-auto flex items-center justify-center gap-2 text-sm font-medium">
+            <Mail className="w-4 h-4 flex-shrink-0" />
+            <span>Please verify your email to access all features.</span>
+            {verificationResent ? (
+              <span className="ml-2 text-orange-100">Verification email sent! Check your inbox.</span>
+            ) : (
+              <button
+                onClick={handleResendVerification}
+                disabled={resendingVerification}
+                className="ml-2 underline hover:no-underline disabled:opacity-50"
+              >
+                {resendingVerification ? 'Sending...' : 'Resend verification email'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Pending Approval Warning Banner */}
       {isPendingApproval && (
         <div className="bg-yellow-500 text-yellow-900 py-2 px-4">

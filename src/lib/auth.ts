@@ -94,12 +94,6 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials');
         }
 
-        // Check email verification (admin roles are exempt)
-        const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'CUSTOMER_SERVICE', 'WAREHOUSE_MANAGER', 'MARKETING_MANAGER', 'CONTENT_MANAGER'];
-        if (!adminRoles.includes(user.role) && !user.emailVerified) {
-          throw new Error('Please verify your email address. Check your inbox for the verification link.');
-        }
-
         // Clear failed attempts on successful login
         await clearFailedAttempts(credentials.email);
 
@@ -112,6 +106,7 @@ export const authOptions: NextAuthOptions = {
           gsaApprovalStatus: user.gsaApprovalStatus,
           approvalStatus: user.approvalStatus,
           image: user.image,
+          emailVerified: !!user.emailVerified,
         };
       },
     }),
@@ -124,14 +119,15 @@ export const authOptions: NextAuthOptions = {
         token.accountType = user.accountType;
         token.gsaApprovalStatus = user.gsaApprovalStatus;
         token.approvalStatus = user.approvalStatus;
+        token.emailVerified = (user as any).emailVerified ?? false;
         token.roleRefreshedAt = Date.now();
       }
-      // Refresh role from DB every 5 minutes
+      // Refresh role and emailVerified from DB every 5 minutes
       if (token.id && (!token.roleRefreshedAt || Date.now() - (token.roleRefreshedAt as number) > 5 * 60 * 1000)) {
         try {
           const dbUser = await db.user.findUnique({
             where: { id: token.id as string },
-            select: { role: true, accountType: true, isActive: true, approvalStatus: true, gsaApprovalStatus: true },
+            select: { role: true, accountType: true, isActive: true, approvalStatus: true, gsaApprovalStatus: true, emailVerified: true },
           });
           if (dbUser) {
             if (!dbUser.isActive) {
@@ -142,6 +138,7 @@ export const authOptions: NextAuthOptions = {
             token.accountType = dbUser.accountType;
             token.approvalStatus = dbUser.approvalStatus;
             token.gsaApprovalStatus = dbUser.gsaApprovalStatus;
+            token.emailVerified = !!dbUser.emailVerified;
           }
           token.roleRefreshedAt = Date.now();
         } catch {
@@ -157,6 +154,7 @@ export const authOptions: NextAuthOptions = {
         session.user.accountType = token.accountType as AccountType;
         session.user.gsaApprovalStatus = token.gsaApprovalStatus as any;
         session.user.approvalStatus = token.approvalStatus as any;
+        (session.user as any).emailVerified = token.emailVerified ?? false;
       }
       return session;
     },
