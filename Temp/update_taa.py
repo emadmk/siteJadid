@@ -61,6 +61,12 @@ def get_db_url():
                     return val
     return None
 
+def clean_db_url(url):
+    """Remove Prisma-specific query params (e.g. ?schema=public) that psycopg2 doesn't understand."""
+    if "?" in url:
+        url = url.split("?")[0]
+    return url
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -116,6 +122,7 @@ def main():
         print("  Example: DATABASE_URL='postgresql://user:pass@localhost:5432/dbname' python3 update_taa.py")
         sys.exit(1)
 
+    db_url = clean_db_url(db_url)
     conn = psycopg2.connect(db_url)
     cur = conn.cursor()
     print("  Database connection OK")
