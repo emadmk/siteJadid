@@ -3,20 +3,21 @@ version: '3.8'
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:14-alpine
-    container_name: sitejadid_postgres
+    image: postgres:16-alpine
+    container_name: ecommerce-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: siteuser
+      POSTGRES_USER: ${POSTGRES_USER:-ecommerce_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env file}
-      POSTGRES_DB: sitejadid
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U siteuser -d sitejadid"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ecommerce_user} -d ${POSTGRES_DB:-ecommerce_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,7 +25,7 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: sitejadid_redis
+    container_name: ecommerce-redis
     restart: unless-stopped
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set in .env file}
     ports:
@@ -37,12 +38,12 @@ services:
       timeout: 3s
       retries: 5
 
-  # Next.js Application
+  # Next.js Application (optional - use PM2 in production instead)
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: sitejadid_app
+    container_name: ecommerce-app
     restart: unless-stopped
     depends_on:
       postgres:
@@ -51,7 +52,7 @@ services:
         condition: service_healthy
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://siteuser:${DB_PASSWORD}@postgres:5432/sitejadid
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-ecommerce_user}:${DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-ecommerce_db}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:?NEXTAUTH_SECRET must be set in .env file}
       - REDIS_HOST=redis
@@ -64,11 +65,13 @@ services:
     volumes:
       - ./public/uploads:/app/public/uploads
       - ./logs:/app/logs
+    profiles:
+      - docker-app
 
   # Nginx Reverse Proxy (optional)
   nginx:
     image: nginx:alpine
-    container_name: sitejadid_nginx
+    container_name: ecommerce-nginx
     restart: unless-stopped
     depends_on:
       - app
