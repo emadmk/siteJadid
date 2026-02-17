@@ -230,7 +230,12 @@ export function StorefrontHeader() {
               </Link>
 
               {/* User Menu */}
-              {status === 'authenticated' ? (
+              {status === 'loading' ? (
+                <div className="flex items-center gap-2 p-2">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+                  <div className="hidden lg:block w-16 h-4 bg-gray-200 rounded animate-pulse" />
+                </div>
+              ) : status === 'authenticated' ? (
                 <div className="relative">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -466,7 +471,11 @@ export function StorefrontHeader() {
             </div>
 
             <nav className="p-4">
-              {status !== 'authenticated' && (
+              {status === 'loading' ? (
+                <div className="mb-4 pb-4 border-b border-gray-200">
+                  <div className="w-full py-3 bg-gray-200 rounded-lg animate-pulse h-12" />
+                </div>
+              ) : status !== 'authenticated' && (
                 <div className="mb-4 pb-4 border-b border-gray-200">
                   <button
                     onClick={() => {
