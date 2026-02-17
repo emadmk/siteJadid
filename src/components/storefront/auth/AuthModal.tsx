@@ -84,8 +84,23 @@ export function AuthModal() {
       return;
     }
 
-    if (registerData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (registerData.password.length < 12) {
+      setError('Password must be at least 12 characters');
+      return;
+    }
+
+    if (!/[A-Z]/.test(registerData.password)) {
+      setError('Password must contain at least one uppercase letter');
+      return;
+    }
+
+    if (!/[0-9]/.test(registerData.password)) {
+      setError('Password must contain at least one number');
+      return;
+    }
+
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(registerData.password)) {
+      setError('Password must contain at least one special character (!@#$%^&*...)');
       return;
     }
 
@@ -389,9 +404,9 @@ export function AuthModal() {
                     value={registerData.password}
                     onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                     className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-                    placeholder="At least 8 characters"
+                    placeholder="Min 12 chars, A-Z, 0-9, @#$..."
                     required
-                    minLength={8}
+                    minLength={12}
                   />
                   <button
                     type="button"
@@ -400,6 +415,26 @@ export function AuthModal() {
                   >
                     {showPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
                   </button>
+                </div>
+                <div className="mt-1.5 text-xs text-gray-500 space-y-0.5">
+                  <p className="font-medium text-gray-600">Password requirements:</p>
+                  <ul className="list-disc list-inside space-y-0.5">
+                    <li className={registerData.password.length >= 12 ? 'text-green-600' : ''}>
+                      At least 12 characters
+                    </li>
+                    <li className={/[A-Z]/.test(registerData.password) ? 'text-green-600' : ''}>
+                      At least one uppercase letter (A-Z)
+                    </li>
+                    <li className={/[a-z]/.test(registerData.password) ? 'text-green-600' : ''}>
+                      At least one lowercase letter (a-z)
+                    </li>
+                    <li className={/[0-9]/.test(registerData.password) ? 'text-green-600' : ''}>
+                      At least one number (0-9)
+                    </li>
+                    <li className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(registerData.password) ? 'text-green-600' : ''}>
+                      At least one special character (!@#$%...)
+                    </li>
+                  </ul>
                 </div>
               </div>
 

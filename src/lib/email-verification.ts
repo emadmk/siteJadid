@@ -111,7 +111,7 @@ export async function sendVerificationEmail(
 ): Promise<boolean> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const verifyUrl = `${baseUrl}/auth/verify-email?token=${token}`;
+    const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
     const html = buildVerificationEmailHtml(verifyUrl, userName);
 
     // Try to use the internal email API
