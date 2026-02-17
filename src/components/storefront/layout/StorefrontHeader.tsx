@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
@@ -29,7 +29,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 import { useSearch } from '@/contexts/SearchContext';
 
-export function StorefrontHeader() {
+function StorefrontHeaderInner() {
   const { data: session, status, update: updateSession } = useSession();
   const { cart, openCart } = useCart();
   const { openModal: openAuthModal } = useAuthModal();
@@ -439,7 +439,7 @@ export function StorefrontHeader() {
         <QuickOrderPad isOpen={isQuickOrderOpen} onClose={() => setIsQuickOrderOpen(false)} />
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="fixed inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
@@ -579,5 +579,13 @@ export function StorefrontHeader() {
         </div>
       )}
     </header>
+  );
+}
+
+export function StorefrontHeader() {
+  return (
+    <Suspense>
+      <StorefrontHeaderInner />
+    </Suspense>
   );
 }

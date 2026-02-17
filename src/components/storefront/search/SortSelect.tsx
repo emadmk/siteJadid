@@ -1,8 +1,9 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
-export function SortSelect() {
+function SortSelectInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -31,5 +32,13 @@ export function SortSelect() {
       <option value="name">Name: A-Z</option>
       <option value="rating">Highest Rated</option>
     </select>
+  );
+}
+
+export function SortSelect() {
+  return (
+    <Suspense>
+      <SortSelectInner />
+    </Suspense>
   );
 }

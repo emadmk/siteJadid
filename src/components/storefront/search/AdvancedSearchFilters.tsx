@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Filter, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ interface AdvancedSearchFiltersProps {
   };
 }
 
-export function AdvancedSearchFilters({ categories, priceRange }: AdvancedSearchFiltersProps) {
+function AdvancedSearchFiltersInner({ categories, priceRange }: AdvancedSearchFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -249,5 +249,13 @@ export function AdvancedSearchFilters({ categories, priceRange }: AdvancedSearch
         </Button>
       )}
     </div>
+  );
+}
+
+export function AdvancedSearchFilters(props: AdvancedSearchFiltersProps) {
+  return (
+    <Suspense>
+      <AdvancedSearchFiltersInner {...props} />
+    </Suspense>
   );
 }

@@ -1,27 +1,42 @@
 import Redis from 'ioredis';
 
-const getRedisUrl = () => {
-  if (process.env.REDIS_URL) {
-    return process.env.REDIS_URL;
+let _redis: Redis | null = null;
+
+function getRedisClient(): Redis {
+  if (!_redis) {
+    const url = process.env.REDIS_URL;
+    if (!url) {
+      throw new Error('REDIS_URL is not defined');
+    }
+    _redis = new Redis(url, {
+      maxRetriesPerRequest: 3,
+      retryStrategy(times) {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+    });
+
+    _redis.on('error', (error) => {
+      console.error('Redis connection error:', error);
+    });
+
+    _redis.on('connect', () => {
+      console.log('Redis connected successfully');
+    });
   }
-  throw new Error('REDIS_URL is not defined');
-};
+  return _redis;
+}
 
-// Create Redis client
-export const redis = new Redis(getRedisUrl(), {
-  maxRetriesPerRequest: 3,
-  retryStrategy(times) {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
+// Lazy proxy - only connects when actually used at runtime
+export const redis = new Proxy({} as Redis, {
+  get(_target, prop) {
+    const client = getRedisClient();
+    const value = (client as any)[prop];
+    if (typeof value === 'function') {
+      return value.bind(client);
+    }
+    return value;
   },
-});
-
-redis.on('error', (error) => {
-  console.error('Redis connection error:', error);
-});
-
-redis.on('connect', () => {
-  console.log('✅ Redis connected successfully');
 });
 
 // Cache utilities

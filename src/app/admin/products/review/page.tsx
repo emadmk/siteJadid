@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -81,7 +81,7 @@ interface Product {
   categories?: { categoryId: string }[];
 }
 
-export default function ProductReviewPage() {
+function ProductReviewPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1085,5 +1085,17 @@ export default function ProductReviewPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProductReviewPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-safety-green-600 animate-spin" />
+      </div>
+    }>
+      <ProductReviewPageContent />
+    </Suspense>
   );
 }

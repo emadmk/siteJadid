@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -87,7 +87,7 @@ interface ProductsListingProps {
   };
 }
 
-export function ProductsListing({
+function ProductsListingInner({
   initialProducts,
   initialTotal,
   initialPages,
@@ -925,6 +925,14 @@ export function ProductsListing({
         </div>
       </div>
     </div>
+  );
+}
+
+export function ProductsListing(props: ProductsListingProps) {
+  return (
+    <Suspense>
+      <ProductsListingInner {...props} />
+    </Suspense>
   );
 }
 

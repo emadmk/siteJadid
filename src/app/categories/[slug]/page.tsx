@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -104,7 +104,7 @@ interface PageData {
   brands: Brand[];
 }
 
-export default function CategoryPage({ params }: { params: { slug: string } }) {
+function CategoryPageContent({ params }: { params: { slug: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToCart } = useCart();
@@ -979,6 +979,18 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CategoryPage({ params }: { params: { slug: string } }) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-safety-green-600 animate-spin" />
+      </div>
+    }>
+      <CategoryPageContent params={params} />
+    </Suspense>
   );
 }
 

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export function SearchBar() {
+function SearchBarInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -53,5 +53,13 @@ export function SearchBar() {
         Search
       </Button>
     </form>
+  );
+}
+
+export function SearchBar() {
+  return (
+    <Suspense>
+      <SearchBarInner />
+    </Suspense>
   );
 }

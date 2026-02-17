@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyEmailToken } from '@/lib/email-verification';
 import { rateLimit } from '@/lib/rate-limit';

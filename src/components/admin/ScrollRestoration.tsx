@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export function ScrollRestoration() {
+function ScrollRestorationInner() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -39,4 +39,12 @@ export function ScrollRestoration() {
   }, [searchParams]);
 
   return null;
+}
+
+export function ScrollRestoration() {
+  return (
+    <Suspense>
+      <ScrollRestorationInner />
+    </Suspense>
+  );
 }
