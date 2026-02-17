@@ -3,6 +3,7 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { db } from './db';
+import { isAccountLocked, recordFailedAttempt, clearFailedAttempts } from './account-lockout';
 
 // Enums matching Prisma schema
 enum UserRole {
@@ -38,7 +39,7 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 days (reduced from 30 for security)
   },
   pages: {
     signIn: '/auth/signin',
@@ -57,6 +58,13 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials');
         }
 
+        // Check account lockout
+        const lockStatus = await isAccountLocked(credentials.email);
+        if (lockStatus.locked) {
+          const minutes = Math.ceil(lockStatus.remainingSeconds / 60);
+          throw new Error(`Account is temporarily locked. Try again in ${minutes} minutes.`);
+        }
+
         const user = await db.user.findUnique({
           where: { email: credentials.email },
           include: {
@@ -67,6 +75,8 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user || !user.password) {
+          // Record failed attempt even for non-existent users (prevent enumeration)
+          await recordFailedAttempt(credentials.email);
           throw new Error('Invalid credentials');
         }
 
@@ -77,8 +87,21 @@ export const authOptions: NextAuthOptions = {
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
         if (!isPasswordValid) {
+          const result = await recordFailedAttempt(credentials.email);
+          if (result.locked) {
+            throw new Error('Too many failed attempts. Account locked for 15 minutes.');
+          }
           throw new Error('Invalid credentials');
         }
+
+        // Check email verification (admin roles are exempt)
+        const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'CUSTOMER_SERVICE', 'WAREHOUSE_MANAGER', 'MARKETING_MANAGER', 'CONTENT_MANAGER'];
+        if (!adminRoles.includes(user.role) && !user.emailVerified) {
+          throw new Error('Please verify your email address. Check your inbox for the verification link.');
+        }
+
+        // Clear failed attempts on successful login
+        await clearFailedAttempts(credentials.email);
 
         return {
           id: user.id,

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { calculateProductDiscount } from '@/lib/discounts';
+import { calculateShippingCost } from '@/lib/shipping-calculator';
 
 // GET /api/orders - Get user's orders
 export async function GET(request: NextRequest) {
@@ -298,19 +299,13 @@ export async function POST(request: NextRequest) {
       return sum + (item.product.weight || 0) * item.quantity;
     }, 0);
 
-    // Use shipping cost from checkout if provided, otherwise calculate fallback
-    let shippingCost: number;
-    if (typeof providedShippingCost === 'number') {
-      shippingCost = providedShippingCost;
-    } else {
-      // Fallback calculation if not provided
-      shippingCost = subtotal >= 99 ? 0 : totalWeight > 20 ? 35 : 15;
-    }
-
-    // Handle FREE_SHIPPING coupon
-    if (validatedCoupon?.type === 'FREE_SHIPPING') {
-      shippingCost = 0;
-    }
+    // SECURITY FIX: Calculate shipping cost server-side (ignore client-supplied value)
+    const shippingResult = calculateShippingCost({
+      subtotal,
+      totalWeight,
+      isFreeShippingCoupon: validatedCoupon?.type === 'FREE_SHIPPING',
+    });
+    const shippingCost = shippingResult.cost;
 
     // Fix #7: Use only normalized accountType for tax calculation
     const isTaxExempt = accountType === 'GOVERNMENT' || accountType === 'VOLUME_BUYER';

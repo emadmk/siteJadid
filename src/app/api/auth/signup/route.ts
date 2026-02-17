@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 import { rateLimit } from '@/lib/rate-limit';
+import { validatePassword } from '@/lib/password-policy';
+import { createVerificationToken, sendVerificationEmail } from '@/lib/email-verification';
 
 // Government Departments
 const GOVERNMENT_DEPARTMENTS = ['DOW', 'DLA', 'USDA', 'NIH', 'GCSS-Army', 'OTHER'] as const;
@@ -10,7 +12,7 @@ const GOVERNMENT_DEPARTMENTS = ['DOW', 'DLA', 'USDA', 'NIH', 'GCSS-Army', 'OTHER
 // Validation schema - Updated for new user types
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().min(12, 'Password must be at least 12 characters'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   phone: z.string().optional(),
   // Support both old and new account types for backward compatibility
@@ -24,7 +26,7 @@ const signupSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') || 'unknown';
-  const { success } = rateLimit(`signup:${ip}`, 5, 60 * 1000);
+  const { success } = await rateLimit(`signup:${ip}`, 5, 60 * 1000);
   if (!success) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
@@ -32,6 +34,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const validatedData = signupSchema.parse(body);
+
+    // Strong password policy check
+    const passwordCheck = validatePassword(validatedData.password);
+    if (!passwordCheck.valid) {
+      return NextResponse.json(
+        { error: passwordCheck.errors[0] },
+        { status: 400 }
+      );
+    }
 
     // Map old account types to new ones
     let accountType = validatedData.accountType;
@@ -97,15 +108,20 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Send verification email
+    const verificationToken = await createVerificationToken(validatedData.email);
+    await sendVerificationEmail(validatedData.email, verificationToken, validatedData.name);
+
     // Return success (without password)
     const { password: _password, ...userWithoutPassword } = user;
 
     return NextResponse.json(
       {
-        message: 'Account created successfully',
+        message: 'Account created successfully. Please check your email to verify your account.',
         user: userWithoutPassword,
         accountType: accountType,
         requiresApproval: accountType === 'GOVERNMENT' || accountType === 'VOLUME_BUYER',
+        requiresEmailVerification: true,
       },
       { status: 201 }
     );

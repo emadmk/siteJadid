@@ -39,11 +39,9 @@ const nextConfig = {
         hostname: 'www.adasupply.com',
         pathname: '/uploads/**',
       },
-      {
-        protocol: 'https',
-        hostname: '**',
-        pathname: '/uploads/**',
-      },
+      // SECURITY: Wildcard hostname removed to prevent SSRF
+      // Add specific domains here if needed:
+      // { protocol: 'https', hostname: 'cdn.example.com', pathname: '/uploads/**' },
     ],
   },
   experimental: {
@@ -100,10 +98,7 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self' https://js.stripe.com https://hooks.stripe.com;",
-          },
+          // CSP is now set dynamically with nonce in middleware.ts
         ],
       },
     ];

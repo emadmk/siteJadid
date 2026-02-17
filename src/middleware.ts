@@ -6,12 +6,16 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   const { pathname } = request.nextUrl;
 
+  // Generate CSP nonce for this request
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+
   // Public routes that don't require authentication
   const publicRoutes = [
     '/',
     '/products',
     '/auth/signin',
     '/auth/signup',
+    '/auth/verify-email',
     '/contact',
     '/faq',
     '/terms',
@@ -27,9 +31,41 @@ export async function middleware(request: NextRequest) {
     pathname === route || pathname.startsWith('/products/')
   );
 
+  // CSRF: Set CSRF cookie on page loads (not API routes)
+  const response = NextResponse.next();
+
+  // Set CSP header with nonce
+  const cspHeader = [
+    `default-src 'self'`,
+    `script-src 'self' 'nonce-${nonce}' https://js.stripe.com`,
+    `style-src 'self' 'unsafe-inline'`,
+    `img-src 'self' data: https:`,
+    `font-src 'self' data:`,
+    `connect-src 'self' https:`,
+    `frame-src 'self' https://js.stripe.com https://hooks.stripe.com`,
+  ].join('; ');
+
+  response.headers.set('Content-Security-Policy', cspHeader);
+  response.headers.set('X-CSP-Nonce', nonce);
+
+  // Set CSRF cookie on page loads
+  if (!request.nextUrl.pathname.startsWith('/api/')) {
+    const existingCsrf = request.cookies.get('__csrf');
+    if (!existingCsrf) {
+      const csrfToken = crypto.randomUUID();
+      response.cookies.set('__csrf', csrfToken, {
+        httpOnly: false, // Must be readable by JS for double-submit
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+      });
+    }
+  }
+
   // Allow public routes
   if (isPublicRoute) {
-    return NextResponse.next();
+    return response;
   }
 
   // Admin routes require admin role
@@ -52,7 +88,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    return NextResponse.next();
+    return response;
   }
 
   // Protected user routes
@@ -70,10 +106,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/admin', request.url));
     }
 
-    return NextResponse.next();
+    return response;
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
