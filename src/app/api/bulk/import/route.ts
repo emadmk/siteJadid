@@ -32,6 +32,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
     const { type, data } = await request.json();
 
     if (type === 'products') {

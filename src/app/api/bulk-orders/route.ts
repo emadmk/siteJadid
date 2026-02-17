@@ -67,6 +67,9 @@ export async function POST(request: NextRequest) {
     // If csvData provided, parse and add to cart
     if (csvData) {
       const lines = csvData.split('\n').filter((line: string) => line.trim());
+      if (lines.length > 500) {
+        return NextResponse.json({ error: 'CSV exceeds maximum of 500 lines' }, { status: 400 });
+      }
       const results: {
         success: Array<{ sku: string; quantity: number; productName: string }>;
         errors: Array<{ line?: string; sku?: string; error: string; available?: number }>;

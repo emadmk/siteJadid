@@ -40,6 +40,13 @@ export async function PATCH(
       );
     }
 
+    if (rating !== undefined) {
+      const parsedRating = parseInt(rating);
+      if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+        return NextResponse.json({ error: 'Rating must be between 1 and 5' }, { status: 400 });
+      }
+    }
+
     // Update the review
     const updatedReview = await db.review.update({
       where: { id: reviewId },
@@ -54,7 +61,6 @@ export async function PATCH(
           select: {
             id: true,
             name: true,
-            email: true,
             image: true,
           },
         },

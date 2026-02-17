@@ -130,6 +130,17 @@ export async function GET(request: NextRequest) {
       grouped[setting.category][shortKey] = parsedValue;
     }
 
+    // Mask sensitive values
+    const sensitiveKeys = ['stripeSecretKey', 'stripeWebhookSecret', 'paypalClientSecret', 'shippoApiKey'];
+    for (const category of Object.keys(grouped)) {
+      for (const key of Object.keys(grouped[category])) {
+        if (sensitiveKeys.includes(key) && typeof grouped[category][key] === 'string' && grouped[category][key]) {
+          const val = grouped[category][key] as string;
+          grouped[category][key] = val.length > 4 ? '****' + val.slice(-4) : '****';
+        }
+      }
+    }
+
     return NextResponse.json({ settings: grouped, raw: settings });
   } catch (error: any) {
     console.error('Error fetching settings:', error);

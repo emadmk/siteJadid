@@ -58,6 +58,15 @@ export async function POST(request: NextRequest) {
     const authData = await authResponse.json();
     const accessToken = authData.access_token;
 
+    let validatedAmount = data.amount;
+    if (data.orderId) {
+      const order = await prisma.order.findUnique({ where: { id: data.orderId } });
+      if (!order || order.userId !== session.user.id) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+      validatedAmount = Number(order.total);
+    }
+
     // Create order
     const orderResponse = await fetch(`${baseUrl}/v2/checkout/orders`, {
       method: 'POST',
@@ -71,7 +80,7 @@ export async function POST(request: NextRequest) {
           {
             amount: {
               currency_code: data.currency,
-              value: data.amount.toFixed(2),
+              value: validatedAmount.toFixed(2),
             },
             description: data.description || 'Order payment',
             reference_id: data.orderId || '',
@@ -98,7 +107,7 @@ export async function POST(request: NextRequest) {
         transactionId: orderData.id,
         orderId: data.orderId,
         userId: session.user.id,
-        amount: data.amount,
+        amount: validatedAmount,
         currency: data.currency,
         status: 'pending',
         paymentMethod: 'paypal',
@@ -116,7 +125,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error creating PayPal order:', error);
     return NextResponse.json(
-      { error: 'Failed to create PayPal order', details: error.message },
+      { error: 'Failed to create PayPal order' },
       { status: 500 }
     );
   }

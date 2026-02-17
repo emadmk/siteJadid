@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
-  try {
-    // Fix #12: Basic rate limiting using response headers
-    // In production, use a proper rate limiter like upstash/ratelimit
+  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+  const { success } = rateLimit(`track:${ip}`, 10, 60 * 1000);
+  if (!success) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
 
+  try {
     const body = await request.json();
     const { orderNumber, email } = body;
 
@@ -117,7 +121,10 @@ export async function POST(request: NextRequest) {
         })),
 
         // Status History
-        statusHistory: order.statusHistory,
+        statusHistory: order.statusHistory.map((sh: any) => ({
+          status: sh.status,
+          createdAt: sh.createdAt,
+        })),
       },
     });
 

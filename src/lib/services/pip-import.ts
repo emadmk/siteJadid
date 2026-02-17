@@ -142,6 +142,15 @@ interface VariantGroup {
 }
 
 export class PipImportService {
+  private escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   private errors: PipImportError[] = [];
   private warnings: PipImportWarning[] = [];
   private createdProducts: string[] = [];
@@ -856,10 +865,10 @@ export class PipImportService {
       if (colors.length > 0 || sizes.length > 0) {
         parts.push(`<h3>Available Options</h3>`);
         if (colors.length > 0) {
-          parts.push(`<p><strong>Colors:</strong> ${colors.join(', ')}</p>`);
+          parts.push(`<p><strong>Colors:</strong> ${colors.map(c => this.escapeHtml(c)).join(', ')}</p>`);
         }
         if (sizes.length > 0) {
-          parts.push(`<p><strong>Sizes:</strong> ${sizes.join(', ')}</p>`);
+          parts.push(`<p><strong>Sizes:</strong> ${sizes.map(s => this.escapeHtml(s)).join(', ')}</p>`);
         }
       }
     }
@@ -874,13 +883,13 @@ export class PipImportService {
         .map(a => a.trim())
         .filter(Boolean);
       if (apps.length > 0) {
-        parts.push(`<ul>${apps.map(a => `<li>${a}</li>`).join('')}</ul>`);
+        parts.push(`<ul>${apps.map(a => `<li>${this.escapeHtml(a)}</li>`).join('')}</ul>`);
       }
     }
 
     // Spec sheet link
-    if (group.specsheetLink) {
-      parts.push(`<p><a href="${group.specsheetLink}" target="_blank" class="btn">View Specification Sheet</a></p>`);
+    if (group.specsheetLink && /^https?:\/\//i.test(group.specsheetLink)) {
+      parts.push(`<p><a href="${this.escapeHtml(group.specsheetLink)}" target="_blank" class="btn">View Specification Sheet</a></p>`);
     }
 
     return parts.join('\n') || `<p>${group.productName}</p>`;

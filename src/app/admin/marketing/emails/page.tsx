@@ -675,9 +675,11 @@ export default function EmailTemplatesPage() {
                 </button>
               </div>
               <div className="p-6">
-                <div
-                  className="bg-white border border-gray-200 rounded-lg p-4"
-                  dangerouslySetInnerHTML={{ __html: previewTemplate.htmlContent }}
+                <iframe
+                  sandbox=""
+                  srcDoc={previewTemplate.htmlContent}
+                  className="w-full h-[600px] bg-white border border-gray-200 rounded-lg"
+                  title="Email Template Preview"
                 />
               </div>
             </motion.div>

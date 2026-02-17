@@ -14,24 +14,30 @@ export async function POST(request: NextRequest) {
 
     const { amount, orderId } = await request.json();
 
-    if (!amount || amount <= 0) {
-      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
-    }
-
-    // Verify order belongs to user
     if (orderId) {
-      const order = await db.order.findUnique({
-        where: { id: orderId },
-      });
-
+      const order = await db.order.findUnique({ where: { id: orderId } });
       if (!order || order.userId !== session.user.id) {
         return NextResponse.json({ error: 'Order not found' }, { status: 404 });
       }
+      // Use order total from DB, not client amount
+      const validatedAmount = Number(order.total);
+      const paymentIntent = await createPaymentIntent(validatedAmount, 'usd', {
+        userId: session.user.id,
+        orderId,
+      });
+      return NextResponse.json({
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      });
+    }
+
+    // For non-order payments, still validate amount is reasonable
+    if (!amount || amount <= 0 || amount > 100000) {
+      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
     const paymentIntent = await createPaymentIntent(amount, 'usd', {
       userId: session.user.id,
-      ...(orderId && { orderId }),
     });
 
     return NextResponse.json({

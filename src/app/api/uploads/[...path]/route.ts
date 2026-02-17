@@ -10,7 +10,6 @@ const mimeTypes: Record<string, string> = {
   '.png': 'image/png',
   '.gif': 'image/gif',
   '.webp': 'image/webp',
-  '.svg': 'image/svg+xml',
 };
 
 export async function GET(
@@ -23,11 +22,17 @@ export async function GET(
     const filePath = resolvedParams.path.join('/');
 
     // Prevent directory traversal attacks
-    if (filePath.includes('..')) {
+    const decodedPath = decodeURIComponent(filePath);
+    if (decodedPath.includes('..') || decodedPath.includes('\0') || filePath.includes('..')) {
       return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
     }
-
-    const fullPath = path.join(process.cwd(), 'public', 'uploads', filePath);
+    const fullPath = path.join(process.cwd(), 'public', 'uploads', decodedPath);
+    // Verify resolved path is within uploads directory
+    const uploadsDir = path.resolve(process.cwd(), 'public', 'uploads');
+    const resolvedPath = path.resolve(fullPath);
+    if (!resolvedPath.startsWith(uploadsDir)) {
+      return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
+    }
 
     // Check if file exists
     if (!existsSync(fullPath)) {

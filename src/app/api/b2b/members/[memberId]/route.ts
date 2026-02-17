@@ -41,7 +41,12 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    return NextResponse.json(member);
+    // Don't expose full b2bProfile details
+    const { b2bProfile, ...memberData } = member;
+    return NextResponse.json({
+      ...memberData,
+      b2bProfileId: member.b2bProfile.id,
+    });
   } catch (error) {
     console.error('Get B2B member error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

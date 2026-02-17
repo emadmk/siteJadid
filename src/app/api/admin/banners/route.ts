@@ -105,7 +105,9 @@ export async function POST(request: NextRequest) {
         await mkdir(uploadsDir, { recursive: true });
       }
 
-      const ext = imageFile.name.split('.').pop() || 'jpg';
+      const rawExt = (imageFile.name.split('.').pop() || 'jpg').toLowerCase();
+      const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      const ext = allowedExts.includes(rawExt) ? rawExt : 'jpg';
       const filename = `banner-${Date.now()}.${ext}`;
       const filepath = path.join(uploadsDir, filename);
 

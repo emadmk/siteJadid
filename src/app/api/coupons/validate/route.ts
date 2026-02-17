@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+  const { success } = rateLimit(`coupon:${ip}`, 10, 60 * 1000);
+  if (!success) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
   try {
     const session = await getServerSession(authOptions);
     const body = await request.json();

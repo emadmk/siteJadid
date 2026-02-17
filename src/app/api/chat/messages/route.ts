@@ -7,6 +7,9 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const data = await request.json();
 
     if (!data.conversationId || !data.message) {
@@ -31,7 +34,7 @@ export async function POST(request: NextRequest) {
     const message = await prisma.chatMessage.create({
       data: {
         conversationId: data.conversationId,
-        senderId: session?.user?.id,
+        senderId: session.user.id,
         senderType: session ? (
           ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'].includes(session.user.role)
             ? 'ADMIN'
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error sending message:', error);
     return NextResponse.json(
-      { error: 'Failed to send message', details: error.message },
+      { error: 'Failed to send message' },
       { status: 500 }
     );
   }

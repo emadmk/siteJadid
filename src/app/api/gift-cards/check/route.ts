@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { rateLimit } from '@/lib/rate-limit';
 
 // POST /api/gift-cards/check
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+  const { success } = rateLimit(`giftcard:${ip}`, 10, 60 * 1000);
+  if (!success) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
   try {
     const data = await request.json();
 

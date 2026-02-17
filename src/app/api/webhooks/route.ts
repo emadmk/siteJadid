@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import crypto from 'crypto';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     const webhooks = await db.webhook.findMany({
@@ -27,6 +32,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
     const { url, events, isActive } = await request.json();
 
     const webhook = await db.webhook.create({
@@ -34,7 +43,7 @@ export async function POST(request: NextRequest) {
         url,
         events,
         isActive: isActive !== false,
-        secret: `whsec_${Math.random().toString(36).substring(2, 15)}`,
+        secret: `whsec_${crypto.randomUUID()}`,
       },
     });
 

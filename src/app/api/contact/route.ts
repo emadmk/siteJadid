@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+  const { success } = rateLimit(`contact:${ip}`, 3, 60 * 1000);
+  if (!success) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
   try {
     const body = await request.json();
     const { name, email, phone, subject, message, accountType } = body;

@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 
-// POST /api/email/send
+// POST /api/email/send - Admin only (CRIT-2 fix)
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY FIX: Require admin authentication
+    const session = await getServerSession(authOptions);
+    if (!session || !['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 403 }
+      );
+    }
+
     const data = await request.json();
 
     // Validate required fields
@@ -75,7 +86,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error sending email:', error);
     return NextResponse.json(
-      { error: 'Failed to send email', details: error.message },
+      { error: 'Failed to send email' },
       { status: 500 }
     );
   }

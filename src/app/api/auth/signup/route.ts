@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Government Departments
 const GOVERNMENT_DEPARTMENTS = ['DOW', 'DLA', 'USDA', 'NIH', 'GCSS-Army', 'OTHER'] as const;
@@ -22,6 +23,12 @@ const signupSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
+  const { success } = rateLimit(`signup:${ip}`, 5, 60 * 1000);
+  if (!success) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
     const validatedData = signupSchema.parse(body);

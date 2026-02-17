@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               name: true,
-              email: true,
               image: true,
             },
           },
@@ -81,6 +80,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const parsedRating = parseInt(rating);
+    if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      return NextResponse.json({ error: 'Rating must be between 1 and 5' }, { status: 400 });
+    }
+
     // Check if product exists
     const product = await db.product.findUnique({
       where: { id: productId },
@@ -113,7 +117,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: session.user.id,
         productId,
-        rating: parseInt(rating),
+        rating: parsedRating,
         title,
         comment,
         images: images || [],
@@ -124,7 +128,6 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            email: true,
             image: true,
           },
         },

@@ -29,6 +29,11 @@ enum AccountType {
   GOVERNMENT = 'GOVERNMENT',
 }
 
+// SECURITY FIX (AUTH-H5): Ensure NEXTAUTH_SECRET is set
+if (!process.env.NEXTAUTH_SECRET) {
+  throw new Error('NEXTAUTH_SECRET environment variable is required');
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   session: {
@@ -96,6 +101,29 @@ export const authOptions: NextAuthOptions = {
         token.accountType = user.accountType;
         token.gsaApprovalStatus = user.gsaApprovalStatus;
         token.approvalStatus = user.approvalStatus;
+        token.roleRefreshedAt = Date.now();
+      }
+      // Refresh role from DB every 5 minutes
+      if (token.id && (!token.roleRefreshedAt || Date.now() - (token.roleRefreshedAt as number) > 5 * 60 * 1000)) {
+        try {
+          const dbUser = await db.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true, accountType: true, isActive: true, approvalStatus: true, gsaApprovalStatus: true },
+          });
+          if (dbUser) {
+            if (!dbUser.isActive) {
+              // User deactivated - invalidate token
+              return { ...token, role: 'CUSTOMER', accountType: 'B2C' };
+            }
+            token.role = dbUser.role;
+            token.accountType = dbUser.accountType;
+            token.approvalStatus = dbUser.approvalStatus;
+            token.gsaApprovalStatus = dbUser.gsaApprovalStatus;
+          }
+          token.roleRefreshedAt = Date.now();
+        } catch {
+          // If DB fails, keep existing token data
+        }
       }
       return token;
     },

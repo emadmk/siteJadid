@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   // Admin routes require admin role
   if (pathname.startsWith('/admin')) {
     if (!token) {
-      return NextResponse.redirect(new URL('/auth/signin?callbackUrl=' + pathname, request.url));
+      return NextResponse.redirect(new URL('/auth/signin?callbackUrl=' + encodeURIComponent(pathname), request.url));
     }
 
     const adminRoles = [
@@ -61,7 +61,7 @@ export async function middleware(request: NextRequest) {
 
   if (isProtectedRoute) {
     if (!token) {
-      return NextResponse.redirect(new URL('/auth/signin?callbackUrl=' + pathname, request.url));
+      return NextResponse.redirect(new URL('/auth/signin?callbackUrl=' + encodeURIComponent(pathname), request.url));
     }
 
     // Admin users should use admin panel, not user dashboard

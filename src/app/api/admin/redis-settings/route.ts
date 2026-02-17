@@ -12,13 +12,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const settings = await prisma.redisCacheSettings.findFirst();
+    let settings = await prisma.redisCacheSettings.findFirst();
+
+    if (settings && settings.password) {
+      settings = { ...settings, password: '****' + settings.password.slice(-4) };
+    }
 
     return NextResponse.json(settings);
   } catch (error: any) {
     console.error('Error fetching Redis settings:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch Redis settings', details: error.message },
+      { error: 'Failed to fetch Redis settings' },
       { status: 500 }
     );
   }
@@ -80,7 +84,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error saving Redis settings:', error);
     return NextResponse.json(
-      { error: 'Failed to save Redis settings', details: error.message },
+      { error: 'Failed to save Redis settings' },
       { status: 500 }
     );
   }

@@ -43,9 +43,18 @@ export async function POST(request: NextRequest) {
       apiVersion: '2023-10-16',
     });
 
+    let validatedAmount = data.amount;
+    if (data.orderId) {
+      const order = await prisma.order.findUnique({ where: { id: data.orderId } });
+      if (!order || order.userId !== session.user.id) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+      validatedAmount = Number(order.total);
+    }
+
     // Create Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(data.amount * 100), // Convert to cents
+      amount: Math.round(validatedAmount * 100), // Convert to cents
       currency: data.currency.toLowerCase(),
       automatic_payment_methods: {
         enabled: true,
@@ -64,7 +73,7 @@ export async function POST(request: NextRequest) {
         transactionId: paymentIntent.id,
         orderId: data.orderId,
         userId: session.user.id,
-        amount: data.amount,
+        amount: validatedAmount,
         currency: data.currency,
         status: 'pending',
         paymentMethod: 'card',
@@ -82,7 +91,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error creating Stripe payment:', error);
     return NextResponse.json(
-      { error: 'Failed to create payment', details: error.message },
+      { error: 'Failed to create payment' },
       { status: 500 }
     );
   }

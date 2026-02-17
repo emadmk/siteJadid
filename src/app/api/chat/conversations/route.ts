@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching conversations:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch conversations', details: error.message },
+      { error: 'Failed to fetch conversations' },
       { status: 500 }
     );
   }
@@ -43,6 +43,16 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const data = await request.json();
+
+    // If not authenticated, require guest info
+    if (!session?.user?.id) {
+      if (!data.guestEmail || !data.guestName) {
+        return NextResponse.json(
+          { error: 'Guest name and email are required for unauthenticated users' },
+          { status: 400 }
+        );
+      }
+    }
 
     const conversation = await prisma.chatConversation.create({
       data: {
@@ -77,7 +87,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error creating conversation:', error);
     return NextResponse.json(
-      { error: 'Failed to create conversation', details: error.message },
+      { error: 'Failed to create conversation' },
       { status: 500 }
     );
   }
