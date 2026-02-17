@@ -110,28 +110,13 @@ A comprehensive, production-ready B2B/B2C/GSA e-commerce platform built with Nex
 - Docker and Docker Compose
 - Git
 
-### One-Click Deployment
+### Setup
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd siteJadid
 
-# Run the deployment script
-bash scripts/deploy.sh
-```
-
-The script will:
-1. Install dependencies
-2. Start Docker services (PostgreSQL, Redis, Elasticsearch)
-3. Generate Prisma Client
-4. Run database migrations
-5. Seed database with sample data
-6. Build the application
-
-### Manual Setup
-
-```bash
 # Install dependencies
 npm install
 
@@ -157,49 +142,15 @@ npm run dev
 
 Visit http://localhost:3000
 
-## Test Accounts
-
-After seeding, you can login with these test accounts:
-
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | superadmin@ecommerce.com | password123 |
-| Admin | admin@ecommerce.com | password123 |
-| Accountant | accountant@ecommerce.com | password123 |
-| Customer (B2C) | customer@example.com | password123 |
-| B2B Customer | b2b@company.com | password123 |
-| GSA Customer | gsa@agency.gov | password123 |
-
 ## Environment Variables
 
-See `.env.example` for all required environment variables:
+Copy `.env.example` to `.env` and fill in your own credentials:
 
-```env
-# Application
-NODE_ENV=development
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# Database
-DATABASE_URL="postgresql://ecommerce_user:ecommerce_password@localhost:5432/ecommerce_db"
-
-# Redis
-REDIS_URL="redis://localhost:6379"
-
-# Elasticsearch
-ELASTICSEARCH_NODE="http://localhost:9200"
-
-# NextAuth
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-here
-
-# Stripe
-STRIPE_SECRET_KEY=sk_test_your_key
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_key
-
-# Email (SMTP)
-EMAIL_SERVER_HOST=smtp.gmail.com
-EMAIL_FROM=noreply@yourdomain.com
+```bash
+cp .env.example .env
 ```
+
+See `.env.example` for the full list of required variables.
 
 ## Project Structure
 
@@ -209,8 +160,6 @@ EMAIL_FROM=noreply@yourdomain.com
 │   ├── schema.prisma      # Database schema
 │   └── seed.ts            # Database seeder
 ├── public/                # Static files
-├── scripts/
-│   └── deploy.sh          # One-click deployment script
 ├── src/
 │   ├── app/               # Next.js App Router
 │   │   ├── api/           # API routes
@@ -352,8 +301,6 @@ npm run docker:up        # Start Docker services
 npm run docker:down      # Stop Docker services
 npm run docker:build     # Build Docker images
 
-# Deployment
-npm run deploy           # One-click deployment
 ```
 
 ## Features Roadmap
@@ -395,21 +342,6 @@ npm run deploy           # One-click deployment
 - API response caching
 - Lazy loading and code splitting
 
-## Contributing
-
-Contributions are welcome! Please read our contributing guidelines.
-
 ## License
 
 MIT License
-
-## Support
-
-For issues and questions:
-- GitHub Issues: [Create an issue]
-- Email: support@ecommerce.com
-- Documentation: See `docs/` folder
-
----
-
-Built with ❤️ using Next.js, PostgreSQL, Redis, and Elasticsearch
