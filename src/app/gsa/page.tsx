@@ -108,97 +108,121 @@ export default function GSAContractPage() {
 
             {/* Tagline below badge */}
             <p className="text-xl md:text-2xl text-gray-300 font-light italic mb-10">
-              Serving the government for over 25 years
+              Serving the government for over 25 years !
             </p>
 
-            {/* Partner Logos Row */}
-            <div className="flex flex-wrap justify-center gap-4 mb-8">
+            {/* Partner Logos - 4 columns x 2 rows grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8 w-full max-w-3xl">
               {/* SBA WOSB Certified */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
-                <Image
-                  src="/uploads/logos (4).png"
-                  alt="SBA WOSB Certified"
-                  width={130}
-                  height={88}
-                  className="object-contain h-full w-auto"
-                />
-              </div>
-
-              {/* FedMall */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
-                <Image
-                  src="/uploads/logos (2).jpeg"
-                  alt="FedMall"
-                  width={130}
-                  height={78}
-                  className="object-contain max-w-full max-h-full"
-                />
+              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
+                <div className="h-20 flex items-center justify-center mb-2">
+                  <Image
+                    src="/uploads/logos (4).png"
+                    alt="SBA WOSB Certified"
+                    width={160}
+                    height={80}
+                    className="object-contain h-full w-auto"
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">SBA WOSB Certified</span>
               </div>
 
               {/* GSA */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
-                <Image
-                  src="/uploads/logos (3).png"
-                  alt="GSA"
-                  width={130}
-                  height={78}
-                  className="object-contain max-w-full max-h-full"
-                />
+              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
+                <div className="h-20 flex items-center justify-center mb-2">
+                  <Image
+                    src="/uploads/logos (3).png"
+                    alt="GSA"
+                    width={160}
+                    height={80}
+                    className="object-contain h-full w-auto"
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">GSA Schedule Holder</span>
+              </div>
+
+              {/* FedMall */}
+              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
+                <div className="h-20 flex items-center justify-center mb-2">
+                  <Image
+                    src="/uploads/logos (2).jpeg"
+                    alt="FedMall"
+                    width={160}
+                    height={80}
+                    className="object-contain h-full w-auto"
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">FedMall</span>
               </div>
 
               {/* AbilityOne Program */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
-                <Image
-                  src="/uploads/logos (1).png"
-                  alt="AbilityOne Program"
-                  width={130}
-                  height={78}
-                  className="object-contain max-w-full max-h-full"
-                />
+              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
+                <div className="h-20 flex items-center justify-center mb-2">
+                  <Image
+                    src="/uploads/logos (1).png"
+                    alt="AbilityOne Program"
+                    width={160}
+                    height={80}
+                    className="object-contain h-full w-auto"
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">AbilityOne Program</span>
               </div>
 
               {/* HUBZone Certified */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
-                <Image
-                  src="/uploads/logos (3).jpeg"
-                  alt="HUBZone Certified"
-                  width={130}
-                  height={78}
-                  className="object-contain max-w-full max-h-full"
-                />
+              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
+                <div className="h-20 flex items-center justify-center mb-2">
+                  <Image
+                    src="/uploads/logos (3).jpeg"
+                    alt="HUBZone Certified"
+                    width={160}
+                    height={80}
+                    className="object-contain h-full w-auto"
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">HUBZone Certified</span>
               </div>
 
               {/* Defense Logistics Agency */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
-                <Image
-                  src="/uploads/logos (1).jpg"
-                  alt="Defense Logistics Agency"
-                  width={130}
-                  height={78}
-                  className="object-contain max-w-full max-h-full"
-                />
+              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
+                <div className="h-20 flex items-center justify-center mb-2">
+                  <Image
+                    src="/uploads/logos (1).jpg"
+                    alt="Defense Logistics Agency"
+                    width={160}
+                    height={80}
+                    className="object-contain h-full w-auto"
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">Defense Logistics Agency</span>
               </div>
 
               {/* MRO Xpress */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
-                <Image
-                  src="/uploads/logos (2).png"
-                  alt="MRO Xpress"
-                  width={130}
-                  height={78}
-                  className="object-contain max-w-full max-h-full"
-                />
+              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
+                <div className="h-20 flex items-center justify-center mb-2">
+                  <Image
+                    src="/uploads/logos (2).png"
+                    alt="MRO Xpress"
+                    width={160}
+                    height={80}
+                    className="object-contain h-full w-auto"
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">MRO Xpress</span>
               </div>
 
               {/* Tunnel to Towers */}
-              <div className="bg-white rounded-xl p-3 shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center min-w-[156px] h-[104px] overflow-hidden">
-                <Image
-                  src="/uploads/logos (1).jpeg"
-                  alt="Tunnel to Towers Foundation"
-                  width={130}
-                  height={78}
-                  className="object-contain max-w-full max-h-full"
-                />
+              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
+                <div className="h-20 flex items-center justify-center mb-2">
+                  <Image
+                    src="/uploads/logos (1).jpeg"
+                    alt="Tunnel to Towers Foundation"
+                    width={160}
+                    height={80}
+                    className="object-contain h-full w-auto"
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">Tunnel to Towers</span>
               </div>
             </div>
 

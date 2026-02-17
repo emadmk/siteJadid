@@ -174,7 +174,7 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {/* SBA WOSB Certified */}
-            <div className="group bg-gray-50 hover:bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
               <div className="h-24 flex items-center justify-center mb-3">
                 <Image
                   src="/uploads/logos (4).png"
@@ -188,7 +188,7 @@ export default function AboutPage() {
             </div>
 
             {/* GSA */}
-            <div className="group bg-gray-50 hover:bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
               <div className="h-24 flex items-center justify-center mb-3">
                 <Image
                   src="/uploads/logos (3).png"
@@ -202,7 +202,7 @@ export default function AboutPage() {
             </div>
 
             {/* FedMall */}
-            <div className="group bg-gray-50 hover:bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
               <div className="h-24 flex items-center justify-center mb-3">
                 <Image
                   src="/uploads/logos (2).jpeg"
@@ -216,7 +216,7 @@ export default function AboutPage() {
             </div>
 
             {/* AbilityOne Program */}
-            <div className="group bg-gray-50 hover:bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
               <div className="h-24 flex items-center justify-center mb-3">
                 <Image
                   src="/uploads/logos (1).png"
@@ -230,7 +230,7 @@ export default function AboutPage() {
             </div>
 
             {/* HUBZone Certified */}
-            <div className="group bg-gray-50 hover:bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
               <div className="h-24 flex items-center justify-center mb-3">
                 <Image
                   src="/uploads/logos (3).jpeg"
@@ -244,7 +244,7 @@ export default function AboutPage() {
             </div>
 
             {/* Defense Logistics Agency */}
-            <div className="group bg-gray-50 hover:bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
               <div className="h-24 flex items-center justify-center mb-3">
                 <Image
                   src="/uploads/logos (1).jpg"
@@ -258,7 +258,7 @@ export default function AboutPage() {
             </div>
 
             {/* MRO Xpress */}
-            <div className="group bg-gray-50 hover:bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
               <div className="h-24 flex items-center justify-center mb-3">
                 <Image
                   src="/uploads/logos (2).png"
@@ -272,7 +272,7 @@ export default function AboutPage() {
             </div>
 
             {/* Tunnel to Towers */}
-            <div className="group bg-gray-50 hover:bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
+            <div className="group bg-white rounded-2xl p-6 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center border border-transparent hover:border-safety-green-200">
               <div className="h-24 flex items-center justify-center mb-3">
                 <Image
                   src="/uploads/logos (1).jpeg"
