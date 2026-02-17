@@ -260,7 +260,7 @@ export default function RegisterPage() {
                     className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden text-left"
                   >
                     {/* Card Header with Image */}
-                    <div className={`relative h-40 bg-gradient-to-br ${type.bgGradient}`}>
+                    <div className={`relative h-40 bg-gradient-to-br ${type.bgGradient} overflow-hidden`}>
                       <Image
                         src={type.image}
                         alt={type.title}
