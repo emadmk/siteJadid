@@ -928,7 +928,7 @@ export default function BulkEditPage() {
                     >
                       <option value="basePrice">Base Price → Sale Price</option>
                       <option value="salePrice">Update Sale Price</option>
-                      <option value="gsaPrice">GSA Price</option>
+                      <option value="gsaPrice">GOV Price</option>
                       <option value="wholesalePrice">Wholesale Price</option>
                     </select>
                   </div>
@@ -1003,7 +1003,7 @@ export default function BulkEditPage() {
                       <li><strong>Type</strong> (optional - &quot;Variant&quot; or &quot;Product&quot;)</li>
                       <li><strong>Base Price</strong> (optional)</li>
                       <li><strong>Sale Price</strong> (optional)</li>
-                      <li><strong>GSA Price</strong> (optional)</li>
+                      <li><strong>GOV Price</strong> (optional)</li>
                       <li><strong>Wholesale Price</strong> (optional)</li>
                     </ul>
                     <p className="text-xs text-orange-600 mt-2">

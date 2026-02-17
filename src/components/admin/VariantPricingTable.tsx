@@ -114,7 +114,7 @@ export function VariantPricingTable({
               B2B
             </th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              GSA
+              GOV
             </th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               Cost
@@ -223,7 +223,7 @@ export function VariantPricingTable({
                 )}
               </td>
 
-              {/* GSA Price */}
+              {/* GOV Price */}
               <td className="px-4 py-3 text-right">
                 {editingId === variant.id ? (
                   <input

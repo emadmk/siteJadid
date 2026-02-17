@@ -23,7 +23,7 @@ const buyerBanners = [
     id: 1,
     title: 'Government Buyer',
     subtitle: 'Federal & Government pricing',
-    description: 'US Government agencies and contractors get exclusive GSA Schedule pricing.',
+    description: 'US Government agencies and contractors get exclusive GOV Schedule pricing.',
     image: '/images/imagesite/gsa.jpg',
     link: '/register',
     bgColor: 'from-safety-green-700 to-safety-green-900',

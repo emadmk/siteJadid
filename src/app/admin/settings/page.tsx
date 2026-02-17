@@ -383,11 +383,11 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {/* GSA SmartPay */}
+            {/* GOV SmartPay */}
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               <PaymentMethod
                 icon={<Shield className="w-6 h-6 text-gray-600" />}
-                name="GSA SmartPay"
+                name="GOV SmartPay"
                 description="Government Procurement Cards"
                 active={settings.payment.gsaSmartpay}
                 onChange={(v) => updateSetting('payment', 'gsaSmartpay', v)}
@@ -564,8 +564,8 @@ export default function SettingsPage() {
               onChange={(v) => updateSetting('tax', 'applyToShipping', v)}
             />
             <Toggle
-              label="GSA Tax Exempt"
-              description="GSA orders are tax-exempt"
+              label="GOV Tax Exempt"
+              description="GOV orders are tax-exempt"
               checked={settings.tax.gsaExempt}
               onChange={(v) => updateSetting('tax', 'gsaExempt', v)}
             />

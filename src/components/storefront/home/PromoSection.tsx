@@ -38,13 +38,13 @@ export function PromoSection() {
 
               {/* Description */}
               <p className="text-white/75 mb-6 max-w-lg">
-                As an approved GSA Multiple Award Schedule (MAS) supplier, we provide competitive pricing, full compliance with federal acquisition regulations, and reliable solutions for your operations.
+                As an approved GOV Multiple Award Schedule (MAS) supplier, we provide competitive pricing, full compliance with federal acquisition regulations, and reliable solutions for your operations.
               </p>
 
               {/* Benefits List */}
               <div className="grid sm:grid-cols-2 gap-3 mb-8">
                 {[
-                  'GSA Schedule Pricing',
+                  'GOV Schedule Pricing',
                   'Purchase Card Accepted',
                   'TAA Compliant Products',
                   'Fast Federal Shipping',
@@ -61,7 +61,7 @@ export function PromoSection() {
                 href="/gsa"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-white text-safety-green-700 rounded-lg font-semibold hover:bg-gray-100 transition-colors group"
               >
-                Learn More About GSA
+                Learn More About GOV
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
@@ -76,7 +76,7 @@ export function PromoSection() {
               <div className="absolute inset-0 lg:inset-y-8 lg:right-8 lg:left-12 overflow-hidden rounded-xl lg:rounded-2xl shadow-2xl">
                 <Image
                   src="/images/imagesite/gsaplane.jpg"
-                  alt="Military Aircraft - GSA Government Solutions"
+                  alt="Military Aircraft - GOV Government Solutions"
                   fill
                   className="object-cover"
                   quality={100}

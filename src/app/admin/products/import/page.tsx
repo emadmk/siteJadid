@@ -432,21 +432,21 @@ export default function ProductImportPage() {
                 <ul className="list-disc list-inside ml-2 space-y-1">
                   <li>Style extracted from manufacturer_part_number (E01830 from E01830-3M)</li>
                   <li>Size variants created automatically (3M, 7EW, 8.5M, etc.)</li>
-                  <li>Multiple price types: Commercial, Website, GSA</li>
+                  <li>Multiple price types: Commercial, Website, GOV</li>
                   <li>Image matching: {'{style}'}.jpg, {'{style}'}_2.jpg, {'{style}'}_3.jpg</li>
                   <li>Products without images in import-images folder are skipped</li>
-                  <li>GSA SIN and pricing automatically captured</li>
+                  <li>GOV SIN and pricing automatically captured</li>
                 </ul>
               </div>
             ) : importType === 'carhartt' ? (
               <div className="space-y-2 text-sm text-orange-700">
-                <p><strong>Expected Columns:</strong> manufacturer_part_number, ADA vendor_part_number, item_name, item_description, commercial_price, Website Sale Price, GSA/Federal Price</p>
+                <p><strong>Expected Columns:</strong> manufacturer_part_number, ADA vendor_part_number, item_name, item_description, commercial_price, Website Sale Price, GOV/Federal Price</p>
                 <p><strong>Features:</strong></p>
                 <ul className="list-disc list-inside ml-2 space-y-1">
                   <li>Manufacturer Part Number (CMW6095) → Product SKU</li>
                   <li>ADA Vendor Part Number (CHT-CMW6095-7M) → Variant SKU</li>
                   <li>Size variants created from ADA part numbers (7M, 8W, etc.)</li>
-                  <li>Multiple prices: Commercial, Website Sale, Supplier Cost, GSA</li>
+                  <li>Multiple prices: Commercial, Website Sale, Supplier Cost, GOV</li>
                   <li>Images from: /import-images/Images/{'<Category>/<Style>/<PartNumber>'}/JPEG/</li>
                   <li>Auto-creates Carhartt brand and assigns to Footwear category</li>
                   <li>Products go to PreRelease status for review</li>
@@ -454,10 +454,10 @@ export default function ProductImportPage() {
               </div>
             ) : (
               <div className="space-y-2 text-sm text-blue-700">
-                <p><strong>Expected Columns:</strong> Vendor Part Number, Item_name, Unit Price, GSA Price, Category, etc.</p>
+                <p><strong>Expected Columns:</strong> Vendor Part Number, Item_name, Unit Price, GOV Price, Category, etc.</p>
                 <p><strong>Features:</strong></p>
                 <ul className="list-disc list-inside ml-2 space-y-1">
-                  <li>GSA compliance fields (SIN, NSN)</li>
+                  <li>GOV compliance fields (SIN, NSN)</li>
                   <li>Custom field mapping support</li>
                   <li>Multiple price tiers</li>
                   <li>Image pattern matching</li>
@@ -1052,7 +1052,7 @@ export default function ProductImportPage() {
                 <span className="text-gray-400">Optional</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">GSA Price</span>
+                <span className="text-gray-600">GOV Price</span>
                 <span className="text-gray-400">Optional</span>
               </div>
               <div className="flex justify-between">

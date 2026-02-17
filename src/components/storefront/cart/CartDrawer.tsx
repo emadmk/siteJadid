@@ -129,7 +129,7 @@ export function CartDrawer() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-white font-semibold text-sm">GSA Pricing Applied!</span>
+                  <span className="text-white font-semibold text-sm">Government Pricing Applied!</span>
                   <BadgePercent className="w-4 h-4 text-yellow-300" />
                 </div>
                 <p className="text-blue-100 text-xs">Exclusive government rates on eligible items</p>
@@ -246,12 +246,12 @@ export function CartDrawer() {
                         <p className="text-xs text-gray-500 mt-0.5">
                           SKU: {item.variant?.sku || item.product.sku}
                         </p>
-                        {/* GSA Pricing Badge */}
+                        {/* Government Pricing Badge */}
                         {hasGSAPrice && gsaPrice && (
                           <div className="flex items-center gap-1 mt-1">
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
                               <Shield className="w-3 h-3" />
-                              GSA Price
+                              Government Price
                             </span>
                             {Number(gsaPrice) < Number(regularPrice) && (
                               <span className="text-xs text-green-600 font-medium">
