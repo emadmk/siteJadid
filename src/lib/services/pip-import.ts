@@ -941,11 +941,9 @@ export class PipImportService {
     this.brandCache.clear();
     this.csvImageMap.clear();
 
-    // Load CSV image mapping if provided or auto-detect
+    // Load CSV image mapping if provided
     const csvPaths = [
       csvPath,
-      path.join(process.cwd(), 'public/uploads/PIP-Product-Images-SKU-Level.csv'),
-      '/root/ada/siteJadid/public/uploads/PIP-Product-Images-SKU-Level.csv',
     ].filter(Boolean) as string[];
 
     for (const csv of csvPaths) {
