@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { sendOrderStatusUpdate } from '@/lib/email-notifications';
 
 const updateStatusSchema = z.object({
   status: z.enum([
@@ -108,6 +109,34 @@ export async function PUT(
 
       return updated;
     });
+
+    // Send status update email to customer (non-blocking)
+    if (updatedOrder.user?.email) {
+      // Get tracking info if shipped
+      let trackingNumber: string | undefined;
+      let carrier: string | undefined;
+      if (status === 'SHIPPED') {
+        const shipment = await db.shipment.findFirst({
+          where: { orderId: params.id },
+          orderBy: { createdAt: 'desc' },
+          select: { trackingNumber: true, carrier: true },
+        });
+        trackingNumber = shipment?.trackingNumber || undefined;
+        carrier = shipment?.carrier || undefined;
+      }
+
+      sendOrderStatusUpdate({
+        email: updatedOrder.user.email,
+        userName: updatedOrder.user.name || 'Customer',
+        orderNumber: order.orderNumber,
+        status,
+        trackingNumber,
+        carrier,
+        notes,
+        userId: updatedOrder.user.id,
+        orderId: params.id,
+      }).catch(err => console.error('Failed to send order status email:', err));
+    }
 
     return NextResponse.json({
       success: true,

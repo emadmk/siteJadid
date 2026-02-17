@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { calculateProductDiscount } from '@/lib/discounts';
 import { calculateShippingCost } from '@/lib/shipping-calculator';
+import { sendOrderConfirmation } from '@/lib/email-notifications';
 
 // GET /api/orders - Get user's orders
 export async function GET(request: NextRequest) {
@@ -421,6 +422,43 @@ export async function POST(request: NextRequest) {
 
       return newOrder;
     });
+
+    // Send order confirmation email (non-blocking)
+    const orderUser = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true, email: true },
+    });
+
+    if (orderUser?.email) {
+      const shippingAddr = order.shippingAddress;
+      sendOrderConfirmation({
+        email: orderUser.email,
+        userName: orderUser.name || 'Customer',
+        orderNumber: order.orderNumber,
+        items: order.items.map((item: any) => ({
+          name: item.name,
+          sku: item.sku || '',
+          quantity: item.quantity,
+          price: Number(item.price),
+          image: item.product?.images?.[0] ? `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || ''}${item.product.images[0]}` : undefined,
+        })),
+        subtotal: Number(order.subtotal),
+        shipping: Number(order.shipping || order.shippingCost || 0),
+        tax: Number(order.tax || order.taxAmount || 0),
+        discount: Number(order.discount || 0),
+        total: Number(order.total || order.totalAmount),
+        shippingAddress: shippingAddr ? {
+          name: shippingAddr.fullName || (shippingAddr.firstName ? `${shippingAddr.firstName} ${shippingAddr.lastName || ''}`.trim() : undefined),
+          street: shippingAddr.addressLine1 || shippingAddr.address1 || '',
+          city: shippingAddr.city || '',
+          state: shippingAddr.state || '',
+          zip: shippingAddr.zipCode || '',
+        } : { street: '', city: '', state: '', zip: '' },
+        paymentMethod: paymentMethod === 'net30' ? 'Net 30 Invoice' : paymentMethod === 'invoice' ? 'Invoice' : 'Credit Card',
+        userId: session.user.id,
+        orderId: order.id,
+      }).catch(err => console.error('Failed to send order confirmation email:', err));
+    }
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {

@@ -2,6 +2,8 @@
 
 import crypto from 'crypto';
 import { db } from './db';
+import { getBaseUrl } from './email-templates';
+import { sendVerificationNotification, sendWelcomeEmail } from './email-notifications';
 
 const TOKEN_EXPIRY_HOURS = 24;
 
@@ -64,74 +66,48 @@ export async function verifyEmailToken(token: string): Promise<{ success: boolea
 }
 
 /**
- * Build the verification email HTML
+ * Build verification URL using the correct public base URL
  */
-export function buildVerificationEmailHtml(verifyUrl: string, userName?: string): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
-  <div style="background-color: white; border-radius: 8px; padding: 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-    <h1 style="color: #333; margin-bottom: 24px;">Verify Your Email Address</h1>
-    <p style="color: #555; font-size: 16px; line-height: 1.6;">
-      Hi${userName ? ` ${userName}` : ''},
-    </p>
-    <p style="color: #555; font-size: 16px; line-height: 1.6;">
-      Thank you for creating an account. Please verify your email address by clicking the button below:
-    </p>
-    <div style="text-align: center; margin: 32px 0;">
-      <a href="${verifyUrl}"
-         style="background-color: #2563eb; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
-        Verify Email Address
-      </a>
-    </div>
-    <p style="color: #888; font-size: 14px;">
-      This link will expire in ${TOKEN_EXPIRY_HOURS} hours. If you didn't create an account, you can safely ignore this email.
-    </p>
-    <p style="color: #888; font-size: 12px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
-      If the button doesn't work, copy and paste this URL into your browser:<br>
-      <a href="${verifyUrl}" style="color: #2563eb; word-break: break-all;">${verifyUrl}</a>
-    </p>
-  </div>
-</body>
-</html>`;
+export function buildVerifyUrl(token: string, requestUrl?: string): string {
+  // Priority: 1. NEXT_PUBLIC_SITE_URL, 2. NEXTAUTH_URL, 3. Request origin, 4. NEXT_PUBLIC_APP_URL
+  let baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL;
+
+  if (!baseUrl && requestUrl) {
+    try {
+      const url = new URL(requestUrl);
+      baseUrl = url.origin;
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!baseUrl) {
+    baseUrl = getBaseUrl();
+  }
+
+  // Remove trailing slash
+  baseUrl = baseUrl.replace(/\/$/, '');
+
+  return `${baseUrl}/api/auth/verify-email?token=${token}`;
 }
 
 /**
- * Send verification email using the configured email service
+ * Send verification email using the new template system
  */
 export async function sendVerificationEmail(
   email: string,
   token: string,
-  userName?: string
+  userName?: string,
+  requestUrl?: string
 ): Promise<boolean> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
-    const html = buildVerificationEmailHtml(verifyUrl, userName);
+    const verifyUrl = buildVerifyUrl(token, requestUrl);
 
-    // Try to use the internal email API
-    const response = await fetch(`${baseUrl}/api/email/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: email,
-        subject: 'Verify Your Email Address',
-        html,
-        type: 'VERIFICATION',
-      }),
+    return await sendVerificationNotification({
+      email,
+      userName,
+      verifyUrl,
     });
-
-    // If internal API fails (no admin session), try SMTP directly
-    if (!response.ok) {
-      return await sendViaSMTP(email, 'Verify Your Email Address', html);
-    }
-
-    return true;
   } catch (error) {
     console.error('Failed to send verification email:', error);
     return false;
@@ -139,39 +115,28 @@ export async function sendVerificationEmail(
 }
 
 /**
- * Fallback: send email via SMTP if configured
+ * Send welcome email with verification link
  */
-async function sendViaSMTP(to: string, subject: string, html: string): Promise<boolean> {
+export async function sendWelcomeWithVerification(data: {
+  email: string;
+  userName: string;
+  accountType: string;
+  token: string;
+  userId?: string;
+  requestUrl?: string;
+}): Promise<boolean> {
   try {
-    const host = process.env.EMAIL_SERVER_HOST;
-    const port = parseInt(process.env.EMAIL_SERVER_PORT || '587');
-    const user = process.env.EMAIL_SERVER_USER;
-    const pass = process.env.EMAIL_SERVER_PASSWORD;
-    const from = process.env.EMAIL_FROM;
+    const verifyUrl = buildVerifyUrl(data.token, data.requestUrl);
 
-    if (!host || !user || !pass || !from) {
-      console.warn('SMTP not configured - verification email not sent');
-      return false;
-    }
-
-    // Use nodemailer if available, otherwise log the verification link
-    try {
-      const nodemailer = require('nodemailer');
-      const transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: { user, pass },
-      });
-
-      await transporter.sendMail({ from, to, subject, html });
-      return true;
-    } catch {
-      console.warn('Nodemailer not available - verification email logged to console');
-      return false;
-    }
+    return await sendWelcomeEmail({
+      email: data.email,
+      userName: data.userName,
+      accountType: data.accountType,
+      verifyUrl,
+      userId: data.userId,
+    });
   } catch (error) {
-    console.error('SMTP send error:', error);
+    console.error('Failed to send welcome email:', error);
     return false;
   }
 }

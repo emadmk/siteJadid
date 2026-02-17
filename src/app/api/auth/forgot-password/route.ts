@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { db } from '@/lib/db';
 import { rateLimit } from '@/lib/rate-limit';
-import { buildPasswordResetEmailHtml, sendResetEmail } from '@/lib/password-reset';
+import { sendResetEmail } from '@/lib/password-reset';
 
 const TOKEN_EXPIRY_HOURS = 1;
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send reset email
-    await sendResetEmail(normalizedEmail, token, user.name || undefined);
+    await sendResetEmail(normalizedEmail, token, user.name || undefined, request.url);
 
     return NextResponse.json({ message: successMessage });
   } catch (error) {

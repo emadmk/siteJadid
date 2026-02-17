@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { constructWebhookEvent, logPaymentTransaction } from '@/lib/services/stripe';
+import { sendPaymentReceivedNotification } from '@/lib/email-notifications';
 
 // Disable body parsing - we need raw body for webhook signature
 export const dynamic = 'force-dynamic';
@@ -188,6 +189,29 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
           changedBy: 'system',
         },
       });
+
+      // Send payment received email (non-blocking)
+      const orderWithUser = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: {
+          orderNumber: true,
+          user: { select: { name: true, email: true } },
+        },
+      });
+      if (orderWithUser?.user?.email) {
+        const cardLabel = cardDetails?.brand
+          ? `${cardDetails.brand.charAt(0).toUpperCase() + cardDetails.brand.slice(1)} ****${cardDetails.last4}`
+          : 'Credit Card';
+        sendPaymentReceivedNotification({
+          email: orderWithUser.user.email,
+          userName: orderWithUser.user.name || 'Customer',
+          orderNumber: orderWithUser.orderNumber,
+          amount: paymentIntent.amount / 100,
+          paymentMethod: cardLabel,
+          transactionId: paymentIntent.id,
+          orderId,
+        }).catch(err => console.error('Failed to send payment email:', err));
+      }
     } catch (error) {
       console.error('Error updating order for payment success:', error);
     }

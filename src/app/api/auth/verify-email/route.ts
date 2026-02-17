@@ -23,16 +23,17 @@ export async function GET(request: NextRequest) {
     const result = await verifyEmailToken(token);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
+      // Redirect to home with error message
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+      return NextResponse.redirect(
+        `${baseUrl}/?verify-error=${encodeURIComponent(result.error || 'Verification failed')}`
       );
     }
 
-    // Redirect to sign-in page with success message
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    // Redirect to home with success flag - session will be refreshed client-side
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
     return NextResponse.redirect(
-      `${baseUrl}/auth/signin?verified=true`
+      `${baseUrl}/?email-verified=true`
     );
   } catch (error) {
     console.error('Email verification error:', error);

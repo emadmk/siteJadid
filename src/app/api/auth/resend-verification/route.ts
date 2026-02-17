@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = await createVerificationToken(email);
-    await sendVerificationEmail(email, token, user.name || undefined);
+    await sendVerificationEmail(email, token, user.name || undefined, request.url);
 
     return NextResponse.json({
       message: 'If an account with that email exists and is not yet verified, a verification email has been sent.',

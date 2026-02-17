@@ -122,8 +122,8 @@ export const authOptions: NextAuthOptions = {
         token.emailVerified = (user as any).emailVerified ?? false;
         token.roleRefreshedAt = Date.now();
       }
-      // Refresh role and emailVerified from DB every 5 minutes
-      if (token.id && (!token.roleRefreshedAt || Date.now() - (token.roleRefreshedAt as number) > 5 * 60 * 1000)) {
+      // Refresh role and emailVerified from DB every 1 minute
+      if (token.id && (!token.roleRefreshedAt || Date.now() - (token.roleRefreshedAt as number) > 60 * 1000)) {
         try {
           const dbUser = await db.user.findUnique({
             where: { id: token.id as string },

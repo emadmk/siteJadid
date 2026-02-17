@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit } from '@/lib/rate-limit';
+import { sendContactConfirmation } from '@/lib/email-notifications';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
@@ -60,6 +61,14 @@ export async function POST(request: NextRequest) {
       },
     });
     */
+
+    // Send confirmation email to customer (non-blocking)
+    sendContactConfirmation({
+      email,
+      userName: name,
+      subject,
+      message,
+    }).catch(err => console.error('Failed to send contact confirmation email:', err));
 
     return NextResponse.json({
       message: 'Message sent successfully',

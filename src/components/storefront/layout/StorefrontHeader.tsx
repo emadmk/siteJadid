@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Search,
   ShoppingCart,
@@ -29,10 +30,12 @@ import { useAuthModal } from '@/contexts/AuthModalContext';
 import { useSearch } from '@/contexts/SearchContext';
 
 export function StorefrontHeader() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const { cart, openCart } = useCart();
   const { openModal: openAuthModal } = useAuthModal();
   const { openSearch } = useSearch();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -41,6 +44,7 @@ export function StorefrontHeader() {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [resendingVerification, setResendingVerification] = useState(false);
   const [verificationResent, setVerificationResent] = useState(false);
+  const [emailJustVerified, setEmailJustVerified] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,6 +53,22 @@ export function StorefrontHeader() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Handle email verification redirect - refresh session immediately
+  useEffect(() => {
+    const verified = searchParams?.get('email-verified');
+    if (verified === 'true') {
+      setEmailJustVerified(true);
+      // Force session refresh to get updated emailVerified
+      updateSession();
+      // Clean URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('email-verified');
+      router.replace(url.pathname + url.search, { scroll: false });
+      // Hide success message after 8 seconds
+      setTimeout(() => setEmailJustVerified(false), 8000);
+    }
+  }, [searchParams, updateSession, router]);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -65,7 +85,7 @@ export function StorefrontHeader() {
   const accountType = session?.user?.accountType;
   const approvalStatus = (session?.user as any)?.approvalStatus || (session?.user as any)?.gsaApprovalStatus;
   const isPendingApproval = (isB2B || isGSA) && approvalStatus === 'PENDING';
-  const isEmailUnverified = status === 'authenticated' && !(session?.user as any)?.emailVerified;
+  const isEmailUnverified = status === 'authenticated' && !(session?.user as any)?.emailVerified && !emailJustVerified;
 
   const handleResendVerification = async () => {
     if (resendingVerification || !session?.user?.email) return;
@@ -87,6 +107,16 @@ export function StorefrontHeader() {
 
   return (
     <header className={`sticky top-0 z-40 transition-shadow ${isScrolled ? 'shadow-md' : ''}`}>
+      {/* Email Verified Success Banner */}
+      {emailJustVerified && (
+        <div className="bg-green-600 text-white py-2.5 px-4">
+          <div className="container mx-auto flex items-center justify-center gap-2 text-sm font-medium">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>Email verified successfully! You now have full access to all features.</span>
+          </div>
+        </div>
+      )}
+
       {/* Email Verification Warning Banner */}
       {isEmailUnverified && (
         <div className="bg-orange-500 text-white py-2.5 px-4">

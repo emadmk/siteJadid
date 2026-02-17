@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { z } from 'zod';
 import { rateLimit } from '@/lib/rate-limit';
 import { validatePassword } from '@/lib/password-policy';
-import { createVerificationToken, sendVerificationEmail } from '@/lib/email-verification';
+import { createVerificationToken, sendWelcomeWithVerification } from '@/lib/email-verification';
 
 // Government Departments
 const GOVERNMENT_DEPARTMENTS = ['DOW', 'DLA', 'USDA', 'NIH', 'GCSS-Army', 'OTHER'] as const;
@@ -108,9 +108,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Send verification email
+    // Send welcome email with verification link
     const verificationToken = await createVerificationToken(validatedData.email);
-    await sendVerificationEmail(validatedData.email, verificationToken, validatedData.name);
+    const requestUrl = req.url;
+
+    await sendWelcomeWithVerification({
+      email: validatedData.email,
+      userName: validatedData.name,
+      accountType,
+      token: verificationToken,
+      userId: user.id,
+      requestUrl,
+    });
 
     // Return success (without password)
     const { password: _password, ...userWithoutPassword } = user;
