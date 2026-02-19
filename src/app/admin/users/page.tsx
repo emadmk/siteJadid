@@ -116,6 +116,7 @@ export default function TeamManagementPage() {
       const timer = setTimeout(() => setSuccess(null), 4000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [success]);
 
   useEffect(() => {
@@ -123,6 +124,7 @@ export default function TeamManagementPage() {
       const timer = setTimeout(() => setError(null), 6000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [error]);
 
   const handleAddUser = async (e: React.FormEvent) => {
