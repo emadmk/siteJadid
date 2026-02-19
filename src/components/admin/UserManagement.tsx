@@ -22,10 +22,22 @@ interface UserManagementProps {
   currentUserRole: string;
 }
 
-const ROLES = ['USER', 'ADMIN', 'SUPER_ADMIN'];
+const ROLES = [
+  { value: 'CUSTOMER', label: 'Customer' },
+  { value: 'CUSTOMER_SERVICE', label: 'Customer Service' },
+  { value: 'ACCOUNTANT', label: 'Accounting' },
+  { value: 'MARKETING_MANAGER', label: 'Marketing' },
+  { value: 'CONTENT_MANAGER', label: 'Content Manager' },
+  { value: 'WAREHOUSE_MANAGER', label: 'Warehouse' },
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'SUPER_ADMIN', label: 'Super Admin' },
+];
 const ACCOUNT_TYPES = [
+  { value: 'B2C', label: 'Personal (B2C)' },
   { value: 'PERSONAL', label: 'Personal' },
+  { value: 'B2B', label: 'Business (B2B)' },
   { value: 'VOLUME_BUYER', label: 'Volume Buyer' },
+  { value: 'GSA', label: 'Government (GSA)' },
   { value: 'GOVERNMENT', label: 'Government' },
 ];
 const APPROVAL_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
@@ -234,7 +246,7 @@ export function UserManagement({ user, currentUserRole }: UserManagementProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 disabled:bg-gray-100"
             >
               {ROLES.map((role) => (
-                <option key={role} value={role}>{role}</option>
+                <option key={role.value} value={role.value}>{role.label}</option>
               ))}
             </select>
           </div>

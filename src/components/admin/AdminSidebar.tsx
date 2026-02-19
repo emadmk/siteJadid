@@ -192,6 +192,12 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    title: 'Team',
+    href: '/admin/users',
+    icon: Users,
+    permissions: ['settings.manage'],
+  },
+  {
     title: 'Settings',
     icon: Settings,
     permissions: ['settings.view'],

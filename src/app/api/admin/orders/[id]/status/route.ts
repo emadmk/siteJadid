@@ -32,7 +32,7 @@ export async function PUT(
     }
 
     // Check admin role
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN') {
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

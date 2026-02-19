@@ -9,8 +9,13 @@ const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email().optional(),
   phone: z.string().optional().nullable(),
-  role: z.enum(['USER', 'ADMIN', 'SUPER_ADMIN']).optional(),
-  accountType: z.enum(['B2C', 'B2B', 'GSA']).optional(),
+  role: z.enum([
+    'SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'CUSTOMER_SERVICE',
+    'WAREHOUSE_MANAGER', 'MARKETING_MANAGER', 'CONTENT_MANAGER',
+    'CUSTOMER', 'B2B_CUSTOMER', 'GSA_CUSTOMER',
+    'PERSONAL_CUSTOMER', 'VOLUME_BUYER_CUSTOMER', 'GOVERNMENT_CUSTOMER',
+  ]).optional(),
+  accountType: z.enum(['B2C', 'B2B', 'GSA', 'PERSONAL', 'VOLUME_BUYER', 'GOVERNMENT']).optional(),
   gsaApprovalStatus: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional().nullable(),
   gsaNumber: z.string().optional().nullable(),
   gsaDepartment: z.string().optional().nullable(),
@@ -86,11 +91,15 @@ export async function PUT(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Only SUPER_ADMIN can change roles to ADMIN or SUPER_ADMIN
-    if (validatedData.role && ['ADMIN', 'SUPER_ADMIN'].includes(validatedData.role)) {
+    // Only SUPER_ADMIN can change staff roles
+    const staffRoles = [
+      'SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'CUSTOMER_SERVICE',
+      'WAREHOUSE_MANAGER', 'MARKETING_MANAGER', 'CONTENT_MANAGER',
+    ];
+    if (validatedData.role && staffRoles.includes(validatedData.role)) {
       if (session.user.role !== 'SUPER_ADMIN') {
         return NextResponse.json(
-          { error: 'Only Super Admin can assign admin roles' },
+          { error: 'Only Super Admin can assign staff roles' },
           { status: 403 }
         );
       }
@@ -132,6 +141,7 @@ export async function PUT(
     if (validatedData.gsaApprovalStatus !== undefined) updateData.gsaApprovalStatus = validatedData.gsaApprovalStatus;
     if (validatedData.gsaNumber !== undefined) updateData.gsaNumber = validatedData.gsaNumber;
     if (validatedData.gsaDepartment !== undefined) updateData.gsaDepartment = validatedData.gsaDepartment;
+    if (validatedData.isActive !== undefined) updateData.isActive = validatedData.isActive;
 
     const updatedUser = await db.user.update({
       where: { id: params.id },
@@ -146,6 +156,7 @@ export async function PUT(
         gsaApprovalStatus: true,
         gsaNumber: true,
         gsaDepartment: true,
+        isActive: true,
       },
     });
 
