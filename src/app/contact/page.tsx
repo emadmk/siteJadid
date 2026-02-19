@@ -1,11 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, Mail, Phone, MapPin, Send, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function ContactPage() {
+  const [companyInfo, setCompanyInfo] = useState({
+    phone: '478-329-8896',
+    email: 'info@adasupply.com',
+    address: '205 Old Perry Rd. Bonaire, Georgia 31005',
+    city: 'Bonaire',
+    state: 'Georgia',
+    country: 'US',
+  });
+
+  useEffect(() => {
+    fetch('/api/storefront/company-info')
+      .then(res => res.json())
+      .then(data => {
+        if (data.phone || data.address) {
+          setCompanyInfo(prev => ({ ...prev, ...data }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -234,8 +254,8 @@ export default function ContactPage() {
                   <Phone className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium text-black">Phone</div>
-                    <a href="tel:478-329-8896" className="text-sm text-gray-600 hover:text-safety-green-600">
-                      478-329-8896
+                    <a href={`tel:${companyInfo.phone}`} className="text-sm text-gray-600 hover:text-safety-green-600">
+                      {companyInfo.phone}
                     </a>
                     <div className="text-sm text-gray-500">Mon-Fri 8AM-6PM EST</div>
                   </div>
@@ -245,8 +265,8 @@ export default function ContactPage() {
                   <Mail className="w-5 h-5 text-safety-green-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="font-medium text-black">Email</div>
-                    <a href="mailto:info@adasupply.com" className="text-sm text-gray-600 hover:text-safety-green-600">
-                      info@adasupply.com
+                    <a href={`mailto:${companyInfo.email}`} className="text-sm text-gray-600 hover:text-safety-green-600">
+                      {companyInfo.email}
                     </a>
                   </div>
                 </div>
@@ -256,8 +276,7 @@ export default function ContactPage() {
                   <div>
                     <div className="font-medium text-black">Headquarters</div>
                     <div className="text-sm text-gray-600">
-                      Warner Robins, GA<br />
-                      United States
+                      {companyInfo.address || `${companyInfo.city}, ${companyInfo.state}`}
                     </div>
                   </div>
                 </div>

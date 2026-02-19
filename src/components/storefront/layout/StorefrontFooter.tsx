@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Phone,
@@ -85,10 +85,41 @@ const trustBadges = [
   { icon: CreditCard, label: 'Easy Returns', sublabel: '30-Day Policy' },
 ];
 
+interface CompanyInfo {
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+}
+
 export function StorefrontFooter() {
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
+    phone: '478-329-8896',
+    email: 'info@adasupply.com',
+    address: '205 Old Perry Rd. Bonaire, Georgia 31005',
+    city: 'Bonaire',
+    state: 'Georgia',
+    country: 'US',
+  });
+
+  useEffect(() => {
+    fetch('/api/storefront/company-info')
+      .then(res => res.json())
+      .then(data => {
+        if (data.phone || data.address) {
+          setCompanyInfo(prev => ({
+            ...prev,
+            ...data,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,17 +221,17 @@ export function StorefrontFooter() {
               construction, and workplace safety needs. GSA Schedule Contract Holder.
             </p>
             <div className="space-y-3">
-              <a href="tel:478-329-8896" className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
+              <a href={`tel:${companyInfo.phone}`} className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
                 <Phone className="w-5 h-5 text-safety-green-400" />
-                478-329-8896
+                {companyInfo.phone}
               </a>
-              <a href="mailto:info@adasupply.com" className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
+              <a href={`mailto:${companyInfo.email}`} className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors">
                 <Mail className="w-5 h-5 text-safety-green-400" />
-                info@adasupply.com
+                {companyInfo.email}
               </a>
               <div className="flex items-start gap-3 text-gray-400">
                 <MapPin className="w-5 h-5 text-safety-green-400 flex-shrink-0 mt-0.5" />
-                <span>Warner Robins, GA<br />United States</span>
+                <span>{companyInfo.address || `${companyInfo.city}, ${companyInfo.state}`}</span>
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-gray-700">

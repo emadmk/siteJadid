@@ -1,9 +1,19 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export function AnnouncementBar() {
+  const [phone, setPhone] = useState('478-329-8896');
+
+  useEffect(() => {
+    fetch('/api/storefront/company-info')
+      .then(res => res.json())
+      .then(data => { if (data.phone) setPhone(data.phone); })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="bg-white border-b border-gray-200 text-sm">
       <div className="container mx-auto px-4">
@@ -24,7 +34,7 @@ export function AnnouncementBar() {
           <div className="flex items-center gap-3 lg:gap-4">
             {/* Support Links */}
             <div className="hidden lg:flex items-center gap-3 text-gray-600 text-xs">
-              <span>Support: <a href="tel:478-329-8896" className="hover:text-safety-green-600 transition-colors">478-329-8896</a></span>
+              <span>Support: <a href={`tel:${phone}`} className="hover:text-safety-green-600 transition-colors">{phone}</a></span>
               <span className="text-gray-300">|</span>
               <Link href="/contact" className="hover:text-safety-green-600 transition-colors">Contact us</Link>
               <span className="text-gray-300">|</span>

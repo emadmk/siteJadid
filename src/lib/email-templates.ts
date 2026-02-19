@@ -1,6 +1,8 @@
 // Professional email template system for ADA Supplies
 // Beautiful, responsive HTML email templates
 
+import { prisma } from '@/lib/prisma';
+
 const BRAND = {
   name: 'ADA Supplies',
   tagline: 'Safety Done Right!',
@@ -8,14 +10,53 @@ const BRAND = {
   colorDark: '#15803d', // safety-green-700
   colorLight: '#f0fdf4', // green-50
   website: '', // Set from env
-  phone: '(478) 256-1655',
+  phone: '478-329-8896',
   email: 'info@adasupply.com',
-  address: 'Warner Robins, GA, USA',
+  address: '205 Old Perry Rd. Bonaire, Georgia 31005',
   logoUrl: '/images/imagesite/logo.png',
   gsaContract: 'GS-21F-0086U',
   cageCode: '1J2Y1',
   since: '1999',
 };
+
+// Load company info from settings DB and update BRAND defaults
+let _brandLoaded = false;
+async function ensureBrandLoaded() {
+  if (_brandLoaded) return;
+  try {
+    const settings = await prisma.setting.findMany({
+      where: {
+        key: {
+          in: [
+            'store.email', 'store.phone',
+            'shipping.originStreet', 'shipping.originCity',
+            'shipping.originState', 'shipping.originZip',
+            'shipping.originPhone',
+          ],
+        },
+      },
+    });
+    const map: Record<string, string> = {};
+    for (const s of settings) map[s.key] = s.value;
+
+    if (map['shipping.originPhone'] || map['store.phone']) {
+      BRAND.phone = map['shipping.originPhone'] || map['store.phone'];
+    }
+    if (map['store.email']) BRAND.email = map['store.email'];
+
+    const parts = [
+      map['shipping.originStreet'],
+      map['shipping.originCity'],
+      map['shipping.originState'],
+      map['shipping.originZip'],
+    ].filter(Boolean);
+    if (parts.length > 0) BRAND.address = parts.join(', ');
+
+    _brandLoaded = true;
+  } catch {
+    // Use defaults if DB is unavailable
+  }
+}
 
 function getBaseUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -780,4 +821,5 @@ export {
   infoBox,
   getBaseUrl,
   BRAND,
+  ensureBrandLoaded,
 };
