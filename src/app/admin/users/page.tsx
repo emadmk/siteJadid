@@ -51,7 +51,6 @@ interface StaffUser {
   role: string;
   isActive: boolean;
   createdAt: string;
-  lastLogin: string | null;
   emailVerified: Date | null;
 }
 
@@ -503,11 +502,6 @@ export default function TeamManagementPage() {
                             day: 'numeric',
                           })}
                         </div>
-                        {user.lastLogin && (
-                          <div className="text-xs text-gray-500">
-                            Last login: {new Date(user.lastLogin).toLocaleDateString()}
-                          </div>
-                        )}
                       </td>
                       {isSuperAdmin && (
                         <td className="px-6 py-4 text-right">
