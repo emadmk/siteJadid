@@ -3,25 +3,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { UserRole } from '@prisma/client';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 
-const STAFF_ROLES = [
-  'SUPER_ADMIN',
-  'ADMIN',
-  'ACCOUNTANT',
-  'CUSTOMER_SERVICE',
-  'WAREHOUSE_MANAGER',
-  'MARKETING_MANAGER',
-  'CONTENT_MANAGER',
-] as const;
+const STAFF_ROLES: UserRole[] = [
+  UserRole.SUPER_ADMIN,
+  UserRole.ADMIN,
+  UserRole.ACCOUNTANT,
+  UserRole.CUSTOMER_SERVICE,
+  UserRole.WAREHOUSE_MANAGER,
+  UserRole.MARKETING_MANAGER,
+  UserRole.CONTENT_MANAGER,
+];
 
 const createStaffSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   phone: z.string().optional().nullable(),
-  role: z.enum(STAFF_ROLES),
+  role: z.nativeEnum(UserRole).refine((val) => STAFF_ROLES.includes(val), {
+    message: 'Invalid staff role',
+  }),
 });
 
 // GET - List all staff/admin users
@@ -37,7 +40,7 @@ export async function GET(request: NextRequest) {
     const roleFilter = searchParams.get('role') || '';
 
     const where: any = {
-      role: { in: STAFF_ROLES as unknown as string[] },
+      role: { in: STAFF_ROLES },
     };
 
     if (roleFilter) {
@@ -54,7 +57,7 @@ export async function GET(request: NextRequest) {
         where.AND = [{ role: roleFilter }];
         delete where.role;
       } else {
-        where.AND = [{ role: { in: STAFF_ROLES as unknown as string[] } }];
+        where.AND = [{ role: { in: STAFF_ROLES } }];
         delete where.role;
       }
     }
@@ -79,7 +82,7 @@ export async function GET(request: NextRequest) {
       }),
       db.user.groupBy({
         by: ['role'],
-        where: { role: { in: STAFF_ROLES as unknown as string[] } },
+        where: { role: { in: STAFF_ROLES } },
         _count: true,
       }),
     ]);
