@@ -79,7 +79,8 @@ export function StorefrontHeader() {
     }
   }, [status]);
 
-  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN';
+  const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT', 'CUSTOMER_SERVICE', 'WAREHOUSE_MANAGER', 'MARKETING_MANAGER', 'CONTENT_MANAGER'];
+  const isAdmin = adminRoles.includes(session?.user?.role as string);
   const isB2B = session?.user?.accountType === 'B2B' || session?.user?.accountType === 'VOLUME_BUYER';
   const isGSA = session?.user?.accountType === 'GSA' || session?.user?.accountType === 'GOVERNMENT';
   const accountType = session?.user?.accountType;

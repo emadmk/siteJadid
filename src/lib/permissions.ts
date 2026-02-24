@@ -83,6 +83,7 @@ const rolePermissions: Record<UserRole, Permission[]> = {
   CUSTOMER_SERVICE: [
     'dashboard.view',
     'products.view',
+    'products.edit',
     'orders.view',
     'orders.manage',
     'customers.view',

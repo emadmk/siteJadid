@@ -39,6 +39,7 @@ import {
   X,
   Upload,
   Trash2,
+  ExternalLink,
 } from 'lucide-react';
 import { useState, createContext, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -390,6 +391,27 @@ export function AdminSidebar({ userRole }: { userRole?: UserRole }) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
+          {/* Back To Website */}
+          <Link
+            href="/"
+            className={cn(
+              'group relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200',
+              'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20',
+              collapsed && 'justify-center px-2'
+            )}
+          >
+            <ExternalLink className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && <span>Back To Website</span>}
+            {collapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-md
+                              opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
+                Back To Website
+              </div>
+            )}
+          </Link>
+
+          <div className="border-b border-gray-200 dark:border-gray-700 my-2" />
+
           {filteredMenuItems.map((item) => (
             <SidebarMenuItem key={item.title} item={item} />
           ))}

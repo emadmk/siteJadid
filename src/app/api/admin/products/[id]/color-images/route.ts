@@ -16,7 +16,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+    if (!['SUPER_ADMIN', 'ADMIN', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

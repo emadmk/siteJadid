@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['ADMIN', 'SUPER_ADMIN', 'WAREHOUSE_MANAGER'].includes(session.user.role)) {
+    if (!['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE', 'WAREHOUSE_MANAGER', 'MARKETING_MANAGER', 'CONTENT_MANAGER'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -64,7 +64,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+    if (!['SUPER_ADMIN', 'ADMIN', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -238,7 +238,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+    if (!['SUPER_ADMIN', 'ADMIN', 'CONTENT_MANAGER', 'CUSTOMER_SERVICE'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
