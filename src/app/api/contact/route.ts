@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit } from '@/lib/rate-limit';
-import { sendContactConfirmation } from '@/lib/email-notifications';
+import { sendContactConfirmation, sendAdminContactFormNotification } from '@/lib/email-notifications';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
@@ -70,6 +70,16 @@ export async function POST(request: NextRequest) {
       subject,
       message,
     }).catch(err => console.error('Failed to send contact confirmation email:', err));
+
+    // Send notification to admin/staff (non-blocking)
+    sendAdminContactFormNotification({
+      senderName: name,
+      senderEmail: email,
+      senderPhone: phone,
+      subject,
+      message,
+      accountType,
+    }).catch(err => console.error('Failed to send admin contact notification:', err));
 
     return NextResponse.json({
       message: 'Message sent successfully',

@@ -3,13 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { sendAccountApprovalNotification } from '@/lib/email-notifications';
 
 // GET /api/admin/gsa-approvals - Get all GSA users
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+    if (!session || !['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -44,7 +45,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+    if (!session || !['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -67,6 +68,17 @@ export async function PUT(request: NextRequest) {
         createdAt: true,
       },
     });
+
+    // Send email to customer when approved/rejected (non-blocking)
+    if (user.email && (status === 'APPROVED' || status === 'REJECTED')) {
+      sendAccountApprovalNotification({
+        email: user.email,
+        userName: user.name || 'Customer',
+        accountType: user.accountType,
+        status: status as 'APPROVED' | 'REJECTED',
+        userId: user.id,
+      }).catch(err => console.error('Failed to send GSA approval email:', err));
+    }
 
     return NextResponse.json(user);
   } catch (error) {

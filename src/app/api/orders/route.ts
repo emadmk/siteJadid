@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { calculateProductDiscount } from '@/lib/discounts';
 import { calculateShippingCost } from '@/lib/shipping-calculator';
-import { sendOrderConfirmation } from '@/lib/email-notifications';
+import { sendOrderConfirmation, sendAdminNewOrderNotification } from '@/lib/email-notifications';
 
 // GET /api/orders - Get user's orders
 export async function GET(request: NextRequest) {
@@ -459,6 +459,18 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         orderId: order.id,
       }).catch(err => console.error('Failed to send order confirmation email:', err));
+
+      // Send admin notification for new order (non-blocking)
+      sendAdminNewOrderNotification({
+        orderNumber: order.orderNumber,
+        customerName: orderUser.name || 'Customer',
+        customerEmail: orderUser.email,
+        accountType: accountType,
+        total: Number(order.total || order.totalAmount),
+        itemCount: order.items.length,
+        paymentMethod: paymentMethod === 'net30' ? 'Net 30 Invoice' : paymentMethod === 'invoice' ? 'Invoice' : 'Credit Card',
+        orderId: order.id,
+      }).catch(err => console.error('Failed to send admin order notification:', err));
     }
 
     return NextResponse.json(order, { status: 201 });

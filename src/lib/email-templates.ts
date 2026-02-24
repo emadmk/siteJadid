@@ -814,6 +814,320 @@ export function contactConfirmationTemplate(data: {
   };
 }
 
+// ═══════════════════════════════════════════════
+// ADMIN NOTIFICATION TEMPLATES
+// ═══════════════════════════════════════════════
+
+/**
+ * Admin Notification: New Order Placed
+ */
+export function adminNewOrderTemplate(data: {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  accountType: string;
+  total: number;
+  itemCount: number;
+  paymentMethod: string;
+}): { subject: string; html: string } {
+  const baseUrl = getBaseUrl();
+  const fmt = (n: number) => `$${n.toFixed(2)}`;
+  const accountLabel = data.accountType === 'GOVERNMENT' ? 'Government'
+    : data.accountType === 'VOLUME_BUYER' ? 'Volume Buyer'
+    : data.accountType === 'GSA' ? 'GSA'
+    : data.accountType === 'B2B' ? 'B2B'
+    : 'Personal';
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background-color: #eff6ff; border-radius: 50%; line-height: 64px; font-size: 28px;">🛒</div>
+    </div>
+    <h1 style="color: #111827; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; text-align: center;">New Order Received</h1>
+    <p style="color: #6b7280; font-size: 15px; text-align: center; margin: 0 0 28px 0;">A new order has been placed on ${BRAND.name}</p>
+
+    ${infoBox(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding-bottom: 12px;">
+            <span style="color: #6b7280; font-size: 13px;">Order Number</span><br>
+            <span style="color: #111827; font-size: 18px; font-weight: 700; letter-spacing: 0.5px;">${data.orderNumber}</span>
+          </td>
+          <td style="text-align: right; padding-bottom: 12px;">
+            <span style="color: #6b7280; font-size: 13px;">Total</span><br>
+            <span style="color: #059669; font-size: 20px; font-weight: 700;">${fmt(data.total)}</span>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="border-top: 1px solid #e5e7eb; padding-top: 12px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="width: 50%;">
+                  <span style="color: #6b7280; font-size: 12px;">Customer</span><br>
+                  <span style="color: #111827; font-size: 14px; font-weight: 600;">${data.customerName}</span><br>
+                  <a href="mailto:${data.customerEmail}" style="color: ${BRAND.color}; font-size: 13px;">${data.customerEmail}</a>
+                </td>
+                <td style="width: 50%;">
+                  <span style="color: #6b7280; font-size: 12px;">Account Type</span><br>
+                  <span style="color: #111827; font-size: 14px; font-weight: 600;">${accountLabel}</span><br>
+                  <span style="color: #6b7280; font-size: 13px;">${data.itemCount} item${data.itemCount > 1 ? 's' : ''} &bull; ${data.paymentMethod}</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    `)}
+
+    <div style="text-align: center; margin: 28px 0 0 0;">
+      ${button('View Order in Admin', `${baseUrl}/admin/orders`)}
+    </div>
+  `;
+
+  return {
+    subject: `[New Order] #${data.orderNumber} – ${fmt(data.total)} from ${data.customerName}`,
+    html: baseLayout(content, `New order #${data.orderNumber} – ${fmt(data.total)} from ${data.customerName}`),
+  };
+}
+
+/**
+ * Admin Notification: Contact Form Submission
+ */
+export function adminContactFormTemplate(data: {
+  senderName: string;
+  senderEmail: string;
+  senderPhone?: string;
+  subject: string;
+  message: string;
+  accountType?: string;
+}): { subject: string; html: string } {
+  const baseUrl = getBaseUrl();
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background-color: #fef3c7; border-radius: 50%; line-height: 64px; font-size: 28px;">💬</div>
+    </div>
+    <h1 style="color: #111827; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; text-align: center;">New Contact Form Message</h1>
+    <p style="color: #6b7280; font-size: 15px; text-align: center; margin: 0 0 28px 0;">A customer has submitted a message through the contact form</p>
+
+    ${infoBox(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+            <p style="color: #166534; font-size: 14px; font-weight: 600; margin: 0 0 12px 0;">Contact Information</p>
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding: 4px 0;"><span style="color: #6b7280; font-size: 13px; width: 80px; display: inline-block;">Name:</span> <strong style="color: #111827; font-size: 14px;">${data.senderName}</strong></td>
+              </tr>
+              <tr>
+                <td style="padding: 4px 0;"><span style="color: #6b7280; font-size: 13px; width: 80px; display: inline-block;">Email:</span> <a href="mailto:${data.senderEmail}" style="color: ${BRAND.color}; font-size: 14px;">${data.senderEmail}</a></td>
+              </tr>
+              ${data.senderPhone ? `<tr><td style="padding: 4px 0;"><span style="color: #6b7280; font-size: 13px; width: 80px; display: inline-block;">Phone:</span> <a href="tel:${data.senderPhone}" style="color: ${BRAND.color}; font-size: 14px;">${data.senderPhone}</a></td></tr>` : ''}
+              ${data.accountType ? `<tr><td style="padding: 4px 0;"><span style="color: #6b7280; font-size: 13px; width: 80px; display: inline-block;">Account:</span> <span style="color: #111827; font-size: 14px;">${data.accountType}</span></td></tr>` : ''}
+            </table>
+          </td>
+        </tr>
+      </table>
+    `)}
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 16px 0;">
+      <tr>
+        <td style="background-color: #f9fafb; border-radius: 8px; padding: 20px;">
+          <p style="color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Subject</p>
+          <p style="color: #111827; font-size: 15px; font-weight: 600; margin: 0 0 16px 0;">${data.subject}</p>
+          <p style="color: #6b7280; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Message</p>
+          <p style="color: #374151; font-size: 14px; line-height: 1.7; margin: 0; white-space: pre-wrap;">${data.message}</p>
+        </td>
+      </tr>
+    </table>
+
+    <div style="text-align: center; margin: 28px 0 0 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+        <tr>
+          <td style="padding-right: 8px;">${button('Reply via Email', `mailto:${data.senderEmail}?subject=Re: ${encodeURIComponent(data.subject)}`)}</td>
+          ${data.senderPhone ? `<td style="padding-left: 8px;">${button('Call Customer', `tel:${data.senderPhone}`, '#2563eb')}</td>` : ''}
+        </tr>
+      </table>
+    </div>
+  `;
+
+  return {
+    subject: `[Contact Form] ${data.subject} – from ${data.senderName}`,
+    html: baseLayout(content, `New contact form message from ${data.senderName}: ${data.subject}`),
+  };
+}
+
+/**
+ * Admin Notification: New Registration Requiring Approval (Government/Volume Buyer)
+ */
+export function adminNewRegistrationTemplate(data: {
+  userName: string;
+  userEmail: string;
+  userPhone?: string;
+  accountType: string;
+  companyName?: string;
+  governmentDepartment?: string;
+  registeredAt: string;
+}): { subject: string; html: string } {
+  const baseUrl = getBaseUrl();
+  const accountLabel = data.accountType === 'GOVERNMENT' ? 'Government'
+    : data.accountType === 'VOLUME_BUYER' ? 'Volume Buyer'
+    : data.accountType;
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background-color: #fef3c7; border-radius: 50%; line-height: 64px; font-size: 28px;">🔔</div>
+    </div>
+    <h1 style="color: #111827; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; text-align: center;">New ${accountLabel} Registration</h1>
+    <p style="color: #6b7280; font-size: 15px; text-align: center; margin: 0 0 28px 0;">A new ${accountLabel.toLowerCase()} account requires your approval</p>
+
+    ${infoBox(`
+      <p style="color: #92400e; font-size: 14px; font-weight: 600; margin: 0 0 4px 0;">⏳ Approval Required</p>
+      <p style="color: #374151; font-size: 13px; line-height: 1.5; margin: 0;">This account is pending approval. Please review the details below and approve or reject the account.</p>
+    `, '#fef3c7')}
+
+    <h2 style="color: #111827; font-size: 16px; font-weight: 600; margin: 24px 0 12px 0;">Registration Details</h2>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px 0;">
+      <tr>
+        <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6;">
+          <span style="color: #6b7280; font-size: 13px; display: inline-block; width: 160px;">Full Name</span>
+          <strong style="color: #111827; font-size: 14px;">${data.userName}</strong>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6;">
+          <span style="color: #6b7280; font-size: 13px; display: inline-block; width: 160px;">Email</span>
+          <a href="mailto:${data.userEmail}" style="color: ${BRAND.color}; font-size: 14px;">${data.userEmail}</a>
+        </td>
+      </tr>
+      ${data.userPhone ? `
+      <tr>
+        <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6;">
+          <span style="color: #6b7280; font-size: 13px; display: inline-block; width: 160px;">Phone</span>
+          <a href="tel:${data.userPhone}" style="color: ${BRAND.color}; font-size: 14px;">${data.userPhone}</a>
+        </td>
+      </tr>` : ''}
+      <tr>
+        <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6;">
+          <span style="color: #6b7280; font-size: 13px; display: inline-block; width: 160px;">Account Type</span>
+          <span style="display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: 600; background-color: ${data.accountType === 'GOVERNMENT' ? '#dbeafe' : '#fef3c7'}; color: ${data.accountType === 'GOVERNMENT' ? '#1e40af' : '#92400e'};">${accountLabel}</span>
+        </td>
+      </tr>
+      ${data.companyName ? `
+      <tr>
+        <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6;">
+          <span style="color: #6b7280; font-size: 13px; display: inline-block; width: 160px;">Company Name</span>
+          <strong style="color: #111827; font-size: 14px;">${data.companyName}</strong>
+        </td>
+      </tr>` : ''}
+      ${data.governmentDepartment ? `
+      <tr>
+        <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6;">
+          <span style="color: #6b7280; font-size: 13px; display: inline-block; width: 160px;">Government Department</span>
+          <strong style="color: #111827; font-size: 14px;">${data.governmentDepartment}</strong>
+        </td>
+      </tr>` : ''}
+      <tr>
+        <td style="padding: 10px 0;">
+          <span style="color: #6b7280; font-size: 13px; display: inline-block; width: 160px;">Registered At</span>
+          <span style="color: #111827; font-size: 14px;">${data.registeredAt}</span>
+        </td>
+      </tr>
+    </table>
+
+    <div style="text-align: center; margin: 28px 0 0 0;">
+      ${button('Review in Admin Panel', `${baseUrl}/admin/customers`)}
+    </div>
+
+    ${divider()}
+
+    <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0; text-align: center;">
+      You can contact this customer directly:<br>
+      ${data.userPhone ? `<a href="tel:${data.userPhone}" style="color: ${BRAND.color};">${data.userPhone}</a> &bull; ` : ''}
+      <a href="mailto:${data.userEmail}" style="color: ${BRAND.color};">${data.userEmail}</a>
+    </p>
+  `;
+
+  return {
+    subject: `[Approval Required] New ${accountLabel} Registration – ${data.userName}`,
+    html: baseLayout(content, `New ${accountLabel.toLowerCase()} registration from ${data.userName} requires approval.`),
+  };
+}
+
+/**
+ * Customer Notification: Account Approved/Rejected
+ */
+export function accountApprovalTemplate(data: {
+  userName: string;
+  accountType: string;
+  status: 'APPROVED' | 'REJECTED';
+}): { subject: string; html: string } {
+  const baseUrl = getBaseUrl();
+  const accountLabel = data.accountType === 'GOVERNMENT' ? 'Government'
+    : data.accountType === 'VOLUME_BUYER' ? 'Volume Buyer'
+    : data.accountType === 'GSA' ? 'Government'
+    : data.accountType;
+
+  const isApproved = data.status === 'APPROVED';
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background-color: ${isApproved ? '#ecfdf5' : '#fef2f2'}; border-radius: 50%; line-height: 64px; font-size: 28px;">${isApproved ? '✅' : '❌'}</div>
+    </div>
+    <h1 style="color: #111827; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; text-align: center;">Account ${isApproved ? 'Approved' : 'Not Approved'}</h1>
+    <p style="color: #6b7280; font-size: 15px; text-align: center; margin: 0 0 28px 0;">Your ${accountLabel} account status has been updated</p>
+
+    <p style="color: #374151; font-size: 15px; line-height: 1.7; margin: 0 0 16px 0;">
+      Hi <strong>${data.userName}</strong>,
+    </p>
+
+    ${isApproved ? `
+    <p style="color: #374151; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+      Great news! Your <strong>${accountLabel}</strong> account has been approved. You now have full access to all ${accountLabel.toLowerCase()} features and pricing.
+    </p>
+
+    ${infoBox(`
+      <p style="color: #166534; font-size: 14px; font-weight: 600; margin: 0 0 8px 0;">🎉 What's Now Available:</p>
+      <ul style="color: #374151; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+        ${data.accountType === 'GOVERNMENT' || data.accountType === 'GSA' ? `
+        <li>GSA contract pricing</li>
+        <li>Tax-exempt purchasing</li>
+        <li>Purchase order payment</li>
+        <li>Government compliance documentation</li>
+        ` : `
+        <li>Volume discount pricing</li>
+        <li>Tax-exempt purchasing</li>
+        <li>Net 30 payment terms</li>
+        <li>Dedicated account support</li>
+        `}
+      </ul>
+    `)}
+
+    <div style="text-align: center; margin: 32px 0 0 0;">
+      ${button('Start Shopping', `${baseUrl}/products`)}
+    </div>
+    ` : `
+    <p style="color: #374151; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+      We're sorry, but your <strong>${accountLabel}</strong> account application has not been approved at this time. You can still use your account as a personal customer.
+    </p>
+
+    ${infoBox(`
+      <p style="color: #92400e; font-size: 14px; line-height: 1.6; margin: 0;">
+        If you believe this is an error or would like to provide additional documentation, please contact our team at <a href="mailto:${BRAND.email}" style="color: #92400e; text-decoration: underline;">${BRAND.email}</a> or call us at <a href="tel:${BRAND.phone}" style="color: #92400e; text-decoration: underline;">${BRAND.phone}</a>.
+      </p>
+    `, '#fef3c7')}
+    `}
+  `;
+
+  return {
+    subject: isApproved
+      ? `Your ${accountLabel} Account is Approved! – ${BRAND.name}`
+      : `${accountLabel} Account Update – ${BRAND.name}`,
+    html: baseLayout(content, isApproved
+      ? `Your ${accountLabel} account has been approved! Start shopping with ${accountLabel.toLowerCase()} pricing.`
+      : `Update on your ${accountLabel} account application.`),
+  };
+}
+
 export {
   baseLayout,
   button,

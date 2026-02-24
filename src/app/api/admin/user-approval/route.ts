@@ -3,13 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { sendAccountApprovalNotification } from '@/lib/email-notifications';
 
 // POST /api/admin/user-approval - Approve or reject a user
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+    if (!session || !['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -38,7 +39,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // TODO: Send email notification to user about approval/rejection
+    // Send email notification to customer about approval/rejection (non-blocking)
+    if (user.email) {
+      sendAccountApprovalNotification({
+        email: user.email,
+        userName: user.name || 'Customer',
+        accountType: user.accountType,
+        status: status as 'APPROVED' | 'REJECTED',
+        userId: user.id,
+      }).catch(err => console.error('Failed to send account approval email:', err));
+    }
 
     return NextResponse.json({
       success: true,

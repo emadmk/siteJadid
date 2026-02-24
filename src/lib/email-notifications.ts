@@ -9,6 +9,10 @@ import {
   orderStatusTemplate,
   paymentReceivedTemplate,
   contactConfirmationTemplate,
+  adminNewOrderTemplate,
+  adminContactFormTemplate,
+  adminNewRegistrationTemplate,
+  accountApprovalTemplate,
 } from './email-templates';
 
 /**
@@ -274,6 +278,170 @@ export async function sendContactConfirmation(data: {
   const sent = await sendEmail(data.email, template.subject, template.html);
   if (sent) {
     await logEmail({ to: data.email, subject: template.subject, type: 'CONTACT_CONFIRMATION' });
+  }
+  return sent;
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN & STAFF NOTIFICATION FUNCTIONS
+// ═══════════════════════════════════════════════
+
+/**
+ * Fetch all staff emails (SUPER_ADMIN, ADMIN, CUSTOMER_SERVICE)
+ * Reads from the database so any new staff member automatically receives notifications
+ */
+async function getStaffEmails(): Promise<Array<{ email: string; name: string | null; role: string }>> {
+  try {
+    const { db } = require('./db');
+    const staffUsers = await db.user.findMany({
+      where: {
+        role: { in: ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'] },
+        isActive: true,
+        email: { not: null },
+      },
+      select: {
+        email: true,
+        name: true,
+        role: true,
+      },
+    });
+    return staffUsers.filter((u: any) => u.email);
+  } catch (error) {
+    console.error('[EMAIL] Failed to fetch staff emails:', error);
+    return [];
+  }
+}
+
+/**
+ * Send email to all staff members (SUPER_ADMIN, ADMIN, CUSTOMER_SERVICE)
+ */
+async function sendToAllStaff(subject: string, html: string, logType: string, extraLogData?: { orderId?: string }): Promise<void> {
+  const staff = await getStaffEmails();
+  if (staff.length === 0) {
+    console.warn('[EMAIL] No staff emails found - admin notification not sent');
+    return;
+  }
+
+  const results = await Promise.allSettled(
+    staff.map(async (member) => {
+      const sent = await sendEmail(member.email, subject, html);
+      if (sent) {
+        await logEmail({
+          to: member.email,
+          subject,
+          type: logType,
+          ...extraLogData,
+        });
+      }
+      return sent;
+    })
+  );
+
+  const sentCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
+  console.log(`[EMAIL] Admin notification "${logType}" sent to ${sentCount}/${staff.length} staff members`);
+}
+
+/**
+ * Send Admin Notification: New Order Placed
+ */
+export async function sendAdminNewOrderNotification(data: {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  accountType: string;
+  total: number;
+  itemCount: number;
+  paymentMethod: string;
+  orderId?: string;
+}): Promise<void> {
+  const template = adminNewOrderTemplate({
+    orderNumber: data.orderNumber,
+    customerName: data.customerName,
+    customerEmail: data.customerEmail,
+    accountType: data.accountType,
+    total: data.total,
+    itemCount: data.itemCount,
+    paymentMethod: data.paymentMethod,
+  });
+
+  await sendToAllStaff(template.subject, template.html, 'ADMIN_NEW_ORDER', { orderId: data.orderId });
+}
+
+/**
+ * Send Admin Notification: Contact Form Message
+ */
+export async function sendAdminContactFormNotification(data: {
+  senderName: string;
+  senderEmail: string;
+  senderPhone?: string;
+  subject: string;
+  message: string;
+  accountType?: string;
+}): Promise<void> {
+  const template = adminContactFormTemplate({
+    senderName: data.senderName,
+    senderEmail: data.senderEmail,
+    senderPhone: data.senderPhone,
+    subject: data.subject,
+    message: data.message,
+    accountType: data.accountType,
+  });
+
+  await sendToAllStaff(template.subject, template.html, 'ADMIN_CONTACT_FORM');
+}
+
+/**
+ * Send Admin Notification: New Registration Requiring Approval
+ */
+export async function sendAdminNewRegistrationNotification(data: {
+  userName: string;
+  userEmail: string;
+  userPhone?: string;
+  accountType: string;
+  companyName?: string;
+  governmentDepartment?: string;
+  userId?: string;
+}): Promise<void> {
+  const template = adminNewRegistrationTemplate({
+    userName: data.userName,
+    userEmail: data.userEmail,
+    userPhone: data.userPhone,
+    accountType: data.accountType,
+    companyName: data.companyName,
+    governmentDepartment: data.governmentDepartment,
+    registeredAt: new Date().toLocaleString('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }),
+  });
+
+  await sendToAllStaff(template.subject, template.html, 'ADMIN_NEW_REGISTRATION');
+}
+
+/**
+ * Send Customer Notification: Account Approved/Rejected
+ */
+export async function sendAccountApprovalNotification(data: {
+  email: string;
+  userName: string;
+  accountType: string;
+  status: 'APPROVED' | 'REJECTED';
+  userId?: string;
+}): Promise<boolean> {
+  const template = accountApprovalTemplate({
+    userName: data.userName,
+    accountType: data.accountType,
+    status: data.status,
+  });
+
+  const sent = await sendEmail(data.email, template.subject, template.html);
+  if (sent) {
+    await logEmail({
+      to: data.email,
+      subject: template.subject,
+      type: `ACCOUNT_${data.status}`,
+      userId: data.userId,
+    });
   }
   return sent;
 }
