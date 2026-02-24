@@ -183,15 +183,21 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
 
   // SECURITY FIX (CRIT-4): Sanitize HTML to prevent XSS
   const sanitizeHtml = (html: string): string => {
+    // Server-side: use regex-based sanitization (DOMParser is browser-only)
+    if (typeof window === 'undefined') {
+      return html
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/\s*on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/href\s*=\s*["']javascript:[^"']*["']/gi, '')
+        .replace(/src\s*=\s*["']javascript:[^"']*["']/gi, '');
+    }
+    // Client-side: use DOMParser for thorough sanitization
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    // Remove all script tags
     doc.querySelectorAll('script').forEach(el => el.remove());
-    // Remove event handlers
     doc.querySelectorAll('*').forEach(el => {
       Array.from(el.attributes).forEach(attr => {
         if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
       });
-      // Remove javascript: URLs
       if (el.getAttribute('href')?.startsWith('javascript:')) el.removeAttribute('href');
       if (el.getAttribute('src')?.startsWith('javascript:')) el.removeAttribute('src');
     });
