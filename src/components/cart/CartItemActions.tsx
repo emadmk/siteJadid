@@ -21,9 +21,9 @@ export function CartItemActions({ itemId, quantity, minOrderQty, stockQuantity }
   const [isRemoving, setIsRemoving] = useState(false);
 
   const handleIncrement = async () => {
-    if (localQuantity + 1 > stockQuantity) return;
+    if (localQuantity + minOrderQty > stockQuantity) return;
     setIsUpdating(true);
-    const newQty = localQuantity + 1;
+    const newQty = localQuantity + minOrderQty;
     setLocalQuantity(newQty);
     await updateQuantity(itemId, newQty);
     router.refresh();
@@ -33,7 +33,7 @@ export function CartItemActions({ itemId, quantity, minOrderQty, stockQuantity }
   const handleDecrement = async () => {
     if (localQuantity <= minOrderQty) return;
     setIsUpdating(true);
-    const newQty = localQuantity - 1;
+    const newQty = localQuantity - minOrderQty;
     setLocalQuantity(newQty);
     await updateQuantity(itemId, newQty);
     router.refresh();
@@ -72,7 +72,7 @@ export function CartItemActions({ itemId, quantity, minOrderQty, stockQuantity }
             variant="ghost"
             size="sm"
             className="h-10 w-10 hover:bg-gray-100"
-            disabled={localQuantity + 1 > stockQuantity || isUpdating}
+            disabled={localQuantity + minOrderQty > stockQuantity || isUpdating}
             onClick={handleIncrement}
           >
             {isUpdating ? (
