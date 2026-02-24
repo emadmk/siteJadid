@@ -53,44 +53,86 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate total weight
+    // Calculate total weight and build parcel from actual product dimensions
     let totalWeight = data.weight || 0;
+    let parcel: ShippoParcel;
 
-    // If cart items provided, calculate weight from products
     if (data.cartItems && data.cartItems.length > 0) {
       const productIds = data.cartItems.map(item => item.productId);
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },
-        select: { id: true, weight: true }
+        select: { id: true, weight: true, length: true, width: true, height: true }
       });
 
-      const weightMap = new Map<string, number>(products.map(p => [p.id, Number(p.weight) || 0.5]));
+      const productMap = new Map(products.map(p => [p.id, {
+        weight: Number(p.weight) || 1,
+        length: Number(p.length) || 0,
+        width: Number(p.width) || 0,
+        height: Number(p.height) || 0,
+      }]));
 
+      // Calculate total weight
       totalWeight = data.cartItems.reduce((sum: number, item: { productId: string; quantity: number }) => {
-        const weight: number = weightMap.get(item.productId) || 0.5;
+        const product = productMap.get(item.productId);
+        const weight = product?.weight || 1;
         return sum + (weight * Number(item.quantity));
       }, 0);
+
+      // Build parcel from actual product dimensions
+      // Collect all individual item boxes (accounting for quantity)
+      const itemBoxes: Array<{ l: number; w: number; h: number }> = [];
+      for (const item of data.cartItems) {
+        const product = productMap.get(item.productId);
+        const qty = Number(item.quantity);
+        if (product && product.length > 0 && product.width > 0 && product.height > 0) {
+          for (let i = 0; i < qty; i++) {
+            itemBoxes.push({ l: product.length, w: product.width, h: product.height });
+          }
+        }
+      }
+
+      if (itemBoxes.length > 0) {
+        // Smart box calculation: stack items and add padding
+        // Find the largest footprint (length x width) and sum heights
+        const maxLength = Math.max(...itemBoxes.map(b => b.l));
+        const maxWidth = Math.max(...itemBoxes.map(b => b.w));
+        const totalHeight = itemBoxes.reduce((sum, b) => sum + b.h, 0);
+
+        // Add 15% padding for packing material and box walls
+        const PADDING_FACTOR = 1.15;
+        parcel = {
+          length: Math.ceil(maxLength * PADDING_FACTOR),
+          width: Math.ceil(maxWidth * PADDING_FACTOR),
+          height: Math.ceil(totalHeight * PADDING_FACTOR),
+          distance_unit: 'in',
+          weight: Math.max(totalWeight, 0.5),
+          mass_unit: 'lb',
+        };
+      } else {
+        // No products have dimensions - use generous fallback estimate
+        parcel = estimateParcel(totalWeight);
+      }
+    } else {
+      // Ensure minimum weight
+      totalWeight = Math.max(totalWeight, 0.5);
+
+      if (data.length && data.width && data.height) {
+        parcel = {
+          length: data.length,
+          width: data.width,
+          height: data.height,
+          distance_unit: 'in',
+          weight: totalWeight,
+          mass_unit: 'lb',
+        };
+      } else {
+        parcel = estimateParcel(totalWeight);
+      }
     }
 
     // Ensure minimum weight
     totalWeight = Math.max(totalWeight, 0.5);
-
-    // Build parcel info
-    let parcel: ShippoParcel;
-
-    if (data.length && data.width && data.height) {
-      parcel = {
-        length: data.length,
-        width: data.width,
-        height: data.height,
-        distance_unit: 'in',
-        weight: totalWeight,
-        mass_unit: 'lb',
-      };
-    } else {
-      // Estimate parcel size based on weight
-      parcel = estimateParcel(totalWeight);
-    }
+    parcel.weight = Math.max(parcel.weight, 0.5);
 
     // Build destination address for Shippo
     const toAddress: ShippoAddress = {

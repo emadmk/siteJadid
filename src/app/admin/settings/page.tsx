@@ -39,6 +39,9 @@ interface Settings {
     // Shippo Integration
     shippoApiKey: string;
     shippoTestMode: boolean;
+    // Shipping Rate Markup
+    markupFixedAmount: number;
+    markupPercentage: number;
     // Origin Address (Warehouse)
     originName: string;
     originStreet: string;
@@ -94,6 +97,9 @@ const defaultSettings: Settings = {
     // Shippo Integration
     shippoApiKey: '',
     shippoTestMode: true,
+    // Shipping Rate Markup
+    markupFixedAmount: 0,
+    markupPercentage: 0,
     // Origin Address (Warehouse)
     originName: '',
     originStreet: '',
@@ -473,6 +479,54 @@ export default function SettingsPage() {
                     Get your API key from <a href="https://apps.goshippo.com/settings/api" target="_blank" rel="noopener noreferrer" className="underline font-medium">Shippo Dashboard</a>
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Shipping Rate Markup */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-green-500" />
+                Shipping Rate Markup
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                Add a fixed amount and/or percentage on top of Shippo rates. Both can be used together — percentage is applied first, then the fixed amount is added.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Fixed Markup Amount"
+                  type="number"
+                  prefix="$"
+                  step="0.01"
+                  value={settings.shipping.markupFixedAmount}
+                  onChange={(v) => updateSetting('shipping', 'markupFixedAmount', parseFloat(v) || 0)}
+                  placeholder="0.00"
+                />
+                <Input
+                  label="Percentage Markup"
+                  type="number"
+                  step="0.1"
+                  value={settings.shipping.markupPercentage}
+                  onChange={(v) => updateSetting('shipping', 'markupPercentage', parseFloat(v) || 0)}
+                  placeholder="0"
+                />
+              </div>
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg mt-3">
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  {settings.shipping.markupFixedAmount > 0 || settings.shipping.markupPercentage > 0 ? (
+                    <>
+                      Example: If Shippo rate is <strong>$10.00</strong>
+                      {settings.shipping.markupPercentage > 0 && (
+                        <> → +{settings.shipping.markupPercentage}% = <strong>${(10 * (1 + settings.shipping.markupPercentage / 100)).toFixed(2)}</strong></>
+                      )}
+                      {settings.shipping.markupFixedAmount > 0 && (
+                        <> → +${settings.shipping.markupFixedAmount.toFixed(2)} = <strong>${((10 * (1 + (settings.shipping.markupPercentage || 0) / 100)) + settings.shipping.markupFixedAmount).toFixed(2)}</strong></>
+                      )}
+                      {' '}shown to customer
+                    </>
+                  ) : (
+                    <>Set to <strong>0</strong> for both fields to show Shippo rates without any markup.</>
+                  )}
+                </p>
               </div>
             </div>
 

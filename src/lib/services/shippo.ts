@@ -15,6 +15,8 @@ interface CachedSettings {
   origin: ShippoAddress | null;
   markupType: string | null;
   markupValue: number;
+  markupFixed: number;
+  markupPercent: number;
   cachedAt: number;
 }
 
@@ -30,30 +32,26 @@ async function getCachedSettings(): Promise<CachedSettings> {
     return settingsCache;
   }
 
-  // Batch ALL settings + markup into 2 queries instead of 6
-  const [allSettings, markupSettings] = await Promise.all([
-    prisma.setting.findMany({
-      where: {
-        key: {
-          in: [
-            'shipping.shippoApiKey',
-            'shipping.shippoTestMode',
-            'shipping.originName',
-            'shipping.originStreet',
-            'shipping.originCity',
-            'shipping.originState',
-            'shipping.originZip',
-            'shipping.originCountry',
-            'shipping.originPhone',
-          ],
-        },
+  // Batch ALL settings into a single query
+  const allSettings = await prisma.setting.findMany({
+    where: {
+      key: {
+        in: [
+          'shipping.shippoApiKey',
+          'shipping.shippoTestMode',
+          'shipping.originName',
+          'shipping.originStreet',
+          'shipping.originCity',
+          'shipping.originState',
+          'shipping.originZip',
+          'shipping.originCountry',
+          'shipping.originPhone',
+          'shipping.markupFixedAmount',
+          'shipping.markupPercentage',
+        ],
       },
-    }),
-    prisma.shippingService.findMany({
-      select: { markupType: true, markupValue: true },
-      take: 1,
-    }),
-  ]);
+    },
+  });
 
   const map: Record<string, string> = {};
   allSettings.forEach((s) => {
@@ -65,6 +63,25 @@ async function getCachedSettings(): Promise<CachedSettings> {
     map['shipping.originCity'] &&
     map['shipping.originState'] &&
     map['shipping.originZip'];
+
+  // Build markup: supports both fixed amount and percentage (both can be active)
+  const markupFixed = Number(map['shipping.markupFixedAmount']) || 0;
+  const markupPercent = Number(map['shipping.markupPercentage']) || 0;
+
+  // Determine markup type for the applyShippingMarkupSync function
+  // If both are set, we'll handle it in the apply function
+  let markupType: string | null = null;
+  let markupValue = 0;
+  if (markupFixed > 0 && markupPercent > 0) {
+    markupType = 'both';
+    markupValue = 0; // handled separately
+  } else if (markupPercent > 0) {
+    markupType = 'percentage';
+    markupValue = markupPercent;
+  } else if (markupFixed > 0) {
+    markupType = 'fixed';
+    markupValue = markupFixed;
+  }
 
   settingsCache = {
     apiKey: map['shipping.shippoApiKey'] || null,
@@ -80,25 +97,33 @@ async function getCachedSettings(): Promise<CachedSettings> {
           phone: map['shipping.originPhone'],
         }
       : null,
-    markupType: markupSettings.length > 0 ? (markupSettings[0].markupType as string) : null,
-    markupValue: markupSettings.length > 0 ? Number(markupSettings[0].markupValue) : 0,
+    markupType,
+    markupValue,
+    markupFixed,
+    markupPercent,
     cachedAt: Date.now(),
   };
 
   return settingsCache;
 }
 
-// Apply shipping markup using cached settings
-function applyShippingMarkupSync(rates: ShippingRate[], markupType: string | null, markupValue: number): ShippingRate[] {
-  if (!markupType || !markupValue || markupValue === 0) return rates;
+// Apply shipping markup using cached settings (supports fixed, percentage, or both)
+function applyShippingMarkupSync(rates: ShippingRate[], settings: CachedSettings): ShippingRate[] {
+  const { markupFixed, markupPercent } = settings;
 
-  return rates.map((rate) => ({
-    ...rate,
-    cost:
-      markupType === 'percentage'
-        ? Math.round(rate.cost * (1 + markupValue / 100) * 100) / 100
-        : Math.round((rate.cost + markupValue) * 100) / 100,
-  }));
+  if (markupFixed <= 0 && markupPercent <= 0) return rates;
+
+  return rates.map((rate) => {
+    let cost = rate.cost;
+    // Apply percentage first, then fixed amount
+    if (markupPercent > 0) {
+      cost = cost * (1 + markupPercent / 100);
+    }
+    if (markupFixed > 0) {
+      cost = cost + markupFixed;
+    }
+    return { ...rate, cost: Math.round(cost * 100) / 100 };
+  });
 }
 
 // Shippo API Base URLs
@@ -206,8 +231,8 @@ export async function getShippingRates(
     return { rates: [], error: 'Origin address not configured. Please set warehouse address in admin settings.' };
   }
 
-  // Check rates cache by destination ZIP + parcel weight
-  const cacheKey = `${toAddress.zip}_${toAddress.state}_${parcels.map(p => p.weight).join('-')}`;
+  // Check rates cache by destination ZIP + parcel dimensions + weight
+  const cacheKey = `${toAddress.zip}_${toAddress.state}_${parcels.map(p => `${p.weight}-${p.length}x${p.width}x${p.height}`).join('-')}`;
   const cachedRates = ratesCache.get(cacheKey);
   if (cachedRates && (Date.now() - cachedRates.cachedAt) < RATES_CACHE_TTL) {
     return { rates: cachedRates.rates, cached: true };
@@ -263,7 +288,7 @@ export async function getShippingRates(
       .sort((a, b) => a.cost - b.cost);
 
     // Apply shipping markup using cached settings (no extra DB call)
-    const markedUpRates = applyShippingMarkupSync(rates, settings.markupType, settings.markupValue);
+    const markedUpRates = applyShippingMarkupSync(rates, settings);
 
     // Cache these rates for 30 minutes
     ratesCache.set(cacheKey, { rates: markedUpRates, cachedAt: Date.now() });
@@ -442,28 +467,31 @@ export async function testConnection(): Promise<{ success: boolean; error?: stri
 }
 
 /**
- * Calculate package dimensions based on product weights
- * This is a simple estimation - in production you'd have actual package data
+ * Estimate package dimensions when products don't have dimensions set.
+ * Uses generous sizing to avoid undercharging for shipping.
  */
 export function estimateParcel(totalWeight: number): ShippoParcel {
-  // Estimate box size based on weight
-  // These are rough estimates - adjust based on your products
-  let length = 10;
-  let width = 8;
-  let height = 6;
+  // Generous estimates - slightly larger than typical to protect against losses
+  let length = 14;
+  let width = 12;
+  let height = 8;
 
-  if (totalWeight > 20) {
-    length = 24;
-    width = 18;
-    height = 12;
+  if (totalWeight > 30) {
+    length = 30;
+    width = 24;
+    height = 16;
+  } else if (totalWeight > 20) {
+    length = 28;
+    width = 20;
+    height = 14;
   } else if (totalWeight > 10) {
+    length = 22;
+    width = 16;
+    height = 12;
+  } else if (totalWeight > 5) {
     length = 18;
     width = 14;
     height = 10;
-  } else if (totalWeight > 5) {
-    length = 14;
-    width = 10;
-    height = 8;
   }
 
   return {
@@ -471,7 +499,7 @@ export function estimateParcel(totalWeight: number): ShippoParcel {
     width,
     height,
     distance_unit: 'in',
-    weight: Math.max(totalWeight, 0.1), // Minimum 0.1 lb
+    weight: Math.max(totalWeight, 0.5),
     mass_unit: 'lb',
   };
 }

@@ -37,6 +37,9 @@ const DEFAULT_SETTINGS = {
   'shipping.originZip': { value: '', type: 'string', category: 'shipping' },
   'shipping.originCountry': { value: 'US', type: 'string', category: 'shipping' },
   'shipping.originPhone': { value: '', type: 'string', category: 'shipping' },
+  // Shipping Rate Markup
+  'shipping.markupFixedAmount': { value: '0', type: 'number', category: 'shipping' },
+  'shipping.markupPercentage': { value: '0', type: 'number', category: 'shipping' },
 
   // Tax settings (basic)
   'tax.defaultRate': { value: '8.5', type: 'number', category: 'tax' },
