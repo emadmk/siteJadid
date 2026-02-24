@@ -42,17 +42,7 @@ export async function DELETE(
         await tx.shipmentItem.deleteMany({ where: { shipmentId: { in: shipmentIds } } });
       }
 
-      // 2. Delete nested invoice relations
-      const invoices = await tx.invoice.findMany({
-        where: { orderId: params.id },
-        select: { id: true },
-      });
-      if (invoices.length > 0) {
-        const invoiceIds = invoices.map(i => i.id);
-        await tx.invoiceItem.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
-      }
-
-      // 3. Delete nested RMA relations
+      // 2. Delete nested RMA relations
       const rmas = await tx.rMA.findMany({
         where: { orderId: params.id },
         select: { id: true },
