@@ -37,7 +37,7 @@ const ACCOUNT_TYPES = [
   { value: 'PERSONAL', label: 'Personal' },
   { value: 'B2B', label: 'Business (B2B)' },
   { value: 'VOLUME_BUYER', label: 'Volume Buyer' },
-  { value: 'GSA', label: 'Government (GSA)' },
+  { value: 'GSA', label: 'Government' },
   { value: 'GOVERNMENT', label: 'Government' },
 ];
 const APPROVAL_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];

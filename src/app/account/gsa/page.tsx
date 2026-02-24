@@ -70,7 +70,7 @@ export default async function GSAAccountPage() {
       bgColor: 'bg-yellow-100',
       borderColor: 'border-yellow-300',
       label: 'Pending Approval',
-      description: 'Your GSA account is under review. We typically process applications within 1-2 business days.',
+      description: 'Your Government account is under review. We typically process applications within 1-2 business days.',
     },
     APPROVED: {
       icon: CheckCircle,
@@ -78,7 +78,7 @@ export default async function GSAAccountPage() {
       bgColor: 'bg-green-100',
       borderColor: 'border-green-300',
       label: 'Approved',
-      description: 'Your GSA account is active. You now have access to exclusive GSA pricing on eligible products.',
+      description: 'Your Government account is active. You now have access to exclusive government pricing on eligible products.',
     },
     REJECTED: {
       icon: XCircle,
@@ -86,7 +86,7 @@ export default async function GSAAccountPage() {
       bgColor: 'bg-red-100',
       borderColor: 'border-red-300',
       label: 'Not Approved',
-      description: 'Your GSA application was not approved. Please contact support for more information.',
+      description: 'Your Government application was not approved. Please contact support for more information.',
     },
   };
 
@@ -109,8 +109,8 @@ export default async function GSAAccountPage() {
               <Shield className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">GSA Account</h1>
-              <p className="text-blue-100">Government Services Administration</p>
+              <h1 className="text-3xl font-bold text-white">Government Account</h1>
+              <p className="text-blue-100">Government Buyer Account</p>
             </div>
           </div>
         </div>
@@ -143,12 +143,12 @@ export default async function GSAAccountPage() {
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Star className="w-6 h-6 text-green-600" />
-                  <h2 className="text-xl font-bold text-green-800">Your GSA Benefits</h2>
+                  <h2 className="text-xl font-bold text-green-800">Your Government Benefits</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white rounded-lg p-4 border border-green-100">
                     <BadgePercent className="w-8 h-8 text-green-600 mb-2" />
-                    <h3 className="font-semibold text-black mb-1">Exclusive GSA Pricing</h3>
+                    <h3 className="font-semibold text-black mb-1">Exclusive Government Pricing</h3>
                     <p className="text-sm text-gray-600">Access special government pricing on thousands of products</p>
                   </div>
                   <div className="bg-white rounded-lg p-4 border border-green-100">
@@ -181,7 +181,7 @@ export default async function GSAAccountPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-yellow-800">Application Review</h3>
-                      <p className="text-sm text-yellow-700">Our team is verifying your GSA credentials</p>
+                      <p className="text-sm text-yellow-700">Our team is verifying your government credentials</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -199,7 +199,7 @@ export default async function GSAAccountPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-yellow-800">Start Saving</h3>
-                      <p className="text-sm text-yellow-700">Access exclusive GSA pricing on eligible products</p>
+                      <p className="text-sm text-yellow-700">Access exclusive government pricing on eligible products</p>
                     </div>
                   </div>
                 </div>
@@ -249,7 +249,7 @@ export default async function GSAAccountPage() {
                   <label className="text-xs text-gray-500 uppercase tracking-wider">Account Type</label>
                   <p className="text-black font-medium flex items-center gap-2">
                     <Shield className="w-4 h-4 text-blue-600" />
-                    GSA Customer
+                    Government Customer
                   </p>
                 </div>
                 <div>
@@ -269,7 +269,7 @@ export default async function GSAAccountPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-blue-600" />
-                GSA Information
+                Government Information
               </h2>
               <div className="space-y-4">
                 {user.gsaDepartment && (
@@ -282,7 +282,7 @@ export default async function GSAAccountPage() {
                 )}
                 {user.gsaNumber && (
                   <div>
-                    <label className="text-xs text-gray-500 uppercase tracking-wider">GSA Number</label>
+                    <label className="text-xs text-gray-500 uppercase tracking-wider">Government ID Number</label>
                     <p className="text-black font-medium font-mono">{user.gsaNumber}</p>
                   </div>
                 )}
@@ -300,7 +300,7 @@ export default async function GSAAccountPage() {
             <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">
               <h2 className="text-lg font-bold text-blue-800 mb-2">Need Help?</h2>
               <p className="text-sm text-blue-700 mb-4">
-                Questions about your GSA account or pricing? Our team is here to help.
+                Questions about your government account or pricing? Our team is here to help.
               </p>
               <Link href="/contact">
                 <Button variant="outline" className="w-full border-blue-300 text-blue-700 hover:bg-blue-100">

@@ -834,8 +834,8 @@ export function adminNewOrderTemplate(data: {
   const fmt = (n: number) => `$${n.toFixed(2)}`;
   const accountLabel = data.accountType === 'GOVERNMENT' ? 'Government'
     : data.accountType === 'VOLUME_BUYER' ? 'Volume Buyer'
-    : data.accountType === 'GSA' ? 'GSA'
-    : data.accountType === 'B2B' ? 'B2B'
+    : data.accountType === 'GSA' ? 'Government'
+    : data.accountType === 'B2B' ? 'Volume Buyer'
     : 'Personal';
 
   const content = `
@@ -1089,7 +1089,7 @@ export function accountApprovalTemplate(data: {
       <p style="color: #166534; font-size: 14px; font-weight: 600; margin: 0 0 8px 0;">🎉 What's Now Available:</p>
       <ul style="color: #374151; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
         ${data.accountType === 'GOVERNMENT' || data.accountType === 'GSA' ? `
-        <li>GSA contract pricing</li>
+        <li>Government contract pricing</li>
         <li>Tax-exempt purchasing</li>
         <li>Purchase order payment</li>
         <li>Government compliance documentation</li>
