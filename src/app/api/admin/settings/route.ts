@@ -177,6 +177,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Sensitive keys that are masked in GET responses — skip saving if value is still masked
+    const sensitiveKeys = ['stripeSecretKey', 'stripeWebhookSecret', 'paypalClientSecret', 'shippoApiKey'];
+
     // Update each setting
     const updates: Promise<any>[] = [];
     for (const [key, value] of Object.entries(settings)) {
@@ -188,6 +191,11 @@ export async function POST(request: NextRequest) {
       let stringValue = String(value);
       if (type === 'json' && typeof value === 'object') {
         stringValue = JSON.stringify(value);
+      }
+
+      // Skip saving masked sensitive values (e.g. "****abcd") to avoid overwriting real keys
+      if (sensitiveKeys.includes(key) && stringValue.startsWith('****')) {
+        continue;
       }
 
       updates.push(
