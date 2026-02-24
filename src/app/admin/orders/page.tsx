@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Eye, Search, Download, Filter } from 'lucide-react';
 import { db } from '@/lib/db';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { DeleteOrderButton } from '@/components/admin/DeleteOrderButton';
 
 async function getOrders(searchParams: {
   status?: string;
@@ -58,6 +61,8 @@ export default async function OrdersPage({
 }: {
   searchParams: { status?: string; search?: string; accountType?: string };
 }) {
+  const session = await getServerSession(authOptions);
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const orders = await getOrders(searchParams);
 
   const stats = {
@@ -291,12 +296,17 @@ export default async function OrdersPage({
                       })}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link href={`/admin/orders/${order.id}`}>
-                        <Button size="sm" variant="outline" className="border-gray-300 hover:border-safety-green-600 hover:text-safety-green-600">
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <Link href={`/admin/orders/${order.id}`}>
+                          <Button size="sm" variant="outline" className="border-gray-300 hover:border-safety-green-600 hover:text-safety-green-600">
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </Button>
+                        </Link>
+                        {isSuperAdmin && (
+                          <DeleteOrderButton orderId={order.id} orderNumber={order.orderNumber} />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
