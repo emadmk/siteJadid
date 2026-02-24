@@ -1041,8 +1041,8 @@ export function CheckoutForm({
                     Are you a Government Buyer?
                   </h3>
                   <p className="text-sm text-blue-700 mb-3">
-                    Federal, State, and Local government agencies qualify for special pricing.
-                    Get <span className="font-bold text-blue-900">20% off</span> your entire order!
+                    Federal, State, and Local government agencies qualify for <span className="font-bold text-blue-900">exclusive government pricing</span>.
+                    Discounted rates are automatically applied to all items in your order!
                   </p>
 
                   <label className="flex items-center gap-3 cursor-pointer">
