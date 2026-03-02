@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 
 const companies = [
-  { name: 'Robins AFB', logo: '/uploads/Robins-AFB.jpeg' },
+  { name: 'Robins AFB', logo: '/images/imagesite/images.png' },
   { name: 'Boeing', logo: '/uploads/Boeing-Logo.png' },
   { name: 'Northrop Grumman', logo: '/uploads/Northrop-Grumman-Logo.png' },
   { name: 'Perdue', logo: '/uploads/Perdue Logo.png' },

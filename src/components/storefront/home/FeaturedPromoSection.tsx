@@ -209,8 +209,8 @@ export function FeaturedPromoSection() {
               className="object-contain drop-shadow-lg"
               unoptimized
             />
-            <p className="text-white/90 text-xs font-medium mt-2 italic leading-tight">
-              Serving the government<br />and our community<br />for over 25 years
+            <p className="text-white/90 text-sm font-semibold mt-2 italic leading-tight">
+              Serving the government<br />and our community<br />for over 25 years !
             </p>
           </div>
         </div>
