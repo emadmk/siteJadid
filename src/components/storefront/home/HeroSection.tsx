@@ -107,7 +107,7 @@ export function HeroSection() {
                         src={banner.image}
                         alt={banner.title}
                         fill
-                        className="object-cover opacity-30 scale-[1.3]"
+                        className="object-cover opacity-30 scale-[1.3] group-hover:scale-[1.4] transition-transform duration-500"
                       />
                       <div className="absolute inset-0 p-4 flex flex-col">
                         <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-3">
@@ -153,17 +153,17 @@ export function HeroSection() {
                 <Link
                   key={banner.id}
                   href={banner.link}
-                  className="relative overflow-hidden rounded-xl h-56 group"
+                  className="relative overflow-hidden rounded-xl h-56 group hover:shadow-xl transition-shadow duration-300"
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${banner.bgColor}`} />
                   <Image
                     src={banner.image}
                     alt={banner.title}
                     fill
-                    className="object-cover opacity-20 scale-[1.3]"
+                    className="object-cover opacity-20 scale-[1.3] group-hover:scale-[1.4] transition-transform duration-500"
                   />
                   <div className="absolute inset-0 p-6 flex flex-col">
-                    <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-4">
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-4 group-hover:bg-white/30 transition-colors duration-300">
                       <IconComponent className="w-7 h-7 text-white" />
                     </div>
                     <h3 className="text-white font-bold text-xl mb-1">
@@ -176,7 +176,7 @@ export function HeroSection() {
                       {banner.description}
                     </p>
                     <div className="flex items-center gap-2 text-white font-medium text-sm mt-3">
-                      Register Now <ArrowRight className="w-4 h-4" />
+                      Register Now <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                     </div>
                   </div>
                 </Link>
