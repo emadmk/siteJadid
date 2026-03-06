@@ -26,7 +26,7 @@ import {
   Footprints,
 } from 'lucide-react';
 
-type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine' | 'carhartt';
+type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine' | 'carhartt' | '3m';
 
 interface Brand {
   id: string;
@@ -206,6 +206,8 @@ export default function ProductImportPage() {
         ? '/api/admin/wolverine-import'
         : importType === 'carhartt'
         ? '/api/admin/carhartt-import'
+        : importType === '3m'
+        ? '/api/admin/3m-import'
         : '/api/admin/bulk-import';
 
       const response = await fetch(apiUrl, {
@@ -345,6 +347,21 @@ export default function ProductImportPage() {
           </button>
           <button
             onClick={() => {
+              setImportType('3m');
+              setFile(null);
+              setResult(null);
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              importType === '3m'
+                ? 'bg-red-600 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Package className="w-5 h-5" />
+            3M Import
+          </button>
+          <button
+            onClick={() => {
               setImportType('gsa');
               setFile(null);
               setResult(null);
@@ -368,6 +385,8 @@ export default function ProductImportPage() {
             ? 'Import Wolverine/Bates footwear products. Creates size variants automatically from manufacturer part numbers.'
             : importType === 'carhartt'
             ? 'Import Carhartt workwear products. Creates size variants automatically and maps to Footwear category.'
+            : importType === '3m'
+            ? 'Import 3M special products. No images (upload manually). All products go to PreRelease with TAA Approved. No category (assign manually).'
             : 'Import GSA products with custom field mapping and compliance data.'}
         </p>
       </div>
@@ -385,6 +404,8 @@ export default function ProductImportPage() {
               ? 'bg-amber-50 border-amber-200'
               : importType === 'carhartt'
               ? 'bg-orange-50 border-orange-200'
+              : importType === '3m'
+              ? 'bg-red-50 border-red-200'
               : 'bg-blue-50 border-blue-200'
           }`}>
             <h2 className={`text-lg font-semibold mb-3 ${
@@ -396,9 +417,11 @@ export default function ProductImportPage() {
                 ? 'text-amber-800'
                 : importType === 'carhartt'
                 ? 'text-orange-800'
+                : importType === '3m'
+                ? 'text-red-800'
                 : 'text-blue-800'
             }`}>
-              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : importType === 'wolverine' ? 'Wolverine Bates Import' : importType === 'carhartt' ? 'Carhartt Import' : 'GSA Import'} Selected
+              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : importType === 'wolverine' ? 'Wolverine Bates Import' : importType === 'carhartt' ? 'Carhartt Import' : importType === '3m' ? '3M Import' : 'GSA Import'} Selected
             </h2>
             {importType === 'occunomix' ? (
               <div className="space-y-2 text-sm text-safety-green-700">
@@ -450,6 +473,21 @@ export default function ProductImportPage() {
                   <li>Images from: /import-images/Images/{'<Category>/<Style>/<PartNumber>'}/JPEG/</li>
                   <li>Auto-creates Carhartt brand and assigns to Footwear category</li>
                   <li>Products go to PreRelease status for review</li>
+                </ul>
+              </div>
+            ) : importType === '3m' ? (
+              <div className="space-y-2 text-sm text-red-700">
+                <p><strong>Expected Columns:</strong> manufacturer_part_number, vendor_part_number, item_name, item_description, commercial_price, Sup Cost, govt_price_with_fee</p>
+                <p><strong>Features:</strong></p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Each row = one product (no variant detection)</li>
+                  <li>All products go to PreRelease status</li>
+                  <li>TAA Approved automatically set to true</li>
+                  <li>No images imported (upload manually later)</li>
+                  <li>No category assigned (set manually later)</li>
+                  <li>Multiple prices: Commercial, Supplier Cost, GOV with fee</li>
+                  <li>Auto-creates 3M brand</li>
+                  <li>GSA SIN and pricing automatically captured</li>
                 </ul>
               </div>
             ) : (
