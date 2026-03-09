@@ -207,7 +207,7 @@ export default function ProductImportPage() {
         : importType === 'carhartt'
         ? '/api/admin/carhartt-import'
         : importType === '3m'
-        ? '/api/admin/3m-import'
+        ? '/api/admin/threem-import'
         : '/api/admin/bulk-import';
 
       const response = await fetch(apiUrl, {
