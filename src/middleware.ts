@@ -73,9 +73,9 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/signin?callbackUrl=' + encodeURIComponent(pathname), request.url));
     }
 
-    // While impersonating, block admin panel access (redirect to customer dashboard)
+    // While impersonating, block admin panel access (redirect to customer account)
     if (isImpersonating) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/account', request.url));
     }
 
     const adminRoles = [
@@ -89,14 +89,19 @@ export async function middleware(request: NextRequest) {
     ];
 
     if (!adminRoles.includes(token.role as string)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/account', request.url));
     }
 
     return response;
   }
 
+  // Redirect old /dashboard to /account
+  if (pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/account', request.url));
+  }
+
   // Protected user routes
-  const protectedRoutes = ['/dashboard', '/cart', '/checkout', '/orders', '/profile'];
+  const protectedRoutes = ['/account', '/cart', '/checkout', '/orders', '/profile'];
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
   if (isProtectedRoute) {
@@ -104,10 +109,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/signin?callbackUrl=' + encodeURIComponent(pathname), request.url));
     }
 
-    // Admin users should use admin panel, not user dashboard
+    // Admin users should use admin panel, not customer account
     // BUT if impersonating, allow them to stay on customer pages
     const adminRoles = ['SUPER_ADMIN', 'ADMIN'];
-    if (adminRoles.includes(token.role as string) && pathname.startsWith('/dashboard') && !isImpersonating) {
+    if (adminRoles.includes(token.role as string) && pathname.startsWith('/account') && !isImpersonating) {
       return NextResponse.redirect(new URL('/admin', request.url));
     }
 
