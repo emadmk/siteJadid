@@ -58,18 +58,26 @@ async function getUserOrders(userId: string) {
 
 const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
   PENDING: { color: 'bg-yellow-100 text-yellow-800', icon: Clock, label: 'Pending' },
+  CONFIRMED: { color: 'bg-blue-100 text-blue-800', icon: CheckCircle, label: 'Confirmed' },
   PROCESSING: { color: 'bg-blue-100 text-blue-800', icon: Package, label: 'Processing' },
   SHIPPED: { color: 'bg-purple-100 text-purple-800', icon: Truck, label: 'Shipped' },
   DELIVERED: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Delivered' },
   CANCELLED: { color: 'bg-red-100 text-red-800', icon: XCircle, label: 'Cancelled' },
+  REFUNDED: { color: 'bg-gray-100 text-gray-800', icon: XCircle, label: 'Refunded' },
+  ON_HOLD: { color: 'bg-orange-100 text-orange-800', icon: Clock, label: 'On Hold' },
 };
+
+const defaultStatus = { color: 'bg-gray-100 text-gray-800', icon: Package, label: 'Unknown' };
 
 const paymentStatusConfig: Record<string, { color: string; label: string }> = {
   PENDING: { color: 'bg-yellow-100 text-yellow-800', label: 'Payment Pending' },
   PAID: { color: 'bg-green-100 text-green-800', label: 'Paid' },
   FAILED: { color: 'bg-red-100 text-red-800', label: 'Payment Failed' },
   REFUNDED: { color: 'bg-gray-100 text-gray-800', label: 'Refunded' },
+  PARTIALLY_REFUNDED: { color: 'bg-orange-100 text-orange-800', label: 'Partially Refunded' },
 };
+
+const defaultPayment = { color: 'bg-gray-100 text-gray-800', label: 'Unknown' };
 
 export default async function OrdersPage() {
   const session = await getEffectiveSession();
@@ -111,9 +119,9 @@ export default async function OrdersPage() {
       ) : (
         <div className="space-y-4">
           {orders.map((order) => {
-            const status = statusConfig[order.status];
+            const status = statusConfig[order.status] || defaultStatus;
             const StatusIcon = status.icon;
-            const payment = paymentStatusConfig[order.paymentStatus];
+            const payment = paymentStatusConfig[order.paymentStatus] || defaultPayment;
 
             return (
               <div

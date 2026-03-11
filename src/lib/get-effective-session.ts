@@ -1,7 +1,16 @@
 import { getServerSession } from 'next-auth';
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { authOptions } from './auth';
 import { db } from './db';
+
+/**
+ * Parse a specific cookie value from a raw Cookie header string.
+ */
+function parseCookie(cookieHeader: string | null, name: string): string | undefined {
+  if (!cookieHeader) return undefined;
+  const match = cookieHeader.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
 
 /**
  * Get the effective session, considering impersonation.
@@ -15,10 +24,20 @@ export async function getEffectiveSession() {
     return null;
   }
 
-  // Check impersonation cookies
-  const cookieStore = cookies();
-  const impersonateUserId = cookieStore.get('impersonate_user_id')?.value;
-  const impersonateAdminId = cookieStore.get('impersonate_admin_id')?.value;
+  // Check impersonation cookies from request headers
+  // Using headers() instead of cookies() for better compatibility
+  let impersonateUserId: string | undefined;
+  let impersonateAdminId: string | undefined;
+
+  try {
+    const headersList = headers();
+    const cookieHeader = headersList.get('cookie');
+    impersonateUserId = parseCookie(cookieHeader, 'impersonate_user_id');
+    impersonateAdminId = parseCookie(cookieHeader, 'impersonate_admin_id');
+  } catch {
+    // headers() not available in this context
+    return session;
+  }
 
   // Only allow impersonation if the actual session belongs to the admin who started it
   if (!impersonateUserId || !impersonateAdminId || impersonateAdminId !== session.user.id) {
