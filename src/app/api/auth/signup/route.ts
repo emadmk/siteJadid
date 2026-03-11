@@ -123,18 +123,16 @@ export async function POST(req: NextRequest) {
       requestUrl,
     });
 
-    // Send admin notification for accounts requiring approval (non-blocking)
-    if (accountType === 'GOVERNMENT' || accountType === 'VOLUME_BUYER') {
-      sendAdminNewRegistrationNotification({
-        userName: validatedData.name,
-        userEmail: validatedData.email,
-        userPhone: validatedData.phone,
-        accountType,
-        companyName: validatedData.companyName,
-        governmentDepartment: governmentDept,
-        userId: user.id,
-      }).catch(err => console.error('Failed to send admin registration notification:', err));
-    }
+    // Send admin notification for ALL new registrations (non-blocking)
+    sendAdminNewRegistrationNotification({
+      userName: validatedData.name,
+      userEmail: validatedData.email,
+      userPhone: validatedData.phone,
+      accountType,
+      companyName: validatedData.companyName,
+      governmentDepartment: governmentDept,
+      userId: user.id,
+    }).catch(err => console.error('Failed to send admin registration notification:', err));
 
     // Return success (without password)
     const { password: _password, ...userWithoutPassword } = user;

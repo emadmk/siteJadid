@@ -342,9 +342,9 @@ export function CheckoutForm({
     };
   }, [selectedAddressId, fetchShippingRates]);
 
-  // Get shipping cost from selected rate or fallback
+  // Get shipping cost from selected Shippo rate (no hardcoded fallback)
   const selectedRate = shippingRates.find(r => r.id === selectedRateId);
-  const baseShippingCost = selectedRate?.cost ?? 15;
+  const baseShippingCost = selectedRate?.cost ?? 0;
   const shippingCost =
     shippingSettings.freeShippingEnabled && subtotal >= shippingSettings.freeThreshold
       ? 0
@@ -1647,8 +1647,8 @@ export function CheckoutForm({
             <div className="flex justify-between">
               <span className="text-gray-600">Shipping</span>
               <span className="font-medium">
-                {currentStep === 'shipping' && !selectedRate ? (
-                  <span className="text-gray-500 text-sm">Calculated in next step</span>
+                {!selectedRate ? (
+                  <span className="text-gray-500 text-sm">{currentStep === 'shipping' ? 'Calculated in next step' : 'Select a shipping method'}</span>
                 ) : shippingCost === 0 ? (
                   <span className="text-safety-green-600">FREE</span>
                 ) : (
@@ -1670,7 +1670,7 @@ export function CheckoutForm({
           <div className="border-t border-gray-200 mt-4 pt-4">
             <div className="flex justify-between items-center">
               <span className="text-lg font-semibold text-black">Total</span>
-              {currentStep === 'shipping' && !selectedRate ? (
+              {!selectedRate ? (
                 <div className="text-right">
                   <span className="text-xl font-bold text-black">${(subtotal - discount + tax).toFixed(2)}</span>
                   <div className="text-xs text-gray-500">+ shipping</div>

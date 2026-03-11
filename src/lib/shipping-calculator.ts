@@ -1,5 +1,6 @@
-// Server-side shipping cost calculator
-// Prevents client-side manipulation of shipping costs
+// Fallback shipping cost calculator
+// Only used when Shippo rate is not available (e.g., API timeout, no rates returned)
+// Primary shipping rates come from Shippo via /api/shipping/rates
 
 interface ShippingCalculationInput {
   subtotal: number;
@@ -15,8 +16,8 @@ interface ShippingCalculationResult {
 }
 
 /**
- * Calculate shipping cost server-side based on order parameters
- * This replaces client-supplied shipping cost to prevent manipulation
+ * Fallback shipping cost calculator - used ONLY when no Shippo rate is selected
+ * Primary shipping uses real-time Shippo rates selected during checkout
  */
 export function calculateShippingCost(input: ShippingCalculationInput): ShippingCalculationResult {
   // Free shipping coupon overrides everything

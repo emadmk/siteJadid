@@ -32,7 +32,7 @@ export default function ShippingPage() {
                     <div className="font-semibold text-black">Standard Shipping</div>
                     <div className="text-sm text-gray-600">5-7 business days</div>
                   </div>
-                  <div className="text-lg font-bold text-black">$15.00</div>
+                  <div className="text-lg font-bold text-black">Calculated at checkout</div>
                 </div>
 
                 <div className="flex items-center justify-between pb-4 border-b border-gray-200">
@@ -40,7 +40,7 @@ export default function ShippingPage() {
                     <div className="font-semibold text-black">Express Shipping</div>
                     <div className="text-sm text-gray-600">2-3 business days</div>
                   </div>
-                  <div className="text-lg font-bold text-black">$35.00</div>
+                  <div className="text-lg font-bold text-black">Calculated at checkout</div>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -48,13 +48,13 @@ export default function ShippingPage() {
                     <div className="font-semibold text-black">Overnight Shipping</div>
                     <div className="text-sm text-gray-600">Next business day</div>
                   </div>
-                  <div className="text-lg font-bold text-black">$75.00</div>
+                  <div className="text-lg font-bold text-black">Calculated at checkout</div>
                 </div>
               </div>
 
               <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Shipping rates may vary for oversized or heavy items. Additional charges will be calculated at checkout.
+                  <strong>Note:</strong> Shipping rates are calculated based on your delivery address, package weight, and dimensions using real-time carrier rates. The exact cost will be shown at checkout before you place your order.
                 </p>
               </div>
             </div>

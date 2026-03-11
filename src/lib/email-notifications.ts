@@ -14,6 +14,7 @@ import {
   adminNewRegistrationTemplate,
   accountApprovalTemplate,
 } from './email-templates';
+import { db } from './db';
 
 /**
  * Send email via SMTP (nodemailer)
@@ -25,12 +26,21 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
     const port = parseInt(process.env.EMAIL_SERVER_PORT || '587');
     const user = process.env.EMAIL_SERVER_USER;
     const pass = process.env.EMAIL_SERVER_PASSWORD;
-    const from = process.env.EMAIL_FROM || `ADA Supplies <${user}>`;
+    const rawFrom = process.env.EMAIL_FROM || user;
 
     if (!host || !user || !pass) {
-      console.warn('[EMAIL] SMTP not configured - email not sent to:', to);
+      console.error('[EMAIL] SMTP not configured - missing env vars:', {
+        host: !!host,
+        user: !!user,
+        pass: !!pass,
+      });
       return false;
     }
+
+    // Ensure FROM field has proper format: "Name <email>"
+    const from = rawFrom && rawFrom.includes('<')
+      ? rawFrom
+      : `ADA Supplies <${rawFrom}>`;
 
     const nodemailer = require('nodemailer');
     const transporter = nodemailer.createTransport({
@@ -38,19 +48,26 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
       port,
       secure: port === 465,
       auth: { user, pass },
+      // Connection timeout settings
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
 
-    await transporter.sendMail({
+    const result = await transporter.sendMail({
       from,
       to,
       subject,
       html,
     });
 
-    console.log(`[EMAIL] Sent "${subject}" to ${to}`);
+    console.log(`[EMAIL] Sent "${subject}" to ${to} (messageId: ${result.messageId})`);
     return true;
-  } catch (error) {
-    console.error('[EMAIL] Failed to send email:', error);
+  } catch (error: any) {
+    console.error(`[EMAIL] Failed to send "${subject}" to ${to}:`, error.message || error);
+    if (error.code) {
+      console.error(`[EMAIL] Error code: ${error.code}, command: ${error.command}`);
+    }
     return false;
   }
 }
@@ -66,7 +83,7 @@ async function logEmail(data: {
   orderId?: string;
 }): Promise<void> {
   try {
-    const { db } = require('./db');
+    // Using imported db from ./db
     await db.emailLog.create({
       data: {
         toEmail: data.to,
@@ -292,7 +309,7 @@ export async function sendContactConfirmation(data: {
  */
 async function getStaffEmails(): Promise<Array<{ email: string; name: string | null; role: string }>> {
   try {
-    const { db } = require('./db');
+    // Using imported db from ./db
     const staffUsers = await db.user.findMany({
       where: {
         role: { in: ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'] },
@@ -318,9 +335,10 @@ async function getStaffEmails(): Promise<Array<{ email: string; name: string | n
 async function sendToAllStaff(subject: string, html: string, logType: string, extraLogData?: { orderId?: string }): Promise<void> {
   const staff = await getStaffEmails();
   if (staff.length === 0) {
-    console.warn('[EMAIL] No staff emails found - admin notification not sent');
+    console.error('[EMAIL] No staff emails found in database! Check that admin users exist with isActive=true and roles SUPER_ADMIN/ADMIN/CUSTOMER_SERVICE');
     return;
   }
+  console.log(`[EMAIL] Sending "${logType}" to ${staff.length} staff members: ${staff.map(s => s.email).join(', ')}`);
 
   const results = await Promise.allSettled(
     staff.map(async (member) => {
