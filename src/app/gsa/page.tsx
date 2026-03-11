@@ -386,8 +386,8 @@ export default function GSAContractPage() {
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
               <MapPin className="w-8 h-8 mx-auto mb-3 text-safety-green-400" />
               <h4 className="font-semibold mb-2">Address</h4>
-              <p className="text-white">205 Old Perry Rd.</p>
-              <p className="text-white">Bonaire, GA 31005</p>
+              <p className="text-white">924 South Houston Lake Road</p>
+              <p className="text-white">Warner Robins, GA 31088</p>
             </div>
           </div>
 

@@ -9,8 +9,8 @@ export default function ContactPage() {
   const [companyInfo, setCompanyInfo] = useState({
     phone: '478-329-8896',
     email: 'info@adasupply.com',
-    address: '205 Old Perry Rd. Bonaire, Georgia 31005',
-    city: 'Bonaire',
+    address: '924 South Houston Lake Road, Warner Robins, GA 31088',
+    city: 'Warner Robins',
     state: 'Georgia',
     country: 'US',
   });

@@ -12,7 +12,7 @@ const BRAND = {
   website: '', // Set from env
   phone: '478-329-8896',
   email: 'info@adasupply.com',
-  address: '205 Old Perry Rd. Bonaire, Georgia 31005',
+  address: '924 South Houston Lake Road, Warner Robins, GA 31088',
   logoUrl: '/images/imagesite/logo.png',
   gsaContract: 'GS-21F-0086U',
   cageCode: '1J2Y1',
