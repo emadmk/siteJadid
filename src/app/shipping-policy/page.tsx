@@ -32,17 +32,17 @@ export default function ShippingPolicyPage() {
                     <tr>
                       <td className="px-6 py-4 text-sm text-gray-900">Standard Shipping</td>
                       <td className="px-6 py-4 text-sm text-gray-700">5-7 business days</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">$9.99</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">Calculated at checkout</td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 text-sm text-gray-900">Expedited Shipping</td>
                       <td className="px-6 py-4 text-sm text-gray-700">2-3 business days</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">$19.99</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">Calculated at checkout</td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 text-sm text-gray-900">Overnight Shipping</td>
                       <td className="px-6 py-4 text-sm text-gray-700">1 business day</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">$39.99</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">Calculated at checkout</td>
                     </tr>
                   </tbody>
                 </table>

@@ -34,7 +34,7 @@ export default function ShippingInfoPage() {
                   </p>
                   <p className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-gray-500" />
-                    <span>$9.99</span>
+                    <span>Calculated at checkout</span>
                   </p>
                   <p className="text-sm text-gray-600 mt-3">
                     Perfect for non-urgent orders. Most cost-effective option.
@@ -54,7 +54,7 @@ export default function ShippingInfoPage() {
                   </p>
                   <p className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-gray-500" />
-                    <span>$19.99</span>
+                    <span>Calculated at checkout</span>
                   </p>
                   <p className="text-sm text-gray-600 mt-3">
                     Fast delivery when you need it sooner.
@@ -71,7 +71,7 @@ export default function ShippingInfoPage() {
                   </p>
                   <p className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-gray-500" />
-                    <span>$39.99</span>
+                    <span>Calculated at checkout</span>
                   </p>
                   <p className="text-sm text-gray-600 mt-3">
                     Emergency orders processed same day if placed before 2 PM EST.
