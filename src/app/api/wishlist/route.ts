@@ -1,13 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getEffectiveSession } from '@/lib/get-effective-session';
 import { db } from '@/lib/db';
 
 // GET /api/wishlist - Get user's wishlist
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getEffectiveSession();
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -98,7 +97,7 @@ export async function GET(request: NextRequest) {
 // POST /api/wishlist - Add product to wishlist
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getEffectiveSession();
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -202,7 +201,7 @@ export async function POST(request: NextRequest) {
 // DELETE /api/wishlist - Remove product from wishlist
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getEffectiveSession();
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },

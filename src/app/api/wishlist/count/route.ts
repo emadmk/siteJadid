@@ -1,13 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getEffectiveSession } from '@/lib/get-effective-session';
 import { db } from '@/lib/db';
 
 // GET /api/wishlist/count - Get count of items in wishlist
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getEffectiveSession();
 
     // Return 0 if not logged in (don't error out)
     if (!session?.user?.id) {
