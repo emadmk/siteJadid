@@ -138,9 +138,8 @@ export async function PUT(
         orderId: params.id,
       }).catch(err => console.error('Failed to send order status email:', err));
 
-      // Send admin notification for important status changes
-      if (['CANCELLED', 'REFUNDED', 'ON_HOLD'].includes(status)) {
-        sendAdminOrderStatusChangeNotification({
+      // Send admin notification for all status changes
+      sendAdminOrderStatusChangeNotification({
           orderNumber: order.orderNumber,
           customerName: updatedOrder.user.name || 'Customer',
           customerEmail: updatedOrder.user.email,
@@ -149,8 +148,7 @@ export async function PUT(
           changedBy: session.user.name || session.user.email || 'Admin',
           notes,
           orderId: params.id,
-        }).catch(err => console.error('Failed to send admin order status notification:', err));
-      }
+      }).catch(err => console.error('Failed to send admin order status notification:', err));
     }
 
     return NextResponse.json({

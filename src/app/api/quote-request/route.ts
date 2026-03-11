@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
+import { sendAdminQuoteRequestNotification } from '@/lib/email-notifications';
 
 const quoteRequestSchema = z.object({
   companyName: z.string().min(1, 'Company name is required'),
@@ -31,6 +32,18 @@ export async function POST(request: NextRequest) {
         message: validatedData.message || null,
       },
     });
+
+    // Send admin notification for new quote request
+    sendAdminQuoteRequestNotification({
+      companyName: validatedData.companyName,
+      contactName: validatedData.contactName,
+      email: validatedData.email,
+      phone: validatedData.phone,
+      products: validatedData.products,
+      quantity: validatedData.quantity,
+      timeline: validatedData.timeline,
+      message: validatedData.message,
+    }).catch(err => console.error('Failed to send admin quote request notification:', err));
 
     return NextResponse.json({
       success: true,

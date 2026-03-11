@@ -14,6 +14,8 @@ import {
   adminNewRegistrationTemplate,
   accountApprovalTemplate,
   adminOrderStatusChangeTemplate,
+  adminQuoteRequestTemplate,
+  ensureBrandLoaded,
 } from './email-templates';
 import { db } from './db';
 
@@ -116,6 +118,7 @@ export async function sendWelcomeEmail(data: {
   verifyUrl?: string;
   userId?: string;
 }): Promise<boolean> {
+  await ensureBrandLoaded();
   const template = welcomeEmail({
     userName: data.userName,
     accountType: data.accountType,
@@ -138,6 +141,7 @@ export async function sendVerificationNotification(data: {
   verifyUrl: string;
   userId?: string;
 }): Promise<boolean> {
+  await ensureBrandLoaded();
   const template = emailVerificationTemplate({
     userName: data.userName,
     verifyUrl: data.verifyUrl,
@@ -158,6 +162,7 @@ export async function sendPasswordResetNotification(data: {
   userName?: string;
   resetUrl: string;
 }): Promise<boolean> {
+  await ensureBrandLoaded();
   const template = passwordResetTemplate({
     userName: data.userName,
     resetUrl: data.resetUrl,
@@ -200,6 +205,7 @@ export async function sendOrderConfirmation(data: {
   userId?: string;
   orderId?: string;
 }): Promise<boolean> {
+  await ensureBrandLoaded();
   const template = orderConfirmationTemplate({
     userName: data.userName,
     orderNumber: data.orderNumber,
@@ -234,6 +240,7 @@ export async function sendOrderStatusUpdate(data: {
   userId?: string;
   orderId?: string;
 }): Promise<boolean> {
+  await ensureBrandLoaded();
   const template = orderStatusTemplate({
     userName: data.userName,
     orderNumber: data.orderNumber,
@@ -263,6 +270,7 @@ export async function sendPaymentReceivedNotification(data: {
   userId?: string;
   orderId?: string;
 }): Promise<boolean> {
+  await ensureBrandLoaded();
   const template = paymentReceivedTemplate({
     userName: data.userName,
     orderNumber: data.orderNumber,
@@ -287,6 +295,7 @@ export async function sendContactConfirmation(data: {
   subject: string;
   message: string;
 }): Promise<boolean> {
+  await ensureBrandLoaded();
   const template = contactConfirmationTemplate({
     userName: data.userName,
     subject: data.subject,
@@ -373,6 +382,7 @@ export async function sendAdminNewOrderNotification(data: {
   paymentMethod: string;
   orderId?: string;
 }): Promise<void> {
+  await ensureBrandLoaded();
   const template = adminNewOrderTemplate({
     orderNumber: data.orderNumber,
     customerName: data.customerName,
@@ -397,6 +407,7 @@ export async function sendAdminContactFormNotification(data: {
   message: string;
   accountType?: string;
 }): Promise<void> {
+  await ensureBrandLoaded();
   const template = adminContactFormTemplate({
     senderName: data.senderName,
     senderEmail: data.senderEmail,
@@ -421,6 +432,7 @@ export async function sendAdminNewRegistrationNotification(data: {
   governmentDepartment?: string;
   userId?: string;
 }): Promise<void> {
+  await ensureBrandLoaded();
   const template = adminNewRegistrationTemplate({
     userName: data.userName,
     userEmail: data.userEmail,
@@ -447,6 +459,7 @@ export async function sendAccountApprovalNotification(data: {
   status: 'APPROVED' | 'REJECTED';
   userId?: string;
 }): Promise<boolean> {
+  await ensureBrandLoaded();
   const template = accountApprovalTemplate({
     userName: data.userName,
     accountType: data.accountType,
@@ -478,6 +491,7 @@ export async function sendAdminOrderStatusChangeNotification(data: {
   notes?: string;
   orderId?: string;
 }): Promise<void> {
+  await ensureBrandLoaded();
   const template = adminOrderStatusChangeTemplate({
     orderNumber: data.orderNumber,
     customerName: data.customerName,
@@ -489,4 +503,32 @@ export async function sendAdminOrderStatusChangeNotification(data: {
   });
 
   await sendToAllStaff(template.subject, template.html, `ADMIN_ORDER_${data.newStatus}`, { orderId: data.orderId });
+}
+
+/**
+ * Send Admin Notification: Quote Request
+ */
+export async function sendAdminQuoteRequestNotification(data: {
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  products: string;
+  quantity: string;
+  timeline?: string;
+  message?: string;
+}): Promise<void> {
+  await ensureBrandLoaded();
+  const template = adminQuoteRequestTemplate({
+    companyName: data.companyName,
+    contactName: data.contactName,
+    email: data.email,
+    phone: data.phone,
+    products: data.products,
+    quantity: data.quantity,
+    timeline: data.timeline,
+    message: data.message,
+  });
+
+  await sendToAllStaff(template.subject, template.html, 'ADMIN_QUOTE_REQUEST');
 }

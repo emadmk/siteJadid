@@ -20,15 +20,17 @@ const BRAND = {
 };
 
 // Load company info from settings DB and update BRAND defaults
-let _brandLoaded = false;
+// Refreshes every 5 minutes so admin changes are picked up without restart
+let _brandLoadedAt = 0;
+const BRAND_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 async function ensureBrandLoaded() {
-  if (_brandLoaded) return;
+  if (_brandLoadedAt && Date.now() - _brandLoadedAt < BRAND_CACHE_TTL) return;
   try {
     const settings = await prisma.setting.findMany({
       where: {
         key: {
           in: [
-            'store.email', 'store.phone',
+            'store.name', 'store.email', 'store.phone', 'store.address',
             'shipping.originStreet', 'shipping.originCity',
             'shipping.originState', 'shipping.originZip',
             'shipping.originPhone',
@@ -39,20 +41,26 @@ async function ensureBrandLoaded() {
     const map: Record<string, string> = {};
     for (const s of settings) map[s.key] = s.value;
 
+    if (map['store.name']) BRAND.name = map['store.name'];
     if (map['shipping.originPhone'] || map['store.phone']) {
       BRAND.phone = map['shipping.originPhone'] || map['store.phone'];
     }
     if (map['store.email']) BRAND.email = map['store.email'];
 
-    const parts = [
-      map['shipping.originStreet'],
-      map['shipping.originCity'],
-      map['shipping.originState'],
-      map['shipping.originZip'],
-    ].filter(Boolean);
-    if (parts.length > 0) BRAND.address = parts.join(', ');
+    // Prefer store.address if set, otherwise build from shipping origin fields
+    if (map['store.address']) {
+      BRAND.address = map['store.address'];
+    } else {
+      const parts = [
+        map['shipping.originStreet'],
+        map['shipping.originCity'],
+        map['shipping.originState'],
+        map['shipping.originZip'],
+      ].filter(Boolean);
+      if (parts.length > 0) BRAND.address = parts.join(', ');
+    }
 
-    _brandLoaded = true;
+    _brandLoadedAt = Date.now();
   } catch {
     // Use defaults if DB is unavailable
   }
@@ -1218,6 +1226,84 @@ export function adminOrderStatusChangeTemplate(data: {
   return {
     subject: `[Order ${label}] #${data.orderNumber} – ${data.customerName}`,
     html: baseLayout(content, `Order #${data.orderNumber} has been ${label.toLowerCase()}`),
+  };
+}
+
+/**
+ * Admin Notification: Quote Request
+ */
+export function adminQuoteRequestTemplate(data: {
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  products: string;
+  quantity: string;
+  timeline?: string;
+  message?: string;
+}): { subject: string; html: string } {
+  const baseUrl = getBaseUrl();
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background-color: #eff6ff; border-radius: 50%; line-height: 64px; font-size: 28px;">📋</div>
+    </div>
+    <h1 style="color: #111827; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; text-align: center;">New Quote Request</h1>
+    <p style="color: #6b7280; font-size: 15px; text-align: center; margin: 0 0 28px 0;">A new quote request has been submitted</p>
+
+    ${infoBox(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding-bottom: 12px;">
+            <span style="color: #6b7280; font-size: 12px;">Company</span><br>
+            <span style="color: #111827; font-size: 16px; font-weight: 700;">${data.companyName}</span>
+          </td>
+          <td style="text-align: right; padding-bottom: 12px;">
+            <span style="color: #6b7280; font-size: 12px;">Quantity</span><br>
+            <span style="color: #111827; font-size: 16px; font-weight: 700;">${data.quantity}</span>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="border-top: 1px solid #e5e7eb; padding-top: 12px;">
+            <span style="color: #6b7280; font-size: 12px;">Contact</span><br>
+            <span style="color: #111827; font-size: 14px; font-weight: 600;">${data.contactName}</span><br>
+            <a href="mailto:${data.email}" style="color: ${BRAND.color}; font-size: 13px;">${data.email}</a>
+            ${data.phone ? `<br><span style="color: #6b7280; font-size: 13px;">${data.phone}</span>` : ''}
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="border-top: 1px solid #e5e7eb; padding-top: 12px;">
+            <span style="color: #6b7280; font-size: 12px;">Products Requested</span><br>
+            <span style="color: #111827; font-size: 14px;">${data.products}</span>
+          </td>
+        </tr>
+        ${data.timeline ? `
+        <tr>
+          <td colspan="2" style="border-top: 1px solid #e5e7eb; padding-top: 12px;">
+            <span style="color: #6b7280; font-size: 12px;">Timeline</span><br>
+            <span style="color: #111827; font-size: 14px;">${data.timeline}</span>
+          </td>
+        </tr>
+        ` : ''}
+        ${data.message ? `
+        <tr>
+          <td colspan="2" style="border-top: 1px solid #e5e7eb; padding-top: 12px;">
+            <span style="color: #6b7280; font-size: 12px;">Additional Message</span><br>
+            <span style="color: #111827; font-size: 14px;">${data.message}</span>
+          </td>
+        </tr>
+        ` : ''}
+      </table>
+    `)}
+
+    <div style="text-align: center; margin: 28px 0 0 0;">
+      ${button('View Quote Requests', `${baseUrl}/admin/quotes`)}
+    </div>
+  `;
+
+  return {
+    subject: `[Quote Request] ${data.companyName} – ${data.contactName}`,
+    html: baseLayout(content, `New quote request from ${data.companyName}`),
   };
 }
 

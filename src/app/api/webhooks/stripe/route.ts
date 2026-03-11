@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { constructWebhookEvent, logPaymentTransaction } from '@/lib/services/stripe';
-import { sendPaymentReceivedNotification } from '@/lib/email-notifications';
+import { sendPaymentReceivedNotification, sendAdminOrderStatusChangeNotification } from '@/lib/email-notifications';
 
 // Disable body parsing - we need raw body for webhook signature
 export const dynamic = 'force-dynamic';
@@ -449,6 +449,29 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
           changedBy: 'system',
         },
       });
+
+      // Send admin notification for refund
+      const order = await prisma.order.findUnique({
+        where: { id: transaction.orderId },
+        select: {
+          orderNumber: true,
+          status: true,
+          user: { select: { name: true, email: true } },
+        },
+      });
+
+      if (order) {
+        sendAdminOrderStatusChangeNotification({
+          orderNumber: order.orderNumber,
+          customerName: order.user?.name || 'Customer',
+          customerEmail: order.user?.email || '',
+          oldStatus: order.status,
+          newStatus: isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
+          changedBy: 'Stripe Webhook',
+          notes: `Refund of $${((refund?.amount || 0) / 100).toFixed(2)} processed via Stripe. Reason: ${refund?.reason || 'Not specified'}`,
+          orderId: transaction.orderId,
+        }).catch(err => console.error('Failed to send admin refund notification:', err));
+      }
     } catch (error) {
       console.error('Error updating order for refund:', error);
     }
