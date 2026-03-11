@@ -3,8 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { User, Mail, Phone, Building2, ShieldCheck, Award, MapPin, Package, CreditCard } from 'lucide-react';
 import { db } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getEffectiveSession } from '@/lib/get-effective-session';
 
 async function getUserProfile(userId: string) {
   const [user, b2bMembership] = await Promise.all([
@@ -77,7 +76,7 @@ async function getUserProfile(userId: string) {
 }
 
 export default async function ProfilePage() {
-  const session = await getServerSession(authOptions);
+  const session = await getEffectiveSession();
 
   if (!session?.user?.id) {
     redirect('/auth/signin?callbackUrl=/profile');

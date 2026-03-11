@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
-import { sendOrderStatusUpdate } from '@/lib/email-notifications';
+import { sendOrderStatusUpdate, sendAdminOrderStatusChangeNotification } from '@/lib/email-notifications';
 
 const updateStatusSchema = z.object({
   status: z.enum([
@@ -137,6 +137,20 @@ export async function PUT(
         userId: updatedOrder.user.id,
         orderId: params.id,
       }).catch(err => console.error('Failed to send order status email:', err));
+
+      // Send admin notification for important status changes
+      if (['CANCELLED', 'REFUNDED', 'ON_HOLD'].includes(status)) {
+        sendAdminOrderStatusChangeNotification({
+          orderNumber: order.orderNumber,
+          customerName: updatedOrder.user.name || 'Customer',
+          customerEmail: updatedOrder.user.email,
+          oldStatus: order.status,
+          newStatus: status,
+          changedBy: session.user.name || session.user.email || 'Admin',
+          notes,
+          orderId: params.id,
+        }).catch(err => console.error('Failed to send admin order status notification:', err));
+      }
     }
 
     return NextResponse.json({

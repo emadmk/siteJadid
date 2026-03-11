@@ -13,6 +13,7 @@ import {
   adminContactFormTemplate,
   adminNewRegistrationTemplate,
   accountApprovalTemplate,
+  adminOrderStatusChangeTemplate,
 } from './email-templates';
 import { db } from './db';
 
@@ -462,4 +463,30 @@ export async function sendAccountApprovalNotification(data: {
     });
   }
   return sent;
+}
+
+/**
+ * Send Admin Notification: Order Status Change (Cancel, Refund, etc.)
+ */
+export async function sendAdminOrderStatusChangeNotification(data: {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  oldStatus: string;
+  newStatus: string;
+  changedBy: string;
+  notes?: string;
+  orderId?: string;
+}): Promise<void> {
+  const template = adminOrderStatusChangeTemplate({
+    orderNumber: data.orderNumber,
+    customerName: data.customerName,
+    customerEmail: data.customerEmail,
+    oldStatus: data.oldStatus,
+    newStatus: data.newStatus,
+    changedBy: data.changedBy,
+    notes: data.notes,
+  });
+
+  await sendToAllStaff(template.subject, template.html, `ADMIN_ORDER_${data.newStatus}`, { orderId: data.orderId });
 }

@@ -3,8 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, Package, MapPin, CreditCard, Award, ShoppingBag, TrendingUp, Clock, CheckCircle, Users, ShoppingCart, ListChecks } from 'lucide-react';
 import { db } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getEffectiveSession } from '@/lib/get-effective-session';
 
 async function getDashboardData(userId: string) {
   const [user, orders, addresses, loyaltyProfile, b2bMembership, shoppingLists] = await Promise.all([
@@ -114,13 +113,14 @@ async function getDashboardData(userId: string) {
 }
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getEffectiveSession();
 
   if (!session?.user?.id) {
     redirect('/auth/signin?callbackUrl=/dashboard');
   }
 
-  if (session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN') {
+  // Only redirect to admin if NOT impersonating
+  if ((session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN') && !(session as any).impersonating) {
     redirect('/admin');
   }
 

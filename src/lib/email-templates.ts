@@ -1128,6 +1128,99 @@ export function accountApprovalTemplate(data: {
   };
 }
 
+/**
+ * Admin Notification: Order Status Change (Cancel/Refund/etc.)
+ */
+export function adminOrderStatusChangeTemplate(data: {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  oldStatus: string;
+  newStatus: string;
+  changedBy: string;
+  notes?: string;
+}): { subject: string; html: string } {
+  const baseUrl = getBaseUrl();
+  const statusLabels: Record<string, string> = {
+    CANCELLED: 'Cancelled',
+    REFUNDED: 'Refunded',
+    ON_HOLD: 'On Hold',
+    PENDING: 'Pending',
+    CONFIRMED: 'Confirmed',
+    PROCESSING: 'Processing',
+    SHIPPED: 'Shipped',
+    DELIVERED: 'Delivered',
+  };
+  const statusColors: Record<string, string> = {
+    CANCELLED: '#dc2626',
+    REFUNDED: '#d97706',
+    ON_HOLD: '#f59e0b',
+    SHIPPED: '#2563eb',
+    DELIVERED: '#059669',
+  };
+  const label = statusLabels[data.newStatus] || data.newStatus;
+  const color = statusColors[data.newStatus] || '#6b7280';
+  const emoji = data.newStatus === 'CANCELLED' ? '❌' : data.newStatus === 'REFUNDED' ? '💰' : '📋';
+
+  const content = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background-color: #fef2f2; border-radius: 50%; line-height: 64px; font-size: 28px;">${emoji}</div>
+    </div>
+    <h1 style="color: #111827; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; text-align: center;">Order ${label}</h1>
+    <p style="color: #6b7280; font-size: 15px; text-align: center; margin: 0 0 28px 0;">Order #${data.orderNumber} status has been changed</p>
+
+    ${infoBox(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding-bottom: 12px;">
+            <span style="color: #6b7280; font-size: 13px;">Order Number</span><br>
+            <span style="color: #111827; font-size: 18px; font-weight: 700;">${data.orderNumber}</span>
+          </td>
+          <td style="text-align: right; padding-bottom: 12px;">
+            <span style="color: #6b7280; font-size: 13px;">New Status</span><br>
+            <span style="color: ${color}; font-size: 18px; font-weight: 700;">${label}</span>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="border-top: 1px solid #e5e7eb; padding-top: 12px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="width: 50%;">
+                  <span style="color: #6b7280; font-size: 12px;">Customer</span><br>
+                  <span style="color: #111827; font-size: 14px; font-weight: 600;">${data.customerName}</span><br>
+                  <a href="mailto:${data.customerEmail}" style="color: ${BRAND.color}; font-size: 13px;">${data.customerEmail}</a>
+                </td>
+                <td style="width: 50%;">
+                  <span style="color: #6b7280; font-size: 12px;">Previous Status</span><br>
+                  <span style="color: #111827; font-size: 14px; font-weight: 600;">${statusLabels[data.oldStatus] || data.oldStatus}</span><br>
+                  <span style="color: #6b7280; font-size: 13px;">Changed by: ${data.changedBy}</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        ${data.notes ? `
+        <tr>
+          <td colspan="2" style="border-top: 1px solid #e5e7eb; padding-top: 12px;">
+            <span style="color: #6b7280; font-size: 12px;">Notes</span><br>
+            <span style="color: #111827; font-size: 14px;">${data.notes}</span>
+          </td>
+        </tr>
+        ` : ''}
+      </table>
+    `)}
+
+    <div style="text-align: center; margin: 28px 0 0 0;">
+      ${button('View Order in Admin', `${baseUrl}/admin/orders`)}
+    </div>
+  `;
+
+  return {
+    subject: `[Order ${label}] #${data.orderNumber} – ${data.customerName}`,
+    html: baseLayout(content, `Order #${data.orderNumber} has been ${label.toLowerCase()}`),
+  };
+}
+
 export {
   baseLayout,
   button,

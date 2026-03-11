@@ -64,10 +64,18 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  // Check if admin is impersonating a customer
+  const isImpersonating = !!request.cookies.get('impersonate_user_id')?.value;
+
   // Admin routes require admin role
   if (pathname.startsWith('/admin')) {
     if (!token) {
       return NextResponse.redirect(new URL('/auth/signin?callbackUrl=' + encodeURIComponent(pathname), request.url));
+    }
+
+    // While impersonating, block admin panel access (redirect to customer dashboard)
+    if (isImpersonating) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
     const adminRoles = [
@@ -97,8 +105,9 @@ export async function middleware(request: NextRequest) {
     }
 
     // Admin users should use admin panel, not user dashboard
+    // BUT if impersonating, allow them to stay on customer pages
     const adminRoles = ['SUPER_ADMIN', 'ADMIN'];
-    if (adminRoles.includes(token.role as string) && pathname.startsWith('/dashboard')) {
+    if (adminRoles.includes(token.role as string) && pathname.startsWith('/dashboard') && !isImpersonating) {
       return NextResponse.redirect(new URL('/admin', request.url));
     }
 

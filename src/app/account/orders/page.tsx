@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getEffectiveSession } from '@/lib/get-effective-session';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import {
@@ -73,7 +72,7 @@ const paymentStatusConfig: Record<string, { color: string; label: string }> = {
 };
 
 export default async function OrdersPage() {
-  const session = await getServerSession(authOptions);
+  const session = await getEffectiveSession();
 
   if (!session?.user?.id) {
     redirect('/auth/signin?callbackUrl=/account/orders');

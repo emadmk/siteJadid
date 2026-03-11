@@ -23,7 +23,7 @@ export function ImpersonationBanner() {
 
   const handleStopImpersonation = async () => {
     await fetch('/api/admin/impersonate', { method: 'DELETE' });
-    router.push('/admin/users');
+    router.push('/admin/customers');
     router.refresh();
     setImpersonating(null);
   };

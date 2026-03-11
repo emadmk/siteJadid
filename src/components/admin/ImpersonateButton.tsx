@@ -31,7 +31,7 @@ export function ImpersonateButton({ userId, userName }: ImpersonateButtonProps) 
 
       if (res.ok && data.success) {
         // Redirect to the storefront as this user
-        router.push('/');
+        router.push('/dashboard');
         router.refresh();
       } else {
         alert(data.error || 'Failed to impersonate user');
