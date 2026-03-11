@@ -314,7 +314,7 @@ async function getStaffEmails(): Promise<Array<{ email: string; name: string | n
       where: {
         role: { in: ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'] },
         isActive: true,
-        email: { not: null },
+        email: { not: undefined },
       },
       select: {
         email: true,
