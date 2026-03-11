@@ -5,6 +5,7 @@ import { ConditionalHeader } from '@/components/ConditionalHeader';
 import { ConditionalFooter } from '@/components/ConditionalFooter';
 import { GlobalModals } from '@/components/GlobalModals';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
+import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
 
 export const metadata: Metadata = {
   title: 'ADA Supplies - Professional Safety Equipment',
@@ -21,6 +22,7 @@ export default function RootLayout({
       <GoogleAnalytics />
       <body className="font-sans antialiased min-h-screen flex flex-col">
         <Providers>
+          <ImpersonationBanner />
           <ConditionalHeader />
           <main className="flex-1">{children}</main>
           <ConditionalFooter />

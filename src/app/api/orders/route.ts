@@ -301,13 +301,43 @@ export async function POST(request: NextRequest) {
       return sum + (item.product.weight || 0) * item.quantity;
     }, 0);
 
-    // SECURITY FIX: Calculate shipping cost server-side (ignore client-supplied value)
-    const shippingResult = calculateShippingCost({
-      subtotal,
-      totalWeight,
-      isFreeShippingCoupon: validatedCoupon?.type === 'FREE_SHIPPING',
-    });
-    const shippingCost = shippingResult.cost;
+    // Use Shippo rate from client if a valid rate was selected, otherwise fall back to flat-rate
+    // The Shippo rate was already calculated server-side via /api/shipping/rates
+    let shippingCost: number;
+
+    if (validatedCoupon?.type === 'FREE_SHIPPING') {
+      shippingCost = 0;
+    } else if (shippingRateId && typeof providedShippingCost === 'number' && providedShippingCost >= 0) {
+      // Client selected a Shippo rate - use it (rate was server-calculated via /api/shipping/rates)
+      // Apply free shipping threshold
+      const freeShippingThreshold = 99;
+      if (subtotal >= freeShippingThreshold) {
+        // Check if free shipping is enabled in settings
+        try {
+          const freeShippingSetting = await db.setting.findFirst({
+            where: { key: 'shipping.freeShippingEnabled' },
+          });
+          const thresholdSetting = await db.setting.findFirst({
+            where: { key: 'shipping.freeShippingThreshold' },
+          });
+          const isFreeShippingEnabled = freeShippingSetting?.value === 'true';
+          const threshold = Number(thresholdSetting?.value) || freeShippingThreshold;
+          shippingCost = (isFreeShippingEnabled && subtotal >= threshold) ? 0 : providedShippingCost;
+        } catch {
+          shippingCost = providedShippingCost;
+        }
+      } else {
+        shippingCost = providedShippingCost;
+      }
+    } else {
+      // Fallback to flat-rate calculator if no Shippo rate selected
+      const shippingResult = calculateShippingCost({
+        subtotal,
+        totalWeight,
+        isFreeShippingCoupon: false,
+      });
+      shippingCost = shippingResult.cost;
+    }
 
     // Fix #7: Use only normalized accountType for tax calculation
     const isTaxExempt = accountType === 'GOVERNMENT' || accountType === 'VOLUME_BUYER';

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { UserManagement } from '@/components/admin/UserManagement';
+import { ImpersonateButton } from '@/components/admin/ImpersonateButton';
 
 async function getCustomer(id: string) {
   const customer = await db.user.findUnique({
@@ -433,6 +434,11 @@ export default async function CustomerDetailPage({
               </div>
             </div>
           </div>
+
+          {/* Login as User */}
+          {session?.user?.role === 'SUPER_ADMIN' && !['SUPER_ADMIN', 'ADMIN'].includes(customer.role) && (
+            <ImpersonateButton userId={customer.id} userName={customer.name || customer.email} />
+          )}
 
           {/* User Management - Edit/Delete */}
           {session?.user && (

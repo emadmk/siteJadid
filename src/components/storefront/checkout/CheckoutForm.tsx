@@ -472,7 +472,29 @@ export function CheckoutForm({
     }
   };
 
+  // Address form field errors
+  const [addressErrors, setAddressErrors] = useState<Record<string, string>>({});
+
+  const validateAddressForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!newAddress.firstName.trim()) errors.firstName = 'First Name is required';
+    if (!newAddress.lastName.trim()) errors.lastName = 'Last Name is required';
+    if (!newAddress.address1.trim()) errors.address1 = 'Address Line 1 is required';
+    if (!newAddress.city.trim()) errors.city = 'City is required';
+    if (!newAddress.state.trim()) errors.state = 'State is required';
+    else if (!/^[A-Z]{2}$/i.test(newAddress.state.trim())) errors.state = 'Enter a valid 2-letter state code (e.g. CA, NY)';
+    if (!newAddress.zipCode.trim()) errors.zipCode = 'ZIP Code is required';
+    else if (!/^\d{5}(-\d{4})?$/.test(newAddress.zipCode.trim())) errors.zipCode = 'Enter a valid ZIP code (e.g. 90210 or 90210-1234)';
+    if (newAddress.phone && !/^\+?1?\d{10,14}$/.test(newAddress.phone.replace(/[\s\-()]/g, ''))) errors.phone = 'Enter a valid phone number';
+
+    setAddressErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSaveAddress = async () => {
+    if (!validateAddressForm()) return;
+
     setLoading(true);
     try {
       const response = await fetch('/api/addresses', {
@@ -768,34 +790,41 @@ export function CheckoutForm({
 
             {showAddressForm ? (
               <div className="space-y-4">
+                <p className="text-sm text-gray-500">Fields marked with <span className="text-red-500">*</span> are required.</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-black mb-1">First Name</label>
+                    <label className="block text-sm font-medium text-black mb-1">First Name <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={newAddress.firstName}
-                      onChange={(e) => setNewAddress({ ...newAddress, firstName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                      onChange={(e) => { setNewAddress({ ...newAddress, firstName: e.target.value }); setAddressErrors(prev => ({ ...prev, firstName: '' })); }}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 ${addressErrors.firstName ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder="John"
                     />
+                    {addressErrors.firstName && <p className="text-red-500 text-xs mt-1">{addressErrors.firstName}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-black mb-1">Last Name</label>
+                    <label className="block text-sm font-medium text-black mb-1">Last Name <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={newAddress.lastName}
-                      onChange={(e) => setNewAddress({ ...newAddress, lastName: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                      onChange={(e) => { setNewAddress({ ...newAddress, lastName: e.target.value }); setAddressErrors(prev => ({ ...prev, lastName: '' })); }}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 ${addressErrors.lastName ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder="Doe"
                     />
+                    {addressErrors.lastName && <p className="text-red-500 text-xs mt-1">{addressErrors.lastName}</p>}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-black mb-1">Address Line 1</label>
+                  <label className="block text-sm font-medium text-black mb-1">Address Line 1 <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={newAddress.address1}
-                    onChange={(e) => setNewAddress({ ...newAddress, address1: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                    onChange={(e) => { setNewAddress({ ...newAddress, address1: e.target.value }); setAddressErrors(prev => ({ ...prev, address1: '' })); }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 ${addressErrors.address1 ? 'border-red-500' : 'border-gray-300'}`}
+                    placeholder="123 Main Street"
                   />
+                  {addressErrors.address1 && <p className="text-red-500 text-xs mt-1">{addressErrors.address1}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-black mb-1">
@@ -806,46 +835,56 @@ export function CheckoutForm({
                     value={newAddress.address2}
                     onChange={(e) => setNewAddress({ ...newAddress, address2: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                    placeholder="Apt, Suite, Unit, etc."
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-black mb-1">City</label>
+                    <label className="block text-sm font-medium text-black mb-1">City <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={newAddress.city}
-                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                      onChange={(e) => { setNewAddress({ ...newAddress, city: e.target.value }); setAddressErrors(prev => ({ ...prev, city: '' })); }}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 ${addressErrors.city ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder="Los Angeles"
                     />
+                    {addressErrors.city && <p className="text-red-500 text-xs mt-1">{addressErrors.city}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-black mb-1">State</label>
+                    <label className="block text-sm font-medium text-black mb-1">State <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={newAddress.state}
-                      onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                      onChange={(e) => { setNewAddress({ ...newAddress, state: e.target.value.toUpperCase() }); setAddressErrors(prev => ({ ...prev, state: '' })); }}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 ${addressErrors.state ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder="CA"
+                      maxLength={2}
                     />
+                    {addressErrors.state && <p className="text-red-500 text-xs mt-1">{addressErrors.state}</p>}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-black mb-1">ZIP Code</label>
+                    <label className="block text-sm font-medium text-black mb-1">ZIP Code <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={newAddress.zipCode}
-                      onChange={(e) => setNewAddress({ ...newAddress, zipCode: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                      onChange={(e) => { setNewAddress({ ...newAddress, zipCode: e.target.value }); setAddressErrors(prev => ({ ...prev, zipCode: '' })); }}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 ${addressErrors.zipCode ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder="90210"
                     />
+                    {addressErrors.zipCode && <p className="text-red-500 text-xs mt-1">{addressErrors.zipCode}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-black mb-1">Phone</label>
                     <input
                       type="tel"
                       value={newAddress.phone}
-                      onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                      onChange={(e) => { setNewAddress({ ...newAddress, phone: e.target.value }); setAddressErrors(prev => ({ ...prev, phone: '' })); }}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500 ${addressErrors.phone ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder="(555) 123-4567"
                     />
+                    {addressErrors.phone && <p className="text-red-500 text-xs mt-1">{addressErrors.phone}</p>}
                   </div>
                 </div>
                 <div className="flex gap-3">
