@@ -1218,9 +1218,9 @@ export async function GET(
       }
     }
 
-    // Add TAA/BAA filter (products with GSA price > 0)
+    // Add TAA/BAA filter
     if (taaApproved) {
-      where.gsaPrice = { gt: 0 };
+      where.taaApproved = true;
     }
 
     // Add smart filters

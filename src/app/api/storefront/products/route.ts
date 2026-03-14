@@ -69,9 +69,9 @@ export async function GET(request: NextRequest) {
       where.isFeatured = true;
     }
 
-    // TAA/BAA Approved filter (products with GSA price)
+    // TAA/BAA Approved filter
     if (taaApproved) {
-      where.gsaPrice = { not: null };
+      where.taaApproved = true;
     }
 
     // Build order by
