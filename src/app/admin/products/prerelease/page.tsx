@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Package, Search, Eye, Pencil, Rocket, ChevronLeft, ChevronRight,
-  AlertCircle, CheckCircle2, Loader2, FolderOpen
+  AlertCircle, CheckCircle2, Loader2, FolderOpen, X, Filter, Shield
 } from 'lucide-react';
 
 interface Product {
@@ -21,6 +22,7 @@ interface Product {
   originalCategory: string | null;
   category: { id: string; name: string } | null;
   brand: { id: string; name: string } | null;
+  taaApproved: boolean;
   createdAt: string;
 }
 
@@ -30,26 +32,71 @@ interface Category {
   level: number;
 }
 
+interface Brand {
+  id: string;
+  name: string;
+}
+
 export default function PreReleasePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Read filters from URL search params
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+
+  const [search, setSearch] = useState(searchParams.get('search') || '');
+  const [taaFilter, setTaaFilter] = useState(searchParams.get('taaApproved') || '');
+  const [hasCategoryFilter, setHasCategoryFilter] = useState(searchParams.get('hasCategory') || '');
+  const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
+  const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'));
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 50;
 
+  // Update URL when filters change
+  const updateURL = useCallback((overrides: Record<string, string> = {}) => {
+    const params = new URLSearchParams();
+    const values = {
+      search,
+      taaApproved: taaFilter,
+      hasCategory: hasCategoryFilter,
+      brand: brandFilter,
+      page: page.toString(),
+      ...overrides,
+    };
+
+    Object.entries(values).forEach(([key, val]) => {
+      if (val && val !== '' && val !== '1') {
+        // Don't add page=1 to URL
+        if (key === 'page' && val === '1') return;
+        params.set(key, val);
+      }
+    });
+
+    const qs = params.toString();
+    router.replace(`/admin/products/prerelease${qs ? '?' + qs : ''}`, { scroll: false });
+  }, [search, taaFilter, hasCategoryFilter, brandFilter, page, router]);
+
   // Fetch prerelease products
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async (currentPage?: number, currentSearch?: string, currentTaa?: string, currentHasCategory?: string, currentBrand?: string) => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
         status: 'PRERELEASE',
-        page: page.toString(),
+        page: (currentPage ?? page).toString(),
         pageSize: pageSize.toString(),
       });
-      if (search) params.set('search', search);
+      const s = currentSearch ?? search;
+      const t = currentTaa ?? taaFilter;
+      const h = currentHasCategory ?? hasCategoryFilter;
+      const b = currentBrand ?? brandFilter;
+
+      if (s) params.set('search', s);
+      if (t) params.set('taaApproved', t);
+      if (h) params.set('hasCategory', h);
+      if (b) params.set('brand', b);
 
       const res = await fetch(`/api/admin/products?${params}`);
       if (res.ok) {
@@ -64,31 +111,80 @@ export default function PreReleasePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, search, taaFilter, hasCategoryFilter, brandFilter]);
 
-  // Fetch categories
-  const fetchCategories = async () => {
+  // Fetch brands
+  const fetchBrands = async () => {
     try {
-      const res = await fetch('/api/admin/categories');
+      const res = await fetch('/api/admin/brands');
       if (res.ok) {
         const data = await res.json();
-        setCategories(data.categories || []);
+        setBrands(data.brands || []);
       }
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
+      console.error('Failed to fetch brands:', error);
     }
   };
 
+  // Initial load
   useEffect(() => {
     fetchProducts();
-    fetchCategories();
-  }, [page]);
+    fetchBrands();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refetch when page changes (not on initial mount)
+  useEffect(() => {
+    fetchProducts();
+    updateURL();
+  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    fetchProducts();
+    fetchProducts(1, search, taaFilter, hasCategoryFilter, brandFilter);
+    updateURL({ page: '1' });
   };
+
+  const applyFilter = (filterName: string, value: string) => {
+    setPage(1);
+    let newTaa = taaFilter;
+    let newHasCategory = hasCategoryFilter;
+    let newBrand = brandFilter;
+
+    if (filterName === 'taaApproved') {
+      newTaa = taaFilter === value ? '' : value;
+      setTaaFilter(newTaa);
+    } else if (filterName === 'hasCategory') {
+      newHasCategory = hasCategoryFilter === value ? '' : value;
+      setHasCategoryFilter(newHasCategory);
+    } else if (filterName === 'brand') {
+      newBrand = brandFilter === value ? '' : value;
+      setBrandFilter(newBrand);
+    }
+
+    fetchProducts(1, search, newTaa, newHasCategory, newBrand);
+
+    // Update URL
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (newTaa) params.set('taaApproved', newTaa);
+    if (newHasCategory) params.set('hasCategory', newHasCategory);
+    if (newBrand) params.set('brand', newBrand);
+    const qs = params.toString();
+    router.replace(`/admin/products/prerelease${qs ? '?' + qs : ''}`, { scroll: false });
+  };
+
+  const clearAllFilters = () => {
+    setSearch('');
+    setTaaFilter('');
+    setHasCategoryFilter('');
+    setBrandFilter('');
+    setPage(1);
+    fetchProducts(1, '', '', '', '');
+    router.replace('/admin/products/prerelease', { scroll: false });
+  };
+
+  const hasActiveFilters = search || taaFilter || hasCategoryFilter || brandFilter;
 
   return (
     <div className="p-8">
@@ -114,9 +210,9 @@ export default function PreReleasePage() {
         </div>
       </div>
 
-      {/* Search */}
+      {/* Search & Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <form onSubmit={handleSearch} className="flex gap-4">
+        <form onSubmit={handleSearch} className="flex gap-4 mb-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -131,6 +227,96 @@ export default function PreReleasePage() {
             Search
           </Button>
         </form>
+
+        {/* Filter Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-gray-600 flex items-center gap-1">
+            <Filter className="w-4 h-4" />
+            Filters:
+          </span>
+
+          {/* TAA Approved */}
+          <button
+            onClick={() => applyFilter('taaApproved', 'true')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+              taaFilter === 'true'
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5" />
+              TAA Approved
+            </span>
+          </button>
+
+          <button
+            onClick={() => applyFilter('taaApproved', 'false')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+              taaFilter === 'false'
+                ? 'bg-gray-800 text-white border-gray-800'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Not TAA
+          </button>
+
+          <span className="text-gray-300">|</span>
+
+          {/* Has Category */}
+          <button
+            onClick={() => applyFilter('hasCategory', 'true')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+              hasCategoryFilter === 'true'
+                ? 'bg-green-600 text-white border-green-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Has Category
+          </button>
+
+          <button
+            onClick={() => applyFilter('hasCategory', 'false')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+              hasCategoryFilter === 'false'
+                ? 'bg-red-600 text-white border-red-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            No Category
+          </button>
+
+          <span className="text-gray-300">|</span>
+
+          {/* Brand Filter */}
+          <select
+            value={brandFilter}
+            onChange={(e) => applyFilter('brand', e.target.value)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+              brandFilter
+                ? 'bg-purple-600 text-white border-purple-600'
+                : 'bg-white text-gray-700 border-gray-300'
+            }`}
+          >
+            <option value="">All Brands</option>
+            {brands.map(brand => (
+              <option key={brand.id} value={brand.id}>
+                {brand.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Clear All */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="px-3 py-1.5 rounded-full text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors flex items-center gap-1"
+            >
+              <X className="w-3.5 h-3.5" />
+              Clear All
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Products List */}
@@ -143,15 +329,25 @@ export default function PreReleasePage() {
         ) : products.length === 0 ? (
           <div className="p-12 text-center">
             <CheckCircle2 className="w-16 h-16 text-safety-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-black mb-2">No PreRelease Products</h3>
+            <h3 className="text-lg font-medium text-black mb-2">
+              {hasActiveFilters ? 'No Matching Products' : 'No PreRelease Products'}
+            </h3>
             <p className="text-gray-600 mb-6">
-              All imported products have been reviewed and released.
+              {hasActiveFilters
+                ? 'No products match your current filters. Try adjusting the filters.'
+                : 'All imported products have been reviewed and released.'}
             </p>
-            <Link href="/admin/products/import">
-              <Button className="bg-safety-green-600 hover:bg-safety-green-700 text-white">
-                Import Products
+            {hasActiveFilters ? (
+              <Button onClick={clearAllFilters} variant="outline">
+                Clear Filters
               </Button>
-            </Link>
+            ) : (
+              <Link href="/admin/products/import">
+                <Button className="bg-safety-green-600 hover:bg-safety-green-700 text-white">
+                  Import Products
+                </Button>
+              </Link>
+            )}
           </div>
         ) : (
           <>
@@ -173,6 +369,9 @@ export default function PreReleasePage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
                       Price
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase">
+                      TAA
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase">
                       Actions
@@ -237,6 +436,16 @@ export default function PreReleasePage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="font-medium">${Number(product.basePrice).toFixed(2)}</span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {product.taaApproved ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded-full">
+                            <Shield className="w-3 h-3" />
+                            TAA
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">

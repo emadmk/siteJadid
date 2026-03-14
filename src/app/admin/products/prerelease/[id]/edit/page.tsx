@@ -9,6 +9,8 @@ import {
   ArrowLeft, Save, Rocket, Loader2, Package, X, Plus, AlertCircle,
   FolderOpen, Check, ImageIcon, Trash2
 } from 'lucide-react';
+import { ProductVariantsManager } from '@/components/admin/ProductVariantsManager';
+import { ColorImageMapper } from '@/components/admin/ColorImageMapper';
 
 interface Product {
   id: string;
@@ -34,6 +36,11 @@ interface Product {
   weight: number | null;
   metaTitle: string | null;
   metaDescription: string | null;
+  taaApproved: boolean;
+  isFeatured: boolean;
+  isBestSeller: boolean;
+  isNewArrival: boolean;
+  colorImages: Record<string, number[]> | null;
 }
 
 interface Category {
@@ -81,9 +88,27 @@ export default function PreReleaseEditPage() {
     metaTitle: '',
     metaDescription: '',
     images: [] as string[],
+    taaApproved: false,
+    isFeatured: false,
+    isBestSeller: false,
+    isNewArrival: false,
   });
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  // Variants and color images for color-image mapping
+  const [variants, setVariants] = useState<{ color?: string | null }[]>([]);
+  const [colorImages, setColorImages] = useState<Record<string, number[]> | null>(null);
+
+  // Fetch variants
+  useEffect(() => {
+    if (productId) {
+      fetch(`/api/admin/products/${productId}/variants`)
+        .then(res => res.json())
+        .then(data => setVariants(data))
+        .catch(console.error);
+    }
+  }, [productId]);
 
   // Fetch product data
   useEffect(() => {
@@ -117,7 +142,12 @@ export default function PreReleaseEditPage() {
             metaTitle: productData.metaTitle || '',
             metaDescription: productData.metaDescription || '',
             images: productData.images || [],
+            taaApproved: productData.taaApproved ?? false,
+            isFeatured: productData.isFeatured ?? false,
+            isBestSeller: productData.isBestSeller ?? false,
+            isNewArrival: productData.isNewArrival ?? false,
           });
+          setColorImages(productData.colorImages as Record<string, number[]> | null);
 
           // Set additional categories
           const additionalCats = productData.categories?.map((c: any) => c.category.id) || [];
@@ -161,6 +191,21 @@ export default function PreReleaseEditPage() {
         return [...prev, categoryId];
       }
     });
+  };
+
+  const handleSaveColorImages = async (newColorImages: Record<string, number[]>) => {
+    try {
+      const res = await fetch(`/api/admin/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ colorImages: newColorImages }),
+      });
+      if (res.ok) {
+        setColorImages(newColorImages);
+      }
+    } catch (error) {
+      console.error('Failed to save color images:', error);
+    }
   };
 
   const handleSave = async (release: boolean = false) => {
@@ -209,6 +254,10 @@ export default function PreReleaseEditPage() {
         metaTitle: formData.metaTitle.trim() || null,
         metaDescription: formData.metaDescription.trim() || null,
         images: formData.images,
+        taaApproved: formData.taaApproved,
+        isFeatured: formData.isFeatured,
+        isBestSeller: formData.isBestSeller,
+        isNewArrival: formData.isNewArrival,
       };
 
       // If releasing, set status to ACTIVE
@@ -279,7 +328,7 @@ export default function PreReleaseEditPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-lg font-medium text-red-800 mb-2">Product Not Found</h2>
-          <p className="text-red-600 mb-4">The product you're looking for doesn't exist.</p>
+          <p className="text-red-600 mb-4">The product you&apos;re looking for doesn&apos;t exist.</p>
           <Link href="/admin/products/prerelease">
             <Button variant="outline">Back to PreRelease</Button>
           </Link>
@@ -511,6 +560,31 @@ export default function PreReleaseEditPage() {
             )}
           </div>
 
+          {/* Product Variants */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <ProductVariantsManager
+              productId={productId}
+              categoryId={selectedCategories[0] || undefined}
+            />
+          </div>
+
+          {/* Color-Image Mapping - Only show when there are images */}
+          {formData.images.length > 0 && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-xl font-bold text-black mb-4">Color-Image Mapping</h2>
+              <p className="text-sm text-gray-500 mb-6">
+                Link product images to color variants. When a customer selects a color, the linked images will be shown.
+              </p>
+              <ColorImageMapper
+                productId={productId}
+                images={formData.images}
+                variants={variants}
+                colorImages={colorImages}
+                onSave={handleSaveColorImages}
+              />
+            </div>
+          )}
+
           {/* SEO */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-lg font-semibold mb-4">SEO</h2>
@@ -583,6 +657,49 @@ export default function PreReleaseEditPage() {
               <p className="text-xs text-gray-500 text-center">
                 Release will make this product visible on the storefront
               </p>
+            </div>
+          </div>
+
+          {/* Features / Flags */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold mb-4">Features & Flags</h2>
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.taaApproved}
+                  onChange={(e) => setFormData(prev => ({ ...prev, taaApproved: e.target.checked }))}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">TAA/BAA Approved</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isFeatured}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isFeatured: e.target.checked }))}
+                  className="w-4 h-4 text-safety-green-600 border-gray-300 rounded focus:ring-safety-green-500"
+                />
+                <span className="text-sm text-gray-700">Featured</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isBestSeller}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isBestSeller: e.target.checked }))}
+                  className="w-4 h-4 text-safety-green-600 border-gray-300 rounded focus:ring-safety-green-500"
+                />
+                <span className="text-sm text-gray-700">Best Seller</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isNewArrival}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isNewArrival: e.target.checked }))}
+                  className="w-4 h-4 text-safety-green-600 border-gray-300 rounded focus:ring-safety-green-500"
+                />
+                <span className="text-sm text-gray-700">New Arrival</span>
+              </label>
             </div>
           </div>
 

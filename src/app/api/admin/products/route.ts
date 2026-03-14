@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('category');
     const supplierId = searchParams.get('supplier');
     const warehouseId = searchParams.get('warehouse');
+    const taaApproved = searchParams.get('taaApproved');
+    const hasCategory = searchParams.get('hasCategory');
     const includeOrderCount = searchParams.get('includeOrderCount') === 'true';
 
     const skip = (page - 1) * limit;
@@ -69,6 +71,18 @@ export async function GET(request: NextRequest) {
       where.AND.push({ defaultWarehouseId: warehouseId });
     }
 
+    if (taaApproved === 'true') {
+      where.AND.push({ taaApproved: true });
+    } else if (taaApproved === 'false') {
+      where.AND.push({ taaApproved: false });
+    }
+
+    if (hasCategory === 'true') {
+      where.AND.push({ categoryId: { not: null } });
+    } else if (hasCategory === 'false') {
+      where.AND.push({ categoryId: null });
+    }
+
     // If no filters, remove the AND wrapper
     const finalWhere = where.AND.length > 0 ? where : {};
 
@@ -91,6 +105,8 @@ export async function GET(request: NextRequest) {
         basePrice: true,
         stockQuantity: true,
         images: true,
+        taaApproved: true,
+        originalCategory: true,
         brand: {
           select: { name: true },
         },
