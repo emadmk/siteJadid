@@ -386,7 +386,7 @@ export default function ProductImportPage() {
             : importType === 'carhartt'
             ? 'Import Carhartt workwear products. Creates size variants automatically and maps to Footwear category.'
             : importType === '3m'
-            ? 'Import 3M special products. No images (upload manually). All products go to PreRelease with TAA Approved. No category (assign manually).'
+            ? 'Import 3M products (Mar 2026 format). Creates categories (inactive). TAA auto-set by country. Prices = unit × min order qty. No images.'
             : 'Import GSA products with custom field mapping and compliance data.'}
         </p>
       </div>
@@ -477,17 +477,18 @@ export default function ProductImportPage() {
               </div>
             ) : importType === '3m' ? (
               <div className="space-y-2 text-sm text-red-700">
-                <p><strong>Expected Columns:</strong> manufacturer_part_number, vendor_part_number, item_name, item_description, commercial_price, Sup Cost, govt_price_with_fee</p>
+                <p><strong>Expected Columns:</strong> 3M Stock #, Customer Part Number, SKU Marketplace Formal Name, Net Price New, ADA Sale Price, ADA Gov Price, 3M Minimum Order Qty, Product Category Level 1/2</p>
                 <p><strong>Features:</strong></p>
                 <ul className="list-disc list-inside ml-2 space-y-1">
                   <li>Each row = one product (no variant detection)</li>
                   <li>All products go to PreRelease status</li>
-                  <li>TAA Approved automatically set to true</li>
+                  <li>TAA: auto-set (false for China/Brazil, true for others)</li>
+                  <li>Prices: unit price × minimum order qty = final site price</li>
+                  <li>Net Price New → cost, ADA Sale Price → retail, ADA Gov Price → gov</li>
+                  <li>Categories created from Level 1 & Level 2 (inactive, not shown)</li>
                   <li>No images imported (upload manually later)</li>
-                  <li>No category assigned (set manually later)</li>
-                  <li>Multiple prices: Commercial, Supplier Cost, GOV with fee</li>
                   <li>Auto-creates 3M brand</li>
-                  <li>GSA SIN and pricing automatically captured</li>
+                  <li>Physical dimensions, UPC, HS Code, lead time captured</li>
                 </ul>
               </div>
             ) : (

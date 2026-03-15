@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Parse Excel file from buffer
+    // Parse Excel file
     console.log('Parsing 3M Excel file...');
     const rows = await threeMImportService.parseExcel(buffer);
 
@@ -75,61 +75,59 @@ export async function POST(request: NextRequest) {
 
     console.log(`Found ${rows.length} 3M rows to process`);
 
-    // Start background import
-    const backgroundImport = async () => {
-      try {
-        console.log('Starting background 3M import...');
-        const result = await threeMImportService.importProducts(rows, options);
+    // Run import synchronously so the result is returned to the UI
+    try {
+      const result = await threeMImportService.importProducts(rows, options);
 
-        // Update job with results
-        await prisma.bulkImportJob.update({
-          where: { id: importJob.id },
-          data: {
-            status: result.success ? 'COMPLETED' : 'FAILED',
-            processedRows: result.processedRows,
-            successCount: result.successCount,
-            errorCount: result.errorCount,
-            errors: JSON.parse(JSON.stringify(result.errors.slice(0, 100))),
-            warnings: JSON.parse(JSON.stringify(result.warnings.slice(0, 100))),
-            summary: {
-              createdProducts: result.createdProducts.length,
-              updatedProducts: result.updatedProducts.length,
+      // Update job with results
+      await prisma.bulkImportJob.update({
+        where: { id: importJob.id },
+        data: {
+          status: result.success ? 'COMPLETED' : 'FAILED',
+          processedRows: result.processedRows,
+          successCount: result.successCount,
+          errorCount: result.errorCount,
+          errors: JSON.parse(JSON.stringify(result.errors.slice(0, 100))),
+          warnings: JSON.parse(JSON.stringify(result.warnings.slice(0, 100))),
+          summary: {
+            createdProducts: result.createdProducts.length,
+            updatedProducts: result.updatedProducts.length,
+            createdCategories: result.createdCategories.length,
+          },
+          completedAt: new Date(),
+        },
+      });
+
+      console.log(`3M import completed: ${result.createdProducts.length} created, ${result.updatedProducts.length} updated, ${result.createdCategories.length} categories`);
+
+      return NextResponse.json({
+        success: true,
+        result,
+        jobId: importJob.id,
+      });
+    } catch (importError) {
+      console.error('3M import error:', importError);
+      await prisma.bulkImportJob.update({
+        where: { id: importJob.id },
+        data: {
+          status: 'FAILED',
+          errors: JSON.parse(JSON.stringify([
+            {
+              row: 0,
+              field: 'general',
+              value: '',
+              message: importError instanceof Error ? importError.message : 'Unknown error',
             },
-            completedAt: new Date(),
-          },
-        });
+          ])),
+          completedAt: new Date(),
+        },
+      });
 
-        console.log(`3M import completed: ${result.createdProducts.length} created, ${result.updatedProducts.length} updated`);
-      } catch (importError) {
-        console.error('Background 3M import error:', importError);
-        await prisma.bulkImportJob.update({
-          where: { id: importJob.id },
-          data: {
-            status: 'FAILED',
-            errors: JSON.parse(JSON.stringify([
-              {
-                row: 0,
-                field: 'general',
-                value: '',
-                message: importError instanceof Error ? importError.message : 'Unknown error',
-              },
-            ])),
-            completedAt: new Date(),
-          },
-        });
-      }
-    };
-
-    // Start in background - don't await!
-    backgroundImport();
-
-    // Return immediately with job ID
-    return NextResponse.json({
-      success: true,
-      jobId: importJob.id,
-      message: `Import started in background. Processing ${rows.length} 3M products. Check status with job ID.`,
-      totalRows: rows.length,
-    });
+      return NextResponse.json(
+        { error: importError instanceof Error ? importError.message : 'Import failed' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Error in 3M import:', error);
     return NextResponse.json(
