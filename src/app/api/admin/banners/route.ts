@@ -15,7 +15,7 @@ export interface Banner {
   mobileImage: string;
   image: string; // legacy - kept for backwards compat
   link: string;
-  linkType: 'url' | 'category' | 'product';
+  linkType: 'url' | 'category' | 'product' | 'brand';
   linkTarget: string; // slug for category/product, full URL for url
   position: 'hero' | 'sidebar' | 'footer' | 'popup';
   isActive: boolean;
@@ -143,6 +143,8 @@ export async function POST(request: NextRequest) {
       finalLink = `/categories/${linkTarget}`;
     } else if (linkType === 'product' && linkTarget) {
       finalLink = `/products/${linkTarget}`;
+    } else if (linkType === 'brand' && linkTarget) {
+      finalLink = `/brands/${linkTarget}`;
     }
 
     const newBanner: Banner = {

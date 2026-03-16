@@ -15,7 +15,7 @@ interface Banner {
   mobileImage: string;
   image: string;
   link: string;
-  linkType: 'url' | 'category' | 'product';
+  linkType: 'url' | 'category' | 'product' | 'brand';
   linkTarget: string;
   position: 'hero' | 'sidebar' | 'footer' | 'popup';
   isActive: boolean;
@@ -165,6 +165,8 @@ export async function PATCH(
         banner.link = `/categories/${linkTarget}`;
       } else if (linkType === 'product' && linkTarget) {
         banner.link = `/products/${linkTarget}`;
+      } else if (linkType === 'brand' && linkTarget) {
+        banner.link = `/brands/${linkTarget}`;
       }
     }
 

@@ -54,6 +54,12 @@ interface ProductOption {
   slug: string;
 }
 
+interface BrandOption {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export default function BannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,9 +73,10 @@ export default function BannersPage() {
   const [desktopPreview, setDesktopPreview] = useState<string>('');
   const [mobilePreview, setMobilePreview] = useState<string>('');
 
-  // Category/Product search
+  // Category/Product/Brand search
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
+  const [brands, setBrands] = useState<BrandOption[]>([]);
   const [productSearch, setProductSearch] = useState('');
   const [searchingProducts, setSearchingProducts] = useState(false);
 
@@ -77,7 +84,7 @@ export default function BannersPage() {
     title: '',
     subtitle: '',
     link: '',
-    linkType: 'url' as 'url' | 'category' | 'product',
+    linkType: 'url' as 'url' | 'category' | 'product' | 'brand',
     linkTarget: '',
     position: 'hero' as Banner['position'],
     isActive: true,
@@ -91,6 +98,7 @@ export default function BannersPage() {
   useEffect(() => {
     fetchBanners();
     fetchCategories();
+    fetchBrands();
   }, []);
 
   const fetchBanners = async () => {
@@ -116,6 +124,18 @@ export default function BannersPage() {
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchBrands = async () => {
+    try {
+      const res = await fetch('/api/admin/brands');
+      if (res.ok) {
+        const data = await res.json();
+        setBrands(data.brands || []);
+      }
+    } catch (error) {
+      console.error('Error fetching brands:', error);
     }
   };
 
@@ -252,7 +272,7 @@ export default function BannersPage() {
       title: banner.title || '',
       subtitle: banner.subtitle || '',
       link: banner.link || '',
-      linkType: banner.linkType || 'url',
+      linkType: banner.linkType as any || 'url',
       linkTarget: banner.linkTarget || '',
       position: banner.position || 'hero',
       isActive: banner.isActive,
@@ -653,6 +673,7 @@ export default function BannersPage() {
                       { value: 'url', label: 'Custom URL' },
                       { value: 'category', label: 'Category' },
                       { value: 'product', label: 'Product' },
+                      { value: 'brand', label: 'Brand' },
                     ].map(opt => (
                       <button
                         key={opt.value}
@@ -756,6 +777,22 @@ export default function BannersPage() {
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {/* Brand Select */}
+                  {formData.linkType === 'brand' && (
+                    <select
+                      value={formData.linkTarget}
+                      onChange={e => setFormData(prev => ({ ...prev, linkTarget: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
+                    >
+                      <option value="">-- Select Brand --</option>
+                      {brands.map(b => (
+                        <option key={b.id} value={b.slug}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
                   )}
                 </div>
 
