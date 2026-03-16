@@ -91,6 +91,7 @@ export default function BannersPage() {
     startDate: '',
     endDate: '',
     slideDuration: 5,
+    order: 0,
     desktopImage: null as File | null,
     mobileImage: null as File | null,
   });
@@ -179,6 +180,7 @@ export default function BannersPage() {
       submitData.append('startDate', formData.startDate);
       submitData.append('endDate', formData.endDate);
       submitData.append('slideDuration', String(formData.slideDuration));
+      submitData.append('order', String(formData.order));
 
       if (formData.desktopImage) {
         submitData.append('desktopImage', formData.desktopImage);
@@ -279,6 +281,7 @@ export default function BannersPage() {
       startDate: banner.startDate || '',
       endDate: banner.endDate || '',
       slideDuration: banner.slideDuration || 5,
+      order: banner.order || 0,
       desktopImage: null,
       mobileImage: null,
     });
@@ -300,6 +303,7 @@ export default function BannersPage() {
       startDate: '',
       endDate: '',
       slideDuration: 5,
+      order: 0,
       desktopImage: null,
       mobileImage: null,
     });
@@ -796,20 +800,34 @@ export default function BannersPage() {
                   )}
                 </div>
 
-                {/* Slide Duration */}
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                    <Clock className="w-4 h-4" />
-                    Slide Duration (seconds)
-                  </label>
-                  <input
-                    type="number"
-                    min="2"
-                    max="30"
-                    value={formData.slideDuration}
-                    onChange={e => setFormData(prev => ({ ...prev, slideDuration: parseInt(e.target.value) || 5 }))}
-                    className="w-32 px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
-                  />
+                {/* Slide Duration & Order */}
+                <div className="flex items-start gap-6">
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                      <Clock className="w-4 h-4" />
+                      Slide Duration (seconds)
+                    </label>
+                    <input
+                      type="number"
+                      min="2"
+                      max="30"
+                      value={formData.slideDuration}
+                      onChange={e => setFormData(prev => ({ ...prev, slideDuration: parseInt(e.target.value) || 5 }))}
+                      className="w-32 px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                      Order
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.order}
+                      onChange={e => setFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
+                      className="w-32 px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
+                    />
+                  </div>
                 </div>
 
                 {/* Title (optional) */}

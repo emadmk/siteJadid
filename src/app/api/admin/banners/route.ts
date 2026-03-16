@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
     const startDate = (formData.get('startDate') as string) || null;
     const endDate = (formData.get('endDate') as string) || null;
     const slideDuration = parseInt(formData.get('slideDuration') as string) || 5;
+    const orderValue = formData.get('order');
     const desktopImageFile = formData.get('desktopImage') as File | null;
     const mobileImageFile = formData.get('mobileImage') as File | null;
 
@@ -136,6 +137,7 @@ export async function POST(request: NextRequest) {
     }
 
     const banners = await getBanners();
+    const order = orderValue !== null ? parseInt(orderValue as string) : banners.length;
 
     // Build the link based on linkType
     let finalLink = link;
@@ -161,7 +163,7 @@ export async function POST(request: NextRequest) {
       isActive,
       startDate,
       endDate,
-      order: banners.length,
+      order,
       slideDuration,
       createdAt: new Date().toISOString(),
     };
