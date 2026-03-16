@@ -58,7 +58,7 @@ async function saveBanners(banners: Banner[]): Promise<void> {
 }
 
 async function saveUploadedImage(file: File, prefix: string): Promise<string> {
-  const uploadsDir = path.join(process.cwd(), 'uploads', 'banners');
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'banners');
   if (!existsSync(uploadsDir)) {
     await mkdir(uploadsDir, { recursive: true });
   }

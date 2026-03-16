@@ -60,7 +60,7 @@ async function saveBanners(banners: Banner[]): Promise<void> {
 async function deleteImageFile(imagePath: string): Promise<void> {
   if (!imagePath) return;
   const cleanPath = imagePath.replace('/api/uploads/', '');
-  const filePath = path.join(process.cwd(), 'uploads', cleanPath);
+  const filePath = path.join(process.cwd(), 'public', 'uploads', cleanPath);
   if (existsSync(filePath)) {
     try {
       await unlink(filePath);
@@ -71,7 +71,7 @@ async function deleteImageFile(imagePath: string): Promise<void> {
 }
 
 async function saveUploadedImage(file: File, prefix: string): Promise<string> {
-  const uploadsDir = path.join(process.cwd(), 'uploads', 'banners');
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'banners');
   if (!existsSync(uploadsDir)) {
     await mkdir(uploadsDir, { recursive: true });
   }
