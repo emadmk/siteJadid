@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Building2, Users, User, ArrowRight, Star } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -24,9 +24,46 @@ interface BannerSlide {
   slideDuration: number;
 }
 
+// Hero banners - 3 Buyer Types (original hardcoded)
+const buyerBanners = [
+  {
+    id: 1,
+    title: 'Government Buyer',
+    subtitle: 'Federal & Government pricing',
+    description: 'US Government agencies and contractors get exclusive GOV Schedule pricing.',
+    image: '/images/imagesite/gsa.jpg',
+    link: '/register',
+    bgColor: 'from-safety-green-700 to-safety-green-900',
+    icon: Building2,
+  },
+  {
+    id: 2,
+    title: 'Volume Buyers',
+    subtitle: 'Bulk orders, bigger savings',
+    description: 'Order in large quantities and unlock special volume discounts on all products.',
+    image: '/images/imagesite/ppenewphoto.jpg',
+    link: '/register',
+    bgColor: 'from-purple-700 to-purple-900',
+    icon: Users,
+  },
+  {
+    id: 3,
+    title: 'Personal Buyer',
+    subtitle: 'Individual protection solutions',
+    description: 'Quality PPE and safety equipment for individual professionals and contractors.',
+    image: '/uploads/ppe-rhn2syjhuk4f553vlfqcysr0quy8cnjai2hlg26xxc.jpg',
+    link: '/register',
+    bgColor: 'from-blue-700 to-blue-900',
+    icon: User,
+  },
+];
+
 export function HeroSection() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentBanner, setCurrentBanner] = useState(0);
+
+  // Dynamic banner slider state
   const [banners, setBanners] = useState<BannerSlide[]>([]);
   const [bannersLoading, setBannersLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -64,7 +101,15 @@ export function HeroSection() {
     fetchBanners();
   }, []);
 
-  // Auto-rotate slides based on current banner's duration
+  // Auto-rotate buyer banners for mobile
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentBanner((prev) => (prev + 1) % buyerBanners.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Auto-rotate dynamic banner slides
   useEffect(() => {
     if (banners.length <= 1) return;
     const duration = (banners[currentSlide]?.slideDuration || 5) * 1000;
@@ -82,107 +127,211 @@ export function HeroSection() {
     setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
   }, [banners.length]);
 
-  const BannerContent = () => {
-    if (bannersLoading) {
-      return (
-        <div className="animate-pulse bg-gray-200 w-full aspect-[16/5] lg:aspect-[16/5] rounded-lg" />
-      );
-    }
-
-    if (banners.length === 0) {
-      return null;
-    }
-
-    return (
-      <div className="relative w-full overflow-hidden rounded-lg group">
-        {/* Slides container */}
-        <div
-          className="flex transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-        >
-          {banners.map((banner) => {
-            const Wrapper = banner.link ? Link : 'div';
-            const wrapperProps = banner.link ? { href: banner.link } : {};
-            return (
-              <Wrapper
-                key={banner.id}
-                {...wrapperProps as any}
-                className="w-full flex-shrink-0 relative block"
-              >
-                {/* Desktop image */}
-                <div className="hidden lg:block relative w-full aspect-[16/5]">
-                  <Image
-                    src={banner.desktopImage}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    priority={currentSlide === 0}
-                    sizes="100vw"
-                  />
-                </div>
-                {/* Mobile image */}
-                <div className="lg:hidden relative w-full aspect-[16/9]">
-                  <Image
-                    src={banner.mobileImage}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    priority={currentSlide === 0}
-                    sizes="100vw"
-                  />
-                </div>
-              </Wrapper>
-            );
-          })}
-        </div>
-
-        {/* Navigation arrows - only show if multiple */}
-        {banners.length > 1 && (
-          <>
-            <button
-              onClick={prevSlide}
-              className="absolute left-2 lg:left-4 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white shadow-md rounded-full p-1.5 lg:p-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              aria-label="Previous slide"
-            >
-              <ChevronLeft className="w-4 h-4 lg:w-5 lg:h-5 text-gray-700" />
-            </button>
-            <button
-              onClick={nextSlide}
-              className="absolute right-2 lg:right-4 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white shadow-md rounded-full p-1.5 lg:p-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              aria-label="Next slide"
-            >
-              <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5 text-gray-700" />
-            </button>
-          </>
-        )}
-
-        {/* Dots */}
-        {banners.length > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-            {banners.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                className={`rounded-full transition-all ${
-                  idx === currentSlide
-                    ? 'w-6 h-2 bg-white'
-                    : 'w-2 h-2 bg-white/60 hover:bg-white/80'
-                }`}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <section className="bg-white">
-      {/* Hero Banner Slider */}
-      <div className="container mx-auto px-4 py-3">
-        <BannerContent />
+      {/* Hero Banners - 3 Buyer Types */}
+      <div className="relative overflow-hidden">
+        <div className="container mx-auto px-4 py-3">
+          {/* Mobile: Single Banner Slider */}
+          <div className="lg:hidden relative">
+            <div className="overflow-hidden rounded-lg">
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${currentBanner * 100}%)` }}
+              >
+                {buyerBanners.map((banner) => {
+                  const IconComponent = banner.icon;
+                  return (
+                    <Link
+                      key={banner.id}
+                      href={banner.link}
+                      className="relative overflow-hidden rounded-lg h-44 w-full flex-shrink-0 group"
+                    >
+                      <div className={`absolute inset-0 bg-gradient-to-br ${banner.bgColor}`} />
+                      <Image
+                        src={banner.image}
+                        alt={banner.title}
+                        fill
+                        className="object-cover opacity-30 scale-[1.3] group-hover:scale-[1.4] transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 p-4 flex flex-col">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-3">
+                          <IconComponent className="w-6 h-6 text-white" />
+                        </div>
+                        <h3 className="text-white font-bold text-lg mb-1">
+                          {banner.title}
+                        </h3>
+                        <p className="text-white/90 text-sm font-medium mb-1">
+                          {banner.subtitle}
+                        </p>
+                        <p className="text-white/70 text-xs flex-1">
+                          {banner.description}
+                        </p>
+                        <div className="flex items-center gap-2 text-white font-medium text-sm mt-2">
+                          Register Now <ArrowRight className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Mobile dots */}
+            <div className="flex justify-center gap-2 mt-2">
+              {buyerBanners.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentBanner(idx)}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    idx === currentBanner ? 'bg-safety-green-600' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Desktop: 3 Buyer Type Cards */}
+          <div className="hidden lg:grid lg:grid-cols-3 gap-4">
+            {buyerBanners.map((banner) => {
+              const IconComponent = banner.icon;
+              return (
+                <Link
+                  key={banner.id}
+                  href={banner.link}
+                  className="relative overflow-hidden rounded-xl h-56 group hover:shadow-xl transition-shadow duration-300"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${banner.bgColor}`} />
+                  <Image
+                    src={banner.image}
+                    alt={banner.title}
+                    fill
+                    className="object-cover opacity-20 scale-[1.3] group-hover:scale-[1.4] transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 p-6 flex flex-col">
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-4 group-hover:bg-white/30 transition-colors duration-300">
+                      <IconComponent className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-xl mb-1">
+                      {banner.title}
+                    </h3>
+                    <p className="text-white/90 text-sm font-medium mb-2">
+                      {banner.subtitle}
+                    </p>
+                    <p className="text-white/70 text-sm flex-1">
+                      {banner.description}
+                    </p>
+                    <div className="flex items-center gap-2 text-white font-medium text-sm mt-3">
+                      Register Now <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </div>
+
+      {/* Dynamic Banner Slider (replaces Promotion Products) */}
+      {!bannersLoading && banners.length > 0 && (
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex gap-4">
+            {/* Banner Slider - 80% width on desktop */}
+            <div className="flex-1 lg:w-4/5 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow relative group">
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+              >
+                {banners.map((banner) => {
+                  const Wrapper = banner.link ? Link : 'div';
+                  const wrapperProps = banner.link ? { href: banner.link } : {};
+                  return (
+                    <Wrapper
+                      key={banner.id}
+                      {...wrapperProps as any}
+                      className="w-full flex-shrink-0 block"
+                    >
+                      {/* Desktop image */}
+                      <img
+                        src={banner.desktopImage}
+                        alt=""
+                        className="hidden lg:block w-full h-auto object-cover"
+                      />
+                      {/* Mobile image */}
+                      <img
+                        src={banner.mobileImage}
+                        alt=""
+                        className="lg:hidden w-full h-auto object-cover"
+                      />
+                    </Wrapper>
+                  );
+                })}
+              </div>
+
+              {/* Navigation arrows */}
+              {banners.length > 1 && (
+                <>
+                  <button
+                    onClick={prevSlide}
+                    className="absolute left-2 lg:left-4 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white shadow-md rounded-full p-1.5 lg:p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Previous slide"
+                  >
+                    <ChevronLeft className="w-4 h-4 lg:w-5 lg:h-5 text-gray-700" />
+                  </button>
+                  <button
+                    onClick={nextSlide}
+                    className="absolute right-2 lg:right-4 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white shadow-md rounded-full p-1.5 lg:p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Next slide"
+                  >
+                    <ChevronRight className="w-4 h-4 lg:w-5 lg:h-5 text-gray-700" />
+                  </button>
+                </>
+              )}
+
+              {/* Dots */}
+              {banners.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                  {banners.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentSlide(idx)}
+                      className={`rounded-full transition-all ${
+                        idx === currentSlide
+                          ? 'w-6 h-2 bg-white shadow'
+                          : 'w-2 h-2 bg-white/60 hover:bg-white/80'
+                      }`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right Box: 25 Years Badge - 20% width (desktop only) */}
+            <div className="hidden lg:flex w-1/5 bg-gradient-to-br from-safety-green-700 via-safety-green-600 to-safety-green-800 rounded-xl overflow-hidden shadow-sm flex-col items-center justify-center relative">
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-16 h-16 bg-white rounded-full translate-y-1/2 -translate-x-1/2" />
+              </div>
+
+              {/* Badge Image & Text */}
+              <div className="relative p-3 flex flex-col items-center justify-center text-center">
+                <Image
+                  src="/images/imagesite/badge copy.png"
+                  alt="Celebrating 25 Years"
+                  width={160}
+                  height={160}
+                  className="object-contain drop-shadow-lg"
+                  unoptimized
+                />
+                <p className="text-white/90 text-sm font-semibold mt-2 italic leading-tight">
+                  Serving the government<br />and our community<br />for over 25 years !
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Categories Section */}
       <div className="container mx-auto px-4 py-6 lg:py-10">
