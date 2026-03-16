@@ -11,13 +11,18 @@ interface Banner {
   id: string;
   title: string;
   subtitle: string;
+  desktopImage: string;
+  mobileImage: string;
   image: string;
   link: string;
+  linkType: 'url' | 'category' | 'product';
+  linkTarget: string;
   position: 'hero' | 'sidebar' | 'footer' | 'popup';
   isActive: boolean;
   startDate: string | null;
   endDate: string | null;
   order: number;
+  slideDuration: number;
   createdAt: string;
 }
 
@@ -50,6 +55,37 @@ async function saveBanners(banners: Banner[]): Promise<void> {
       category: 'marketing',
     },
   });
+}
+
+async function deleteImageFile(imagePath: string): Promise<void> {
+  if (!imagePath) return;
+  const cleanPath = imagePath.replace('/api/uploads/', '');
+  const filePath = path.join(process.cwd(), 'uploads', cleanPath);
+  if (existsSync(filePath)) {
+    try {
+      await unlink(filePath);
+    } catch (e) {
+      console.error('Error deleting image:', e);
+    }
+  }
+}
+
+async function saveUploadedImage(file: File, prefix: string): Promise<string> {
+  const uploadsDir = path.join(process.cwd(), 'uploads', 'banners');
+  if (!existsSync(uploadsDir)) {
+    await mkdir(uploadsDir, { recursive: true });
+  }
+
+  const rawExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  const ext = allowedExts.includes(rawExt) ? rawExt : 'jpg';
+  const filename = `${prefix}-${Date.now()}.${ext}`;
+  const filepath = path.join(uploadsDir, filename);
+
+  const bytes = await file.arrayBuffer();
+  await writeFile(filepath, Buffer.from(bytes));
+
+  return `/api/uploads/banners/${filename}`;
 }
 
 export async function GET(
@@ -96,56 +132,55 @@ export async function PATCH(
     }
 
     const formData = await request.formData();
+    const banner = banners[bannerIndex];
 
+    // Update text fields
     const title = formData.get('title') as string | null;
     const subtitle = formData.get('subtitle') as string | null;
     const link = formData.get('link') as string | null;
+    const linkType = formData.get('linkType') as string | null;
+    const linkTarget = formData.get('linkTarget') as string | null;
     const position = formData.get('position') as string | null;
     const isActive = formData.get('isActive');
     const startDate = formData.get('startDate') as string | null;
     const endDate = formData.get('endDate') as string | null;
     const order = formData.get('order') as string | null;
-    const imageFile = formData.get('image') as File | null;
-
-    const banner = banners[bannerIndex];
+    const slideDuration = formData.get('slideDuration') as string | null;
 
     if (title !== null) banner.title = title;
     if (subtitle !== null) banner.subtitle = subtitle;
-    if (link !== null) banner.link = link;
     if (position !== null) banner.position = position as Banner['position'];
     if (isActive !== null) banner.isActive = isActive === 'true';
     if (startDate !== null) banner.startDate = startDate || null;
     if (endDate !== null) banner.endDate = endDate || null;
     if (order !== null) banner.order = parseInt(order);
+    if (slideDuration !== null) banner.slideDuration = parseInt(slideDuration) || 5;
+    if (linkType !== null) banner.linkType = linkType as Banner['linkType'];
+    if (linkTarget !== null) banner.linkTarget = linkTarget;
 
-    if (imageFile && imageFile.size > 0) {
-      // Delete old image if exists
-      if (banner.image) {
-        const oldPath = banner.image.replace('/api/uploads/', '');
-        const oldFilePath = path.join(process.cwd(), 'uploads', oldPath);
-        if (existsSync(oldFilePath)) {
-          try {
-            await unlink(oldFilePath);
-          } catch (e) {
-            console.error('Error deleting old banner image:', e);
-          }
-        }
+    // Handle link
+    if (link !== null) banner.link = link;
+    if (linkType !== null && linkTarget !== null) {
+      if (linkType === 'category' && linkTarget) {
+        banner.link = `/categories/${linkTarget}`;
+      } else if (linkType === 'product' && linkTarget) {
+        banner.link = `/products/${linkTarget}`;
       }
+    }
 
-      const uploadsDir = path.join(process.cwd(), 'uploads', 'banners');
+    // Handle desktop image
+    const desktopImageFile = formData.get('desktopImage') as File | null;
+    if (desktopImageFile && desktopImageFile.size > 0) {
+      await deleteImageFile(banner.desktopImage);
+      banner.desktopImage = await saveUploadedImage(desktopImageFile, 'banner-desktop');
+      banner.image = banner.desktopImage;
+    }
 
-      if (!existsSync(uploadsDir)) {
-        await mkdir(uploadsDir, { recursive: true });
-      }
-
-      const ext = imageFile.name.split('.').pop() || 'jpg';
-      const filename = `banner-${Date.now()}.${ext}`;
-      const filepath = path.join(uploadsDir, filename);
-
-      const bytes = await imageFile.arrayBuffer();
-      await writeFile(filepath, Buffer.from(bytes));
-
-      banner.image = `/api/uploads/banners/${filename}`;
+    // Handle mobile image
+    const mobileImageFile = formData.get('mobileImage') as File | null;
+    if (mobileImageFile && mobileImageFile.size > 0) {
+      await deleteImageFile(banner.mobileImage);
+      banner.mobileImage = await saveUploadedImage(mobileImageFile, 'banner-mobile');
     }
 
     banners[bannerIndex] = banner;
@@ -178,17 +213,14 @@ export async function DELETE(
 
     const banner = banners[bannerIndex];
 
-    // Delete image file if exists
-    if (banner.image) {
-      const imagePath = banner.image.replace('/api/uploads/', '');
-      const filePath = path.join(process.cwd(), 'uploads', imagePath);
-      if (existsSync(filePath)) {
-        try {
-          await unlink(filePath);
-        } catch (e) {
-          console.error('Error deleting banner image:', e);
-        }
-      }
+    // Delete image files
+    await deleteImageFile(banner.desktopImage);
+    if (banner.mobileImage && banner.mobileImage !== banner.desktopImage) {
+      await deleteImageFile(banner.mobileImage);
+    }
+    // Also try legacy image field
+    if (banner.image && banner.image !== banner.desktopImage && banner.image !== banner.mobileImage) {
+      await deleteImageFile(banner.image);
     }
 
     banners.splice(bannerIndex, 1);

@@ -7,17 +7,22 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
 
-interface Banner {
+export interface Banner {
   id: string;
   title: string;
   subtitle: string;
-  image: string;
+  desktopImage: string;
+  mobileImage: string;
+  image: string; // legacy - kept for backwards compat
   link: string;
+  linkType: 'url' | 'category' | 'product';
+  linkTarget: string; // slug for category/product, full URL for url
   position: 'hero' | 'sidebar' | 'footer' | 'popup';
   isActive: boolean;
   startDate: string | null;
   endDate: string | null;
   order: number;
+  slideDuration: number; // seconds
   createdAt: string;
 }
 
@@ -52,6 +57,24 @@ async function saveBanners(banners: Banner[]): Promise<void> {
   });
 }
 
+async function saveUploadedImage(file: File, prefix: string): Promise<string> {
+  const uploadsDir = path.join(process.cwd(), 'uploads', 'banners');
+  if (!existsSync(uploadsDir)) {
+    await mkdir(uploadsDir, { recursive: true });
+  }
+
+  const rawExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  const ext = allowedExts.includes(rawExt) ? rawExt : 'jpg';
+  const filename = `${prefix}-${Date.now()}.${ext}`;
+  const filepath = path.join(uploadsDir, filename);
+
+  const bytes = await file.arrayBuffer();
+  await writeFile(filepath, Buffer.from(bytes));
+
+  return `/api/uploads/banners/${filename}`;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -81,56 +104,63 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
 
-    const title = formData.get('title') as string;
-    const subtitle = formData.get('subtitle') as string || '';
-    const link = formData.get('link') as string || '';
-    const position = formData.get('position') as string || 'hero';
+    const title = (formData.get('title') as string) || '';
+    const subtitle = (formData.get('subtitle') as string) || '';
+    const link = (formData.get('link') as string) || '';
+    const linkType = (formData.get('linkType') as string) || 'url';
+    const linkTarget = (formData.get('linkTarget') as string) || '';
+    const position = (formData.get('position') as string) || 'hero';
     const isActive = formData.get('isActive') === 'true';
-    const startDate = formData.get('startDate') as string || null;
-    const endDate = formData.get('endDate') as string || null;
-    const imageFile = formData.get('image') as File | null;
+    const startDate = (formData.get('startDate') as string) || null;
+    const endDate = (formData.get('endDate') as string) || null;
+    const slideDuration = parseInt(formData.get('slideDuration') as string) || 5;
+    const desktopImageFile = formData.get('desktopImage') as File | null;
+    const mobileImageFile = formData.get('mobileImage') as File | null;
 
-    if (!title) {
+    let desktopImage = '';
+    let mobileImage = '';
+
+    if (desktopImageFile && desktopImageFile.size > 0) {
+      desktopImage = await saveUploadedImage(desktopImageFile, 'banner-desktop');
+    }
+
+    if (mobileImageFile && mobileImageFile.size > 0) {
+      mobileImage = await saveUploadedImage(mobileImageFile, 'banner-mobile');
+    }
+
+    if (!desktopImage) {
       return NextResponse.json(
-        { error: 'Title is required' },
+        { error: 'Desktop banner image is required' },
         { status: 400 }
       );
     }
 
-    let imagePath = '';
-
-    if (imageFile && imageFile.size > 0) {
-      const uploadsDir = path.join(process.cwd(), 'uploads', 'banners');
-
-      if (!existsSync(uploadsDir)) {
-        await mkdir(uploadsDir, { recursive: true });
-      }
-
-      const rawExt = (imageFile.name.split('.').pop() || 'jpg').toLowerCase();
-      const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-      const ext = allowedExts.includes(rawExt) ? rawExt : 'jpg';
-      const filename = `banner-${Date.now()}.${ext}`;
-      const filepath = path.join(uploadsDir, filename);
-
-      const bytes = await imageFile.arrayBuffer();
-      await writeFile(filepath, Buffer.from(bytes));
-
-      imagePath = `/api/uploads/banners/${filename}`;
-    }
-
     const banners = await getBanners();
+
+    // Build the link based on linkType
+    let finalLink = link;
+    if (linkType === 'category' && linkTarget) {
+      finalLink = `/categories/${linkTarget}`;
+    } else if (linkType === 'product' && linkTarget) {
+      finalLink = `/products/${linkTarget}`;
+    }
 
     const newBanner: Banner = {
       id: `banner-${Date.now()}`,
       title,
       subtitle,
-      image: imagePath,
-      link,
+      desktopImage,
+      mobileImage: mobileImage || desktopImage, // fallback to desktop
+      image: desktopImage, // legacy compat
+      link: finalLink,
+      linkType: linkType as Banner['linkType'],
+      linkTarget,
       position: position as Banner['position'],
       isActive,
       startDate,
       endDate,
       order: banners.length,
+      slideDuration,
       createdAt: new Date().toISOString(),
     };
 
