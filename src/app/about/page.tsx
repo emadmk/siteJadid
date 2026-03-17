@@ -65,40 +65,110 @@ export default function AboutPage() {
         {/* Our Business */}
         <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 mb-12">
           <div className="grid md:grid-cols-2 gap-12 items-start">
-            {/* Left - Warehouse Images Collage */}
+            {/* Left - Store Images Mosaic */}
             <div className="relative">
-              <div className="grid grid-cols-2 gap-3">
-                {/* Main large image - spans 2 rows */}
-                <div className="row-span-2 rounded-xl overflow-hidden shadow-lg">
+              <div className="grid grid-cols-3 auto-rows-[110px] gap-2">
+                {/* Row 1-2: ADA storefront wide + ADA logo portrait */}
+                <div className="col-span-2 row-span-2 rounded-xl overflow-hidden shadow-lg">
                   <Image
-                    src="/images/imagesite/warehouse1.jpeg"
-                    alt="ADA Supply Warehouse"
-                    width={300}
-                    height={320}
+                    src="/images/imagesite/photo (10).jpg"
+                    alt="ADA Supplies Storefront"
+                    width={500}
+                    height={300}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                {/* Top right image */}
-                <div className="rounded-xl overflow-hidden shadow-lg">
+                <div className="row-span-2 rounded-xl overflow-hidden shadow-lg">
                   <Image
-                    src="/images/imagesite/warehouse2.jpeg"
-                    alt="ADA Supply Facility"
-                    width={280}
-                    height={155}
-                    className="w-full h-[155px] object-cover"
+                    src="/images/imagesite/photo (5).jpg"
+                    alt="ADA Supplies - Safety & Workwear Store"
+                    width={200}
+                    height={300}
+                    className="w-full h-full object-cover"
                   />
                 </div>
-                {/* Bottom right image */}
+
+                {/* Row 3-4: Georgia Boot portrait + two landscapes */}
+                <div className="row-span-2 rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/imagesite/photo (1).jpg"
+                    alt="Georgia Boot Display"
+                    width={200}
+                    height={300}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <div className="rounded-xl overflow-hidden shadow-lg">
                   <Image
-                    src="/images/imagesite/warehouse3.jpeg"
-                    alt="ADA Supply Operations"
-                    width={280}
-                    height={155}
-                    className="w-full h-[155px] object-cover"
+                    src="/images/imagesite/photo (4).jpg"
+                    alt="Boot Wall Display"
+                    width={250}
+                    height={150}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/imagesite/photo (6).jpg"
+                    alt="Keen & Reebok Collection"
+                    width={250}
+                    height={150}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                {/* Row 4 continued */}
+                <div className="col-span-2 rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/imagesite/photo (7).jpg"
+                    alt="Brand Wall - Georgia Boot, Ariat, Carhartt"
+                    width={500}
+                    height={150}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                {/* Row 5-6: Hi-vis jacket portrait + Rocky + Hi-vis rack */}
+                <div className="row-span-2 rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/imagesite/photo (3).jpg"
+                    alt="Hi-Visibility Safety Gear"
+                    width={200}
+                    height={300}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/imagesite/photo (2).jpg"
+                    alt="Rocky Boots Collection"
+                    width={250}
+                    height={150}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/imagesite/photo (8).jpg"
+                    alt="Rocky Boots Corner Display"
+                    width={250}
+                    height={150}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                {/* Row 6 continued */}
+                <div className="col-span-2 rounded-xl overflow-hidden shadow-lg">
+                  <Image
+                    src="/images/imagesite/photo (9).jpg"
+                    alt="Hi-Visibility Clothing Display"
+                    width={500}
+                    height={150}
+                    className="w-full h-full object-cover"
                   />
                 </div>
               </div>
+
               {/* ADA Logo overlay */}
               <div className="absolute -bottom-3 -right-3 bg-white rounded-full p-2 shadow-lg border-2 border-safety-green-500">
                 <Image
