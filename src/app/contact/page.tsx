@@ -257,7 +257,8 @@ export default function ContactPage() {
                     <a href={`tel:${companyInfo.phone}`} className="text-sm text-gray-600 hover:text-safety-green-600">
                       {companyInfo.phone}
                     </a>
-                    <div className="text-sm text-gray-500">Mon-Fri 8AM-6PM EST</div>
+                    <div className="text-sm text-gray-500">Mon-Fri 8AM-6PM</div>
+                    <div className="text-sm text-gray-500">Sat 9AM-2PM</div>
                   </div>
                 </div>
 
