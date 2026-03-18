@@ -751,17 +751,17 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   },
   // EAR Protection - only NRR filter
   'ear-protection': {
-    include: ['nrr', 'color', 'protection'],
+    include: ['nrr', 'color'],
   },
   'hearing-protection': {
-    include: ['nrr', 'color', 'protection'],
+    include: ['nrr', 'color'],
   },
   // Head Protection - hardHatType
   'head-protection': {
-    include: ['hardHatType', 'color', 'protection'],
+    include: ['hardHatType', 'color'],
   },
   'hard-hats': {
-    include: ['hardHatType', 'color', 'protection'],
+    include: ['hardHatType', 'color'],
   },
   // High Visibility Vests - all variations
   'vests': {
@@ -902,6 +902,39 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   },
   'hearing-accessories': {
     include: ['taaCompliance', 'nrr'],
+  },
+
+  // Workwear - no style, use hiVisSize for proper S-5XL detection, extendedHiVisColor for more colors
+  'workwear': {
+    include: ['gender', 'material', 'hiVisSize', 'extendedHiVisColor', 'protection'],
+  },
+
+  // Respiratory Protection - no color, no protection
+  'respiratory-safety': {
+    include: ['type', 'material'],
+  },
+  'respiratory-protection': {
+    include: ['type', 'material'],
+  },
+  'respiratory': {
+    include: ['type', 'material'],
+  },
+
+  // Welding/Insulating/Electrical gloves - no style
+  'hand-protect-welding-gloves': {
+    include: ['material', 'size', 'color', 'protection'],
+  },
+  'welding-gloves': {
+    include: ['material', 'size', 'color', 'protection'],
+  },
+  'insulating-gloves': {
+    include: ['material', 'size', 'color', 'protection'],
+  },
+  'welding-safety': {
+    include: ['material', 'size', 'color', 'protection'],
+  },
+  'electrical-safety': {
+    include: ['material', 'size', 'color', 'protection'],
   },
 };
 
