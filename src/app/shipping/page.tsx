@@ -1,6 +1,12 @@
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, Truck, Package, Clock, MapPin, DollarSign, Globe } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Shipping Information | AdaSupply - Professional Safety Equipment',
+  description: 'AdaSupply shipping options, delivery times, and coverage. Fast, reliable delivery of ANSI-certified safety equipment across all 50 states. GSA Schedule Contract Holder.',
+};
 
 export default function ShippingPage() {
   return (
@@ -10,7 +16,7 @@ export default function ShippingPage() {
         <div className="container mx-auto px-4 py-12">
           <h1 className="text-4xl font-bold mb-2">Shipping Information</h1>
           <p className="text-safety-green-100">
-            Fast, reliable delivery of safety equipment across the nation
+            Fast, reliable delivery of professional safety equipment from AdaSupply &mdash; shipped from Warner Robins, GA
           </p>
         </div>
       </div>
@@ -152,8 +158,8 @@ export default function ShippingPage() {
                   <h3 className="font-semibold text-black mb-2">International Shipping</h3>
                   <p className="text-gray-600">
                     For international shipping inquiries, please contact our sales team at{' '}
-                    <a href="mailto:sales@safetypro.com" className="text-safety-green-600 hover:text-safety-green-700">
-                      sales@safetypro.com
+                    <a href="mailto:sales@adasupply.com" className="text-safety-green-600 hover:text-safety-green-700">
+                      sales@adasupply.com
                     </a>{' '}
                     for a custom quote.
                   </p>
@@ -207,8 +213,8 @@ export default function ShippingPage() {
                   <h3 className="font-semibold text-black mb-2">Can I change my shipping address after placing an order?</h3>
                   <p className="text-gray-600">
                     Yes, but only if your order hasn't been shipped yet. Contact customer service immediately at{' '}
-                    <a href="tel:1-800-723-3891" className="text-safety-green-600 hover:text-safety-green-700">
-                      1-800-SAFETY-1
+                    <a href="tel:+14783298896" className="text-safety-green-600 hover:text-safety-green-700">
+                      478-329-8896
                     </a>.
                   </p>
                 </div>

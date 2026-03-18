@@ -50,7 +50,7 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2">
             <ShieldCheck className="w-8 h-8 text-safety-green-600" />
             <div className="flex flex-col">
-              <span className="text-xl font-bold text-black">SafetyPro Supply</span>
+              <span className="text-xl font-bold text-black">AdaSupply</span>
               <span className="text-xs text-gray-600">Professional Safety Equipment</span>
             </div>
           </Link>

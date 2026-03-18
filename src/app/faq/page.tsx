@@ -16,17 +16,17 @@ const faqs: FAQItem[] = [
   {
     category: 'Orders',
     question: 'How do I place an order?',
-    answer: 'Browse our product catalog, add items to your cart, and proceed to checkout. You\'ll need to create an account or sign in to complete your purchase. Follow the checkout steps to enter shipping information and payment details.',
+    answer: 'Browse our catalog at adasupply.com, add items to your cart, and proceed to checkout. You\'ll need to create an account or sign in to complete your purchase. Follow the checkout steps to enter shipping information and payment details. For bulk or government orders, contact our team at 478-329-8896.',
   },
   {
     category: 'Orders',
     question: 'Can I modify or cancel my order?',
-    answer: 'You can modify or cancel your order within 1 hour of placing it by contacting customer service. After that, your order will be in processing and cannot be modified. However, you can always use our return policy after receiving your items.',
+    answer: 'You can modify or cancel your order within 1 hour of placing it by contacting our customer service team at 478-329-8896 or info@adasupply.com. After that, your order will be in processing and cannot be modified. However, you can always use our 30-day return policy after receiving your items.',
   },
   {
     category: 'Orders',
     question: 'Do you accept bulk orders?',
-    answer: 'Yes! We specialize in bulk orders for businesses and organizations. Contact our B2B sales team for volume discounts and custom quotes. Business accounts receive special wholesale pricing and flexible payment terms.',
+    answer: 'Yes! AdaSupply specializes in bulk orders for businesses, organizations, and government agencies. As a GSA Schedule Contract Holder, we serve federal, state, and local government buyers. Contact our B2B sales team at sales@adasupply.com or 478-329-8896 for volume discounts and custom quotes.',
   },
 
   // Shipping
@@ -38,7 +38,7 @@ const faqs: FAQItem[] = [
   {
     category: 'Shipping',
     question: 'Do you ship internationally?',
-    answer: 'Currently, we ship within the United States including Alaska, Hawaii, and US territories. For international shipping inquiries, please contact our sales team for a custom quote.',
+    answer: 'AdaSupply ships from our warehouse in Warner Robins, Georgia to all 50 states, including Alaska, Hawaii, and US territories. For international shipping inquiries, please contact our sales team at sales@adasupply.com or 478-329-8896 for a custom quote.',
   },
   {
     category: 'Shipping',
@@ -50,7 +50,7 @@ const faqs: FAQItem[] = [
   {
     category: 'Returns',
     question: 'What is your return policy?',
-    answer: 'We offer a 30-day return policy on most items. Items must be in original, unused condition with all tags and packaging. Some items like opened PPE cannot be returned for health and safety reasons. Return shipping is free with our prepaid labels.',
+    answer: 'AdaSupply offers a 30-day return policy on most items. Items must be in original, unused condition with all tags and packaging. Some items like opened PPE cannot be returned for health and safety reasons. Contact returns@adasupply.com or call 478-329-8896 to initiate a return.',
   },
   {
     category: 'Returns',
@@ -67,7 +67,7 @@ const faqs: FAQItem[] = [
   {
     category: 'Payment',
     question: 'What payment methods do you accept?',
-    answer: 'We accept all major credit cards (Visa, Mastercard, American Express, Discover), PayPal, and ACH transfers for business accounts. B2B customers may also qualify for Net 30 payment terms.',
+    answer: 'AdaSupply accepts all major credit cards (Visa, Mastercard, American Express, Discover), PayPal, and ACH transfers for business accounts. B2B customers may also qualify for Net 30, Net 45, or Net 60 payment terms. Government customers can use GSA Advantage and government purchase cards.',
   },
   {
     category: 'Payment',
@@ -84,7 +84,7 @@ const faqs: FAQItem[] = [
   {
     category: 'Account',
     question: 'How do I create an account?',
-    answer: 'Click "Sign Up" in the top right corner and fill out the registration form. You can choose between a personal account (B2C), business account (B2B), or government account (GSA). Business and government accounts require approval for special pricing.',
+    answer: 'Click "Sign Up" in the top right corner of adasupply.com and fill out the registration form. You can choose between a personal account (B2C), business account (B2B), or government account (GSA). Business and government accounts require approval for special pricing. For assistance, call 478-329-8896.',
   },
   {
     category: 'Account',
@@ -101,7 +101,7 @@ const faqs: FAQItem[] = [
   {
     category: 'Products',
     question: 'Are your products ANSI certified?',
-    answer: 'Yes, all our safety equipment meets or exceeds ANSI standards and other relevant safety certifications. Product specifications and certifications are listed on each product page.',
+    answer: 'Yes, all safety equipment sold by AdaSupply meets or exceeds ANSI standards and other relevant safety certifications including OSHA, ASTM, and NFPA where applicable. Product specifications and certifications are listed on each product page. As a GSA Schedule Contract Holder, our products meet strict government procurement standards.',
   },
   {
     category: 'Products',
@@ -221,9 +221,9 @@ export default function FAQPage() {
                   Contact Support
                 </Button>
               </Link>
-              <a href="tel:1-800-723-3891">
+              <a href="tel:+14783298896">
                 <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-safety-green-700">
-                  Call 1-800-SAFETY-1
+                  Call 478-329-8896
                 </Button>
               </a>
             </div>

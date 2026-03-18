@@ -120,8 +120,8 @@ export default function CookiesPage() {
                 If you have questions about our use of cookies:
               </p>
               <ul className="list-none text-gray-700 space-y-2">
-                <li>Email: privacy@safetyequipmentstore.com</li>
-                <li>Phone: 1-800-SAFETY-1 (1-800-723-3891)</li>
+                <li>Email: privacy@adasupply.com</li>
+                <li>Phone: 478-329-8896</li>
               </ul>
             </section>
           </div>

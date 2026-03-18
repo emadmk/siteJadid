@@ -27,7 +27,7 @@ export default function CompliancePage() {
               </div>
             </div>
             <p className="text-gray-600 leading-relaxed">
-              At SafetyPro Supply, we are committed to providing safety equipment that meets or exceeds all applicable industry standards and regulations. Our products undergo rigorous testing and certification to ensure they provide the highest level of protection for workers across all industries.
+              At AdaSupply, we are committed to providing safety equipment that meets or exceeds all applicable industry standards and regulations. As a GSA Schedule Contract Holder, our products undergo rigorous testing and certification to ensure they provide the highest level of protection for workers across all industries.
             </p>
           </div>
 

@@ -276,7 +276,7 @@ export default function BulkOrdersPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2 text-gray-700">
                   <FileText className="w-4 h-4" />
-                  <span>1-800-ADASUPPLY</span>
+                  <a href="tel:+14783298896" className="hover:text-safety-green-600">478-329-8896</a>
                 </div>
                 <div className="flex items-center gap-2 text-gray-700">
                   <FileText className="w-4 h-4" />

@@ -141,7 +141,7 @@ export default function ShippingInfoPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">International Shipping</h3>
                 <p className="text-gray-700 mb-3">
                   Currently not available. For international inquiries, please contact our sales team
-                  at international@safetyequipmentstore.com
+                  at sales@adasupply.com
                 </p>
               </div>
             </div>
@@ -207,8 +207,8 @@ export default function ShippingInfoPage() {
             <h2 className="text-2xl font-bold mb-4">Questions About Shipping?</h2>
             <p className="mb-6">Our customer service team is here to help!</p>
             <div className="flex flex-wrap gap-4 justify-center">
-              <a href="tel:1-800-723-3891" className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors">
-                Call 1-800-SAFETY-1
+              <a href="tel:+14783298896" className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors">
+                Call 478-329-8896
               </a>
               <a href="/contact" className="border-2 border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white hover:text-blue-600 transition-colors">
                 Contact Us

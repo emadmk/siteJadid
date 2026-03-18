@@ -44,7 +44,7 @@ export default function TermsPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">Contact Information</h2>
               <p className="text-gray-700">
-                Email: legal@safetyequipmentstore.com | Phone: 1-800-SAFETY-1
+                Email: legal@adasupply.com | Phone: 478-329-8896
               </p>
             </section>
           </div>

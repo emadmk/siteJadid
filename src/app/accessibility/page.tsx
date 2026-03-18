@@ -49,8 +49,8 @@ export default function AccessibilityPage() {
                 encounter accessibility barriers:
               </p>
               <ul className="list-none text-gray-700 space-y-2">
-                <li>Email: accessibility@safetyequipmentstore.com</li>
-                <li>Phone: 1-800-SAFETY-1 (1-800-723-3891)</li>
+                <li>Email: accessibility@adasupply.com</li>
+                <li>Phone: 478-329-8896</li>
               </ul>
               <p className="text-gray-700 mt-4">
                 We try to respond to feedback within 5 business days.
