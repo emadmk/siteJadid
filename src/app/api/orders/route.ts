@@ -371,10 +371,40 @@ export async function POST(request: NextRequest) {
       shippingCost = shippingResult.cost;
     }
 
-    // Fix #7: Use only normalized accountType for tax calculation
-    const isTaxExempt = accountType === 'GOVERNMENT' || accountType === 'VOLUME_BUYER';
+    // Tax calculation using per-customer-type settings from DB
+    let tax = 0;
     const taxableAmount = subtotal - couponDiscount;
-    const tax = isTaxExempt ? 0 : taxableAmount * 0.08;
+    try {
+      const taxSettings = await db.taxSettings.findFirst();
+      if (taxSettings && taxSettings.enableTax) {
+        // Map account type to the corresponding tax fields
+        const taxFieldMap: Record<string, { enabled: boolean; rate: number }> = {
+          B2C: { enabled: taxSettings.taxEnabledB2C, rate: Number(taxSettings.taxRateB2C) },
+          B2B: { enabled: taxSettings.taxEnabledB2B, rate: Number(taxSettings.taxRateB2B) },
+          GSA: { enabled: taxSettings.taxEnabledGSA, rate: Number(taxSettings.taxRateGSA) },
+          PERSONAL: { enabled: taxSettings.taxEnabledPersonal, rate: Number(taxSettings.taxRatePersonal) },
+          VOLUME_BUYER: { enabled: taxSettings.taxEnabledVolumeBuyer, rate: Number(taxSettings.taxRateVolumeBuyer) },
+          GOVERNMENT: { enabled: taxSettings.taxEnabledGovernment, rate: Number(taxSettings.taxRateGovernment) },
+        };
+        const customerTax = taxFieldMap[accountType] || { enabled: true, rate: Number(taxSettings.defaultTaxRate) };
+        if (customerTax.enabled && customerTax.rate > 0) {
+          let taxBase = taxableAmount;
+          if (taxSettings.taxShipping) {
+            taxBase += shippingCost;
+          }
+          tax = taxBase * (customerTax.rate / 100);
+        }
+      } else if (!taxSettings) {
+        // Fallback: no settings in DB, use legacy 8% logic
+        const isTaxExempt = accountType === 'GOVERNMENT' || accountType === 'VOLUME_BUYER';
+        tax = isTaxExempt ? 0 : taxableAmount * 0.08;
+      }
+      // If taxSettings exists but enableTax is false, tax stays 0
+    } catch (taxError) {
+      console.error('Error reading tax settings, using fallback:', taxError);
+      const isTaxExempt = accountType === 'GOVERNMENT' || accountType === 'VOLUME_BUYER';
+      tax = isTaxExempt ? 0 : taxableAmount * 0.08;
+    }
 
     // Fix #2: Apply coupon discount to total
     const total = subtotal - couponDiscount + shippingCost + tax;

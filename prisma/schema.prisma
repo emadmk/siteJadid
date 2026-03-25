@@ -3499,6 +3499,20 @@ model TaxSettings {
   cacheTaxRates   Boolean  @default(true)
   cacheDuration   Int      @default(3600) // seconds
 
+  // Per-Customer-Type Tax Settings
+  taxEnabledB2C          Boolean  @default(true)
+  taxRateB2C             Decimal  @default(8) @db.Decimal(5, 2)
+  taxEnabledB2B          Boolean  @default(true)
+  taxRateB2B             Decimal  @default(8) @db.Decimal(5, 2)
+  taxEnabledGSA          Boolean  @default(true)
+  taxRateGSA             Decimal  @default(8) @db.Decimal(5, 2)
+  taxEnabledPersonal     Boolean  @default(true)
+  taxRatePersonal        Decimal  @default(8) @db.Decimal(5, 2)
+  taxEnabledVolumeBuyer  Boolean  @default(false)
+  taxRateVolumeBuyer     Decimal  @default(0) @db.Decimal(5, 2)
+  taxEnabledGovernment   Boolean  @default(false)
+  taxRateGovernment      Decimal  @default(0) @db.Decimal(5, 2)
+
   updatedBy       String?
   updatedAt       DateTime @updatedAt
 

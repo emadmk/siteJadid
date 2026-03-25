@@ -159,7 +159,29 @@ export default async function CartPage() {
   // Calculate shipping based on settings
   const qualifiesForFreeShipping = shippingSettings.freeShippingEnabled && subtotal >= shippingSettings.freeThreshold;
   const estimatedShipping = qualifiesForFreeShipping ? 0 : (totalWeight > 20 ? 35 : shippingSettings.standardRate);
-  const tax = subtotal * 0.08;
+  // Calculate tax from DB settings
+  let taxRate = 8;
+  let taxEnabled = true;
+  try {
+    const taxSettings = await db.taxSettings.findFirst();
+    if (taxSettings && taxSettings.enableTax) {
+      const acctType = session.user.accountType || 'B2C';
+      const taxFieldMap: Record<string, { enabled: boolean; rate: number }> = {
+        B2C: { enabled: taxSettings.taxEnabledB2C, rate: Number(taxSettings.taxRateB2C) },
+        B2B: { enabled: taxSettings.taxEnabledB2B, rate: Number(taxSettings.taxRateB2B) },
+        GSA: { enabled: taxSettings.taxEnabledGSA, rate: Number(taxSettings.taxRateGSA) },
+        PERSONAL: { enabled: taxSettings.taxEnabledPersonal, rate: Number(taxSettings.taxRatePersonal) },
+        VOLUME_BUYER: { enabled: taxSettings.taxEnabledVolumeBuyer, rate: Number(taxSettings.taxRateVolumeBuyer) },
+        GOVERNMENT: { enabled: taxSettings.taxEnabledGovernment, rate: Number(taxSettings.taxRateGovernment) },
+      };
+      const ct = taxFieldMap[acctType] || { enabled: true, rate: Number(taxSettings.defaultTaxRate) };
+      taxRate = ct.rate;
+      taxEnabled = ct.enabled;
+    } else if (taxSettings && !taxSettings.enableTax) {
+      taxEnabled = false;
+    }
+  } catch {}
+  const tax = taxEnabled ? subtotal * (taxRate / 100) : 0;
   const total = subtotal + estimatedShipping + tax;
 
   // For free shipping progress bar

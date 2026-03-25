@@ -161,6 +161,26 @@ export function CheckoutForm({
     contractNumber: '',
   });
 
+  // Tax rate from server settings
+  const [taxConfig, setTaxConfig] = useState<{ enabled: boolean; rate: number; taxShipping: boolean }>({
+    enabled: true,
+    rate: 8,
+    taxShipping: false,
+  });
+
+  useEffect(() => {
+    fetch('/api/tax/rate')
+      .then(res => res.json())
+      .then(data => {
+        setTaxConfig({
+          enabled: data.enabled ?? true,
+          rate: data.rate ?? 8,
+          taxShipping: data.taxShipping ?? false,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
   // Shipping rates from Shippo
   interface ShippingRateOption {
     id: string;
@@ -353,7 +373,8 @@ export function CheckoutForm({
   const couponDiscount = appliedCoupon?.discount || 0;
   // Government pricing is now applied through the subtotal calculation, not as a discount
   const discount = couponDiscount;
-  const tax = isB2BAccount || isGSAAccount || isGovBuyer ? 0 : (subtotal - discount) * 0.08;
+  const taxBase = (subtotal - discount) + (taxConfig.taxShipping ? shippingCost : 0);
+  const tax = taxConfig.enabled ? taxBase * (taxConfig.rate / 100) : 0;
   const total = subtotal - discount + shippingCost + tax;
 
   // Initialize Stripe and create payment intent when entering payment step
