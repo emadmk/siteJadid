@@ -15,7 +15,56 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  DollarSign,
+  Users,
+  Building2,
+  Landmark,
 } from 'lucide-react';
+
+interface CustomerTypeTax {
+  enabled: boolean;
+  rate: number;
+}
+
+interface TaxSettingsDetailed {
+  enableTax: boolean;
+  provider: string;
+  taxJarApiKey: string;
+  defaultTaxRate: number;
+  taxIncludedInPrice: boolean;
+  calculateTaxOnShipping: boolean;
+  customerTypeTax: {
+    PERSONAL: CustomerTypeTax;
+    VOLUME_BUYER: CustomerTypeTax;
+    GOVERNMENT: CustomerTypeTax;
+    B2C: CustomerTypeTax;
+    B2B: CustomerTypeTax;
+    GSA: CustomerTypeTax;
+  };
+}
+
+const CUSTOMER_TYPES = [
+  { key: 'PERSONAL', label: 'Personal Buyers', icon: Users, description: 'Individual consumer accounts' },
+  { key: 'VOLUME_BUYER', label: 'Volume Buyers', icon: Building2, description: 'High-volume purchasing accounts' },
+  { key: 'GOVERNMENT', label: 'Government Buyers', icon: Landmark, description: 'Government agency accounts' },
+] as const;
+
+const defaultTaxSettings: TaxSettingsDetailed = {
+  enableTax: false,
+  provider: 'manual',
+  taxJarApiKey: '',
+  defaultTaxRate: 0,
+  taxIncludedInPrice: false,
+  calculateTaxOnShipping: false,
+  customerTypeTax: {
+    PERSONAL: { enabled: true, rate: 8 },
+    VOLUME_BUYER: { enabled: false, rate: 0 },
+    GOVERNMENT: { enabled: false, rate: 0 },
+    B2C: { enabled: true, rate: 8 },
+    B2B: { enabled: true, rate: 8 },
+    GSA: { enabled: true, rate: 8 },
+  },
+};
 
 interface Settings {
   store: {
@@ -135,6 +184,7 @@ const defaultSettings: Settings = {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [taxSettings, setTaxSettings] = useState<TaxSettingsDetailed>(defaultTaxSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string; category?: string } | null>(null);
@@ -142,6 +192,7 @@ export default function SettingsPage() {
   // Fetch settings on mount
   useEffect(() => {
     fetchSettings();
+    fetchTaxSettings();
   }, []);
 
   const fetchSettings = async () => {
@@ -165,6 +216,58 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchTaxSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/tax-settings');
+      if (res.ok) {
+        const data = await res.json();
+        setTaxSettings(prev => ({
+          ...prev,
+          ...data,
+          customerTypeTax: { ...prev.customerTypeTax, ...data.customerTypeTax },
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching tax settings:', error);
+    }
+  };
+
+  const saveTaxSettings = async () => {
+    setSaving('tax-detailed');
+    setMessage(null);
+    try {
+      const res = await fetch('/api/admin/tax-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taxSettings),
+      });
+      if (res.ok) {
+        setMessage({ type: 'success', text: 'Tax settings saved successfully!', category: 'tax-detailed' });
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        const data = await res.json();
+        setMessage({ type: 'error', text: data.error || 'Failed to save tax settings', category: 'tax-detailed' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'An error occurred while saving', category: 'tax-detailed' });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const updateCustomerTypeTax = (type: string, field: 'enabled' | 'rate', value: boolean | number) => {
+    setTaxSettings(prev => ({
+      ...prev,
+      customerTypeTax: {
+        ...prev.customerTypeTax,
+        [type]: {
+          ...prev.customerTypeTax[type as keyof typeof prev.customerTypeTax],
+          [field]: value,
+        },
+      },
+    }));
   };
 
   const saveSettings = async (category: keyof Settings) => {
@@ -597,38 +700,143 @@ export default function SettingsPage() {
 
         {/* Tax Settings */}
         <SettingsCard
-          icon={<Globe className="w-5 h-5 text-indigo-600" />}
-          iconBg="bg-indigo-100 dark:bg-indigo-900/30"
+          icon={<DollarSign className="w-5 h-5 text-green-600" />}
+          iconBg="bg-green-100 dark:bg-green-900/30"
           title="Tax Settings"
-          subtitle="Configure tax rates"
-          saving={saving === 'tax'}
-          message={message?.category === 'tax' ? message : null}
-          onSave={() => saveSettings('tax')}
+          subtitle="Configure tax calculation for your store"
+          saving={saving === 'tax-detailed'}
+          message={message?.category === 'tax-detailed' ? message : null}
+          onSave={saveTaxSettings}
         >
-          <div className="space-y-4">
-            <Input
-              label="Default Tax Rate (%)"
-              type="number"
-              step="0.1"
-              value={settings.tax.defaultRate}
-              onChange={(v) => updateSetting('tax', 'defaultRate', parseFloat(v) || 0)}
-            />
-            <Toggle
-              label="Apply Tax to Shipping"
-              description="Include shipping in tax calculations"
-              checked={settings.tax.applyToShipping}
-              onChange={(v) => updateSetting('tax', 'applyToShipping', v)}
-            />
-            <Toggle
-              label="GOV Tax Exempt"
-              description="GOV orders are tax-exempt"
-              checked={settings.tax.gsaExempt}
-              onChange={(v) => updateSetting('tax', 'gsaExempt', v)}
-            />
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <p className="text-sm text-blue-800 dark:text-blue-300">
-                For state-specific tax rates, configure them in the tax management section.
+          <div className="space-y-6">
+            {/* General Tax Settings */}
+            <div className="space-y-4">
+              <Toggle
+                label="Enable Tax Calculation"
+                description="Calculate and apply taxes to orders"
+                checked={taxSettings.enableTax}
+                onChange={(v) => setTaxSettings(prev => ({ ...prev, enableTax: v }))}
+              />
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tax Provider</label>
+                <select
+                  value={taxSettings.provider}
+                  onChange={(e) => setTaxSettings(prev => ({ ...prev, provider: e.target.value }))}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white"
+                >
+                  <option value="manual">Manual Tax Rates</option>
+                  <option value="taxjar">TaxJar (Automatic)</option>
+                </select>
+              </div>
+
+              {taxSettings.provider === 'taxjar' && (
+                <Input
+                  label="TaxJar API Key"
+                  type="password"
+                  value={taxSettings.taxJarApiKey}
+                  onChange={(v) => setTaxSettings(prev => ({ ...prev, taxJarApiKey: v }))}
+                  placeholder="Enter your TaxJar API key"
+                />
+              )}
+
+              {taxSettings.provider === 'manual' && (
+                <Input
+                  label="Default Tax Rate (%)"
+                  type="number"
+                  step="0.01"
+                  value={taxSettings.defaultTaxRate}
+                  onChange={(v) => setTaxSettings(prev => ({ ...prev, defaultTaxRate: parseFloat(v) || 0 }))}
+                  placeholder="0.00"
+                />
+              )}
+
+              <Toggle
+                label="Tax Included in Price"
+                description="Display prices with tax included"
+                checked={taxSettings.taxIncludedInPrice}
+                onChange={(v) => setTaxSettings(prev => ({ ...prev, taxIncludedInPrice: v }))}
+              />
+
+              <Toggle
+                label="Calculate Tax on Shipping"
+                description="Apply tax to shipping costs"
+                checked={taxSettings.calculateTaxOnShipping}
+                onChange={(v) => setTaxSettings(prev => ({ ...prev, calculateTaxOnShipping: v }))}
+              />
+            </div>
+
+            {/* Per-Customer-Type Tax Settings */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Tax by Customer Type</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                Configure tax rates individually for each customer type.
               </p>
+              <div className="space-y-3">
+                {CUSTOMER_TYPES.map(({ key, label, icon: Icon, description }) => {
+                  const typeTax = taxSettings.customerTypeTax[key as keyof typeof taxSettings.customerTypeTax];
+                  return (
+                    <div
+                      key={key}
+                      className={`border rounded-lg p-4 transition-colors ${
+                        typeTax.enabled
+                          ? 'border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10'
+                          : 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                            typeTax.enabled ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                          }`}>
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900 dark:text-white text-sm">{label}</h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{description}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">Rate:</label>
+                            <div className="relative w-24">
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                value={typeTax.rate}
+                                onChange={(e) => updateCustomerTypeTax(key, 'rate', parseFloat(e.target.value) || 0)}
+                                disabled={!typeTax.enabled}
+                                className="w-full px-3 py-1.5 pr-7 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white"
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-400">%</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => updateCustomerTypeTax(key, 'enabled', !typeTax.enabled)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              typeTax.enabled ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
+                            }`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              typeTax.enabled ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-2 ml-12 text-xs">
+                        {typeTax.enabled ? (
+                          <span className="text-green-700 dark:text-green-400">Tax active at {typeTax.rate}%</span>
+                        ) : (
+                          <span className="text-gray-400">Tax exempt (no tax charged)</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </SettingsCard>
