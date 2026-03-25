@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Users, Search, Mail, Phone, Eye, Shield } from 'lucide-react';
 import { db } from '@/lib/db';
+import { EmailComposer } from '@/components/admin/EmailComposer';
 
 async function getCustomers(searchParams: {
   search?: string;
@@ -263,6 +264,11 @@ export default async function CustomersPage({
             </div>
           </div>
         </Link>
+      </div>
+
+      {/* Email Customer */}
+      <div className="mb-8">
+        <EmailComposer compact />
       </div>
 
       {/* Customers Table */}

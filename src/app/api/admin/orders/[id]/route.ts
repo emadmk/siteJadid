@@ -4,6 +4,54 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 
+// PUT /api/admin/orders/[id] - Update order admin notes
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Only SUPER_ADMIN, ADMIN, and CUSTOMER_SERVICE can update admin notes
+    const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'];
+    if (!allowedRoles.includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden. Insufficient permissions.' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { adminNotes } = body;
+
+    if (typeof adminNotes !== 'string') {
+      return NextResponse.json({ error: 'adminNotes must be a string' }, { status: 400 });
+    }
+
+    const order = await db.order.findUnique({
+      where: { id: params.id },
+      select: { id: true },
+    });
+
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    const updatedOrder = await db.order.update({
+      where: { id: params.id },
+      data: { adminNotes },
+    });
+
+    return NextResponse.json(updatedOrder);
+  } catch (error: any) {
+    console.error('Error updating order:', error);
+    return NextResponse.json(
+      { error: 'Failed to update order', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE /api/admin/orders/[id] - Delete an order (SUPER_ADMIN only)
 export async function DELETE(
   req: NextRequest,

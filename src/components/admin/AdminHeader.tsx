@@ -23,6 +23,7 @@ import {
   Gift,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ThemeToggle } from './ui/ThemeToggle';
 import { useCommandPalette } from './ui/CommandPalette';
 import { useSidebar } from './AdminSidebar';
@@ -32,6 +33,7 @@ interface Notification {
   type: string;
   title: string;
   message: string;
+  data?: string;
   createdAt: string;
   isRead: boolean;
 }
@@ -50,6 +52,8 @@ const NotificationIcon = ({ type }: { type: string }) => {
       return <Gift className="w-4 h-4 text-pink-500" />;
     case 'LOYALTY_UPDATE':
       return <Star className="w-4 h-4 text-orange-500" />;
+    case 'SYSTEM':
+      return <Users className="w-4 h-4 text-indigo-500" />;
     default:
       return <AlertCircle className="w-4 h-4 text-gray-500" />;
   }
@@ -72,6 +76,7 @@ const formatTimeAgo = (dateStr: string) => {
 
 export function AdminHeader() {
   const { data: session } = useSession();
+  const router = useRouter();
   const { setOpen: setCommandPaletteOpen } = useCommandPalette();
   const { toggle: toggleSidebar } = useSidebar();
 
@@ -104,8 +109,8 @@ export function AdminHeader() {
   // Fetch notifications on mount and when dropdown opens
   useEffect(() => {
     fetchNotifications();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchNotifications, 60000);
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
@@ -136,6 +141,23 @@ export function AdminHeader() {
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.isRead) {
+      await markAsRead(notification.id);
+    }
+    if (notification.data) {
+      try {
+        const parsed = JSON.parse(notification.data);
+        if (parsed.url) {
+          setShowNotifications(false);
+          router.push(parsed.url);
+        }
+      } catch {
+        // Invalid JSON in data field, ignore
+      }
     }
   };
 
@@ -267,7 +289,8 @@ export function AdminHeader() {
                         notifications.map((notification) => (
                           <div
                             key={notification.id}
-                            className={`p-4 border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                            onClick={() => handleNotificationClick(notification)}
+                            className={`p-4 border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer ${
                               !notification.isRead ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                             }`}
                           >
@@ -282,7 +305,7 @@ export function AdminHeader() {
                                   </p>
                                   {!notification.isRead && (
                                     <button
-                                      onClick={() => markAsRead(notification.id)}
+                                      onClick={(e) => { e.stopPropagation(); markAsRead(notification.id); }}
                                       className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
                                       title="Mark as read"
                                     >

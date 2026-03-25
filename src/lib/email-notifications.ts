@@ -317,7 +317,7 @@ export async function sendContactConfirmation(data: {
  * Fetch all staff emails (SUPER_ADMIN, ADMIN, CUSTOMER_SERVICE)
  * Reads from the database so any new staff member automatically receives notifications
  */
-async function getStaffEmails(): Promise<Array<{ email: string; name: string | null; role: string }>> {
+async function getStaffEmails(): Promise<Array<{ id: string; email: string; name: string | null; role: string }>> {
   try {
     // Using imported db from ./db
     const staffUsers = await db.user.findMany({
@@ -327,6 +327,7 @@ async function getStaffEmails(): Promise<Array<{ email: string; name: string | n
         email: { not: undefined },
       },
       select: {
+        id: true,
         email: true,
         name: true,
         role: true,
@@ -394,6 +395,26 @@ export async function sendAdminNewOrderNotification(data: {
   });
 
   await sendToAllStaff(template.subject, template.html, 'ADMIN_NEW_ORDER', { orderId: data.orderId });
+
+  // Create in-app notifications for all staff users
+  try {
+    const staff = await getStaffEmails();
+    await Promise.allSettled(
+      staff.map((member) =>
+        db.notification.create({
+          data: {
+            userId: member.id,
+            type: 'ORDER_UPDATE',
+            title: `New Order #${data.orderNumber}`,
+            message: `${data.customerName} placed a $${data.total.toFixed(2)} order (${data.itemCount} items)`,
+            data: JSON.stringify({ url: `/admin/orders/${data.orderId}`, orderNumber: data.orderNumber }),
+          },
+        })
+      )
+    );
+  } catch (error) {
+    console.error('[NOTIFICATION] Failed to create in-app notifications for new order:', error);
+  }
 }
 
 /**
@@ -447,6 +468,26 @@ export async function sendAdminNewRegistrationNotification(data: {
   });
 
   await sendToAllStaff(template.subject, template.html, 'ADMIN_NEW_REGISTRATION');
+
+  // Create in-app notifications for all staff users
+  try {
+    const staff = await getStaffEmails();
+    await Promise.allSettled(
+      staff.map((member) =>
+        db.notification.create({
+          data: {
+            userId: member.id,
+            type: 'SYSTEM',
+            title: `New Registration: ${data.userName}`,
+            message: `${data.userEmail} registered as ${data.accountType}${data.companyName ? ` (${data.companyName})` : ''}`,
+            data: JSON.stringify({ url: '/admin/customers/approvals', accountType: data.accountType }),
+          },
+        })
+      )
+    );
+  } catch (error) {
+    console.error('[NOTIFICATION] Failed to create in-app notifications for new registration:', error);
+  }
 }
 
 /**

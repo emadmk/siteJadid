@@ -3,6 +3,9 @@ export const dynamic = 'force-dynamic';
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import { OrderStatusUpdater } from '@/components/admin/OrderStatusUpdater';
+import { AdminNotesEditor } from '@/components/admin/AdminNotesEditor';
+import OrderPrintButtons from '@/components/admin/OrderPrintButtons';
+import { EmailComposer } from '@/components/admin/EmailComposer';
 import { ArrowLeft, Package, MapPin, CreditCard, Truck, User, Building2, Warehouse, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -155,6 +158,72 @@ export default async function OrderDetailPage({
             {order.paymentStatus.replace('_', ' ')}
           </span>
         </div>
+      </div>
+
+      {/* Print Buttons */}
+      <div className="mb-6">
+        <OrderPrintButtons order={{
+          id: order.id,
+          orderNumber: order.orderNumber,
+          createdAt: order.createdAt.toISOString(),
+          status: order.status,
+          paymentStatus: order.paymentStatus,
+          paymentMethod: order.paymentMethod,
+          paidAt: order.paidAt ? order.paidAt.toISOString() : null,
+          subtotal: Number(order.subtotal),
+          tax: Number(order.tax),
+          shipping: Number(order.shipping),
+          discount: Number(order.discount),
+          total: Number(order.total),
+          customerNotes: order.customerNotes,
+          adminNotes: order.adminNotes,
+          purchaseOrderNumber: order.purchaseOrderNumber,
+          gsaContractNumber: order.gsaContractNumber,
+          shippingMethod: order.shippingMethod,
+          shippingCarrier: order.shippingCarrier,
+          trackingNumber: order.trackingNumber,
+          user: {
+            name: order.user.name,
+            email: order.user.email,
+            phone: order.user.phone,
+            accountType: order.user.accountType || order.accountType,
+          },
+          items: order.items.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            sku: item.sku,
+            quantity: item.quantity,
+            price: Number(item.price),
+            total: Number(item.total),
+            discount: Number(item.discount),
+            variantName: item.variantName,
+            variantSku: item.variantSku || item.variant?.sku || null,
+          })),
+          shippingAddress: {
+            firstName: order.shippingAddress.firstName,
+            lastName: order.shippingAddress.lastName,
+            company: order.shippingAddress.company,
+            address1: order.shippingAddress.address1,
+            address2: order.shippingAddress.address2,
+            city: order.shippingAddress.city,
+            state: order.shippingAddress.state,
+            zipCode: order.shippingAddress.zipCode,
+            country: order.shippingAddress.country,
+            phone: order.shippingAddress.phone,
+          },
+          billingAddress: {
+            firstName: order.billingAddress.firstName,
+            lastName: order.billingAddress.lastName,
+            company: order.billingAddress.company,
+            address1: order.billingAddress.address1,
+            address2: order.billingAddress.address2,
+            city: order.billingAddress.city,
+            state: order.billingAddress.state,
+            zipCode: order.billingAddress.zipCode,
+            country: order.billingAddress.country,
+            phone: order.billingAddress.phone,
+          },
+        }} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -533,31 +602,22 @@ export default async function OrderDetailPage({
             </div>
           )}
 
-          {/* Notes - Always show section */}
+          {/* Notes - Editable admin notes */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-black mb-4">Notes</h2>
-            {order.customerNotes ? (
-              <div className="mb-4">
-                <div className="text-sm font-medium text-gray-700 mb-1">Customer Notes</div>
-                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                  {order.customerNotes}
-                </div>
-              </div>
-            ) : (
-              <div className="mb-4">
-                <div className="text-sm font-medium text-gray-700 mb-1">Customer Notes</div>
-                <div className="text-sm text-gray-400 italic">No notes from customer</div>
-              </div>
-            )}
-            {order.adminNotes && (
-              <div>
-                <div className="text-sm font-medium text-gray-700 mb-1">Admin Notes</div>
-                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                  {order.adminNotes}
-                </div>
-              </div>
-            )}
+            <AdminNotesEditor
+              orderId={order.id}
+              initialNotes={order.adminNotes}
+              customerNotes={order.customerNotes}
+            />
           </div>
+
+          {/* Email Customer */}
+          <EmailComposer
+            defaultEmail={order.user.email}
+            defaultName={order.user.name || undefined}
+            orderId={order.id}
+            compact
+          />
         </div>
       </div>
     </div>
