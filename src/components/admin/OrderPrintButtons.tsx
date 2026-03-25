@@ -36,14 +36,14 @@ interface OrderPrintProps {
       variantSku: string | null;
     }>;
     shippingAddress: {
-      firstName: string; lastName: string; company: string | null;
-      address1: string; address2: string | null;
-      city: string; state: string; zipCode: string; country: string; phone: string;
+      firstName: string | null; lastName: string | null; company: string | null;
+      address1: string | null; address2: string | null;
+      city: string | null; state: string | null; zipCode: string | null; country: string | null; phone: string | null;
     };
     billingAddress: {
-      firstName: string; lastName: string; company: string | null;
-      address1: string; address2: string | null;
-      city: string; state: string; zipCode: string; country: string; phone: string;
+      firstName: string | null; lastName: string | null; company: string | null;
+      address1: string | null; address2: string | null;
+      city: string | null; state: string | null; zipCode: string | null; country: string | null; phone: string | null;
     };
   };
 }
