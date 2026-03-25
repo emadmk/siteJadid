@@ -16,6 +16,7 @@ import {
 import { db } from '@/lib/db';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { ImpersonateButton } from '@/components/admin/ImpersonateButton';
+import { EmailComposer } from '@/components/admin/EmailComposer';
 
 async function getCustomer(id: string) {
   const customer = await db.user.findUnique({
@@ -434,6 +435,13 @@ export default async function CustomerDetailPage({
               </div>
             </div>
           </div>
+
+          {/* Email Customer */}
+          <EmailComposer
+            defaultEmail={customer.email}
+            defaultName={customer.name || undefined}
+            compact
+          />
 
           {/* Login as User */}
           {session?.user?.role === 'SUPER_ADMIN' && !['SUPER_ADMIN', 'ADMIN'].includes(customer.role) && (
