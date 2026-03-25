@@ -78,7 +78,7 @@ export default async function SupplierDetailPage({
 
   const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER'];
   if (!session || !adminRoles.includes(session.user.role)) {
-    redirect('/');
+    redirect('/admin');
   }
 
   const supplier = await getSupplier(params.id);

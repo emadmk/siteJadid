@@ -33,7 +33,7 @@ export default async function BundlesPage() {
 
   const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'CONTENT_MANAGER'];
   if (!session || !adminRoles.includes(session.user.role)) {
-    redirect('/');
+    redirect('/admin');
   }
 
   const bundles = await getBundles();

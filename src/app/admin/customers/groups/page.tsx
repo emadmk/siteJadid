@@ -27,7 +27,7 @@ export default async function CustomerGroupsPage() {
 
   const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'];
   if (!session || !adminRoles.includes(session.user.role)) {
-    redirect('/');
+    redirect('/admin');
   }
 
   const groups = await getCustomerGroups();

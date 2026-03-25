@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -39,7 +41,7 @@ export default async function SuppliersPage({
 
   const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER'];
   if (!session || !adminRoles.includes(session.user.role)) {
-    redirect('/');
+    redirect('/admin');
   }
 
   const { suppliers, stats } = await getSuppliers(searchParams.status);

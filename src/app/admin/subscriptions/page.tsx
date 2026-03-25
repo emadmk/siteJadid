@@ -32,7 +32,7 @@ export default async function SubscriptionsPage() {
 
   const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'CUSTOMER_SERVICE'];
   if (!session || !adminRoles.includes(session.user.role)) {
-    redirect('/');
+    redirect('/admin');
   }
 
   const subscriptions = await getSubscriptions();

@@ -27,7 +27,7 @@ export default async function TaxExemptionsPage() {
 
   const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'];
   if (!session || !adminRoles.includes(session.user.role)) {
-    redirect('/');
+    redirect('/admin');
   }
 
   const exemptions = await getTaxExemptions();

@@ -13,6 +13,7 @@ enum UserRole {
   CUSTOMER_SERVICE = 'CUSTOMER_SERVICE',
   WAREHOUSE_MANAGER = 'WAREHOUSE_MANAGER',
   MARKETING_MANAGER = 'MARKETING_MANAGER',
+  CONTENT_MANAGER = 'CONTENT_MANAGER',
   CUSTOMER = 'CUSTOMER',
   B2B_CUSTOMER = 'B2B_CUSTOMER',
   GSA_CUSTOMER = 'GSA_CUSTOMER',
@@ -165,7 +166,7 @@ export const authOptions: NextAuthOptions = {
 export const permissions = {
   // Admin permissions
   canAccessAdminDashboard: (role: UserRole) => {
-    return [UserRole.SUPER_ADMIN, UserRole.ADMIN].includes(role);
+    return [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.CUSTOMER_SERVICE, UserRole.WAREHOUSE_MANAGER, UserRole.MARKETING_MANAGER, UserRole.CONTENT_MANAGER].includes(role);
   },
 
   canManageUsers: (role: UserRole) => {

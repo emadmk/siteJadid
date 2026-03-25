@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -54,7 +56,7 @@ export default async function BackordersListPage() {
     redirect('/auth/signin?callbackUrl=/admin/backorders-list');
   }
 
-  const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER'];
+  const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'WAREHOUSE_MANAGER', 'CUSTOMER_SERVICE'];
   if (!adminRoles.includes(session.user.role)) {
     redirect('/admin');
   }

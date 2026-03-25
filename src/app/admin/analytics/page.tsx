@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { db } from '@/lib/db';
 import { TrendingUp, DollarSign, Users, Package } from 'lucide-react';
 

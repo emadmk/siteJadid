@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Eye, Search, Download, Filter } from 'lucide-react';
@@ -5,6 +7,7 @@ import { db } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DeleteOrderButton } from '@/components/admin/DeleteOrderButton';
+import { isAdminRole } from '@/lib/permissions';
 
 async function getOrders(searchParams: {
   status?: string;
@@ -62,6 +65,12 @@ export default async function OrdersPage({
   searchParams: { status?: string; search?: string; accountType?: string };
 }) {
   const session = await getServerSession(authOptions);
+
+  if (!session?.user?.role || !isAdminRole(session.user.role as any)) {
+    const { redirect } = await import('next/navigation');
+    redirect('/auth/signin?callbackUrl=/admin/orders');
+  }
+
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
   const orders = await getOrders(searchParams);
 

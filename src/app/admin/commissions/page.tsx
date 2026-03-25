@@ -51,7 +51,7 @@ export default async function CommissionsPage() {
 
   const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTANT'];
   if (!session || !adminRoles.includes(session.user.role)) {
-    redirect('/');
+    redirect('/admin');
   }
 
   const { commissions, salesReps } = await getCommissions();

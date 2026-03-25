@@ -24,7 +24,7 @@ export default async function ProductAttributesPage() {
 
   const adminRoles = ['SUPER_ADMIN', 'ADMIN', 'CONTENT_MANAGER'];
   if (!session || !adminRoles.includes(session.user.role)) {
-    redirect('/');
+    redirect('/admin');
   }
 
   const attributes = await getAttributes();
