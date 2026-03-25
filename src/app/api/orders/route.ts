@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       couponCode,
     } = body;
 
-    // Get cart with product details including supplier, warehouse, category, brand
+    // Get cart with product details including supplier, warehouse, category, brand, and variant
     const cart = await db.cart.findFirst({
       where: { userId: session.user.id },
       include: {
@@ -151,6 +151,24 @@ export async function POST(request: NextRequest) {
                 brand: {
                   select: { id: true, name: true },
                 },
+              },
+            },
+            variant: {
+              select: {
+                id: true,
+                sku: true,
+                name: true,
+                color: true,
+                size: true,
+                type: true,
+                material: true,
+                basePrice: true,
+                salePrice: true,
+                wholesalePrice: true,
+                gsaPrice: true,
+                governmentPrice: true,
+                volumeBuyerPrice: true,
+                stockQuantity: true,
               },
             },
           },
@@ -242,13 +260,27 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Build variant display name from variant attributes
+      let variantDisplayName: string | null = null;
+      if (item.variant) {
+        const parts: string[] = [];
+        if (item.variant.color) parts.push(item.variant.color);
+        if (item.variant.size) parts.push(`Size: ${item.variant.size}`);
+        if (item.variant.type) parts.push(item.variant.type);
+        if (item.variant.material) parts.push(item.variant.material);
+        variantDisplayName = parts.length > 0 ? parts.join(', ') : item.variant.name;
+      }
+
       return {
         productId: item.productId,
-        sku: item.product.sku,
+        sku: item.variant?.sku || item.product.sku,
         name: item.product.name,
         quantity: item.quantity,
         price,
         total: itemTotal,
+        variantId: item.variantId || null,
+        variantSku: item.variant?.sku || null,
+        variantName: variantDisplayName || null,
         supplierId: item.product.defaultSupplierId || null,
         warehouseId: item.product.defaultWarehouseId || null,
         stockSource,
@@ -439,7 +471,7 @@ export async function POST(request: NextRequest) {
         where: { cartId: cart.id },
       });
 
-      // Update inventory
+      // Update inventory (both product and variant stock)
       for (const item of cart.items) {
         await tx.product.update({
           where: { id: item.productId },
@@ -449,6 +481,18 @@ export async function POST(request: NextRequest) {
             },
           },
         });
+
+        // Also decrement variant stock if applicable
+        if (item.variantId) {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: {
+              stockQuantity: {
+                decrement: item.quantity,
+              },
+            },
+          });
+        }
       }
 
       return newOrder;
@@ -467,8 +511,8 @@ export async function POST(request: NextRequest) {
         userName: orderUser.name || 'Customer',
         orderNumber: order.orderNumber,
         items: order.items.map((item: any) => ({
-          name: item.name,
-          sku: item.sku || '',
+          name: item.variantName ? `${item.name} (${item.variantName})` : item.name,
+          sku: item.variantSku || item.sku || '',
           quantity: item.quantity,
           price: Number(item.price),
           image: item.product?.images?.[0] ? `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || ''}${item.product.images[0]}` : undefined,

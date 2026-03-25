@@ -49,6 +49,17 @@ async function getOrder(id: string) {
               },
             },
           },
+          variant: {
+            select: {
+              id: true,
+              sku: true,
+              name: true,
+              color: true,
+              size: true,
+              type: true,
+              material: true,
+            },
+          },
           supplier: {
             select: {
               id: true,
@@ -176,10 +187,39 @@ export default async function OrderDetailPage({
                       <Link href={`/products/${item.product.slug}`} className="font-medium text-black hover:text-safety-green-600 line-clamp-1">
                         {item.name}
                       </Link>
-                      {item.variantName && (
-                        <div className="text-sm text-safety-green-600 font-medium mt-0.5">{item.variantName}</div>
+                      {/* Variant details */}
+                      {(item.variantName || item.variant) && (
+                        <div className="mt-1 space-y-0.5">
+                          {item.variantName && (
+                            <div className="text-sm text-safety-green-600 font-medium">{item.variantName}</div>
+                          )}
+                          {item.variant && (
+                            <div className="flex flex-wrap gap-2 text-xs">
+                              {item.variant.color && (
+                                <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                                  Color: {item.variant.color}
+                                </span>
+                              )}
+                              {item.variant.size && (
+                                <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                                  Size: {item.variant.size}
+                                </span>
+                              )}
+                              {item.variant.type && (
+                                <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                                  Type: {item.variant.type}
+                                </span>
+                              )}
+                              {item.variant.material && (
+                                <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                                  Material: {item.variant.material}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       )}
-                      <div className="text-sm text-gray-600 mt-1">SKU: {item.variantSku || item.sku}</div>
+                      <div className="text-sm text-gray-600 mt-1">SKU: {item.variant?.sku || item.variantSku || item.sku}</div>
                       <div className="text-sm text-gray-600 mt-1">
                         Quantity: {item.quantity} × ${Number(item.price).toFixed(2)}
                       </div>
@@ -258,48 +298,69 @@ export default async function OrderDetailPage({
             </div>
           </div>
 
-          {/* Shipping Information */}
-          {order.trackingNumber && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <Truck className="w-5 h-5 text-safety-green-600" />
-                <h2 className="text-xl font-bold text-black">Shipping Information</h2>
-              </div>
+          {/* Shipping Information - Always show */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Truck className="w-5 h-5 text-safety-green-600" />
+              <h2 className="text-xl font-bold text-black">Shipping Information</h2>
+            </div>
 
-              <div className="space-y-3">
+            <div className="space-y-3">
+              <div>
+                <div className="text-sm text-gray-600">Shipping Method</div>
+                <div className="font-medium text-black">{order.shippingMethod || 'Not specified'}</div>
+              </div>
+              {order.shippingCarrier && (
+                <div>
+                  <div className="text-sm text-gray-600">Carrier</div>
+                  <div className="font-medium text-black">{order.shippingCarrier}</div>
+                </div>
+              )}
+              <div>
+                <div className="text-sm text-gray-600">Shipping Cost</div>
+                <div className="font-medium text-black">${Number(order.shipping || order.shippingCost || 0).toFixed(2)}</div>
+              </div>
+              {order.trackingNumber ? (
                 <div>
                   <div className="text-sm text-gray-600">Tracking Number</div>
-                  <div className="font-medium text-black">{order.trackingNumber}</div>
+                  <div className="font-medium text-blue-600">{order.trackingNumber}</div>
                 </div>
-                {order.shippingCarrier && (
-                  <div>
-                    <div className="text-sm text-gray-600">Carrier</div>
-                    <div className="font-medium text-black">{order.shippingCarrier}</div>
+              ) : (
+                <div>
+                  <div className="text-sm text-gray-600">Tracking Number</div>
+                  <div className="text-sm text-gray-400 italic">Not yet assigned</div>
+                </div>
+              )}
+              {order.shippedAt && (
+                <div>
+                  <div className="text-sm text-gray-600">Shipped At</div>
+                  <div className="font-medium text-black">
+                    {new Date(order.shippedAt).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </div>
-                )}
-                {order.shippingMethod && (
-                  <div>
-                    <div className="text-sm text-gray-600">Shipping Method</div>
-                    <div className="font-medium text-black">{order.shippingMethod}</div>
+                </div>
+              )}
+              {order.deliveredAt && (
+                <div>
+                  <div className="text-sm text-gray-600">Delivered At</div>
+                  <div className="font-medium text-safety-green-600">
+                    {new Date(order.deliveredAt).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </div>
-                )}
-                {order.shippedAt && (
-                  <div>
-                    <div className="text-sm text-gray-600">Shipped At</div>
-                    <div className="font-medium text-black">
-                      {new Date(order.shippedAt).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Order History */}
           {order.statusHistory.length > 0 && (
@@ -449,28 +510,52 @@ export default async function OrderDetailPage({
             </div>
           </div>
 
-          {/* Additional Notes */}
-          {(order.customerNotes || order.adminNotes) && (
+          {/* B2B / GSA Details */}
+          {(order.purchaseOrderNumber || order.gsaContractNumber) && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-bold text-black mb-4">Notes</h2>
-              {order.customerNotes && (
-                <div className="mb-4">
-                  <div className="text-sm font-medium text-gray-700 mb-1">Customer Notes</div>
-                  <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                    {order.customerNotes}
+              <h2 className="text-lg font-bold text-black mb-4">B2B / GSA Details</h2>
+              <div className="space-y-3">
+                {order.purchaseOrderNumber && (
+                  <div>
+                    <div className="text-sm text-gray-600">Purchase Order #</div>
+                    <div className="font-medium text-black">{order.purchaseOrderNumber}</div>
                   </div>
-                </div>
-              )}
-              {order.adminNotes && (
-                <div>
-                  <div className="text-sm font-medium text-gray-700 mb-1">Admin Notes</div>
-                  <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                    {order.adminNotes}
+                )}
+                {order.gsaContractNumber && (
+                  <div>
+                    <div className="text-sm text-gray-600">GSA Contract #</div>
+                    <div className="font-medium text-black">{order.gsaContractNumber}</div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
+
+          {/* Notes - Always show section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-bold text-black mb-4">Notes</h2>
+            {order.customerNotes ? (
+              <div className="mb-4">
+                <div className="text-sm font-medium text-gray-700 mb-1">Customer Notes</div>
+                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                  {order.customerNotes}
+                </div>
+              </div>
+            ) : (
+              <div className="mb-4">
+                <div className="text-sm font-medium text-gray-700 mb-1">Customer Notes</div>
+                <div className="text-sm text-gray-400 italic">No notes from customer</div>
+              </div>
+            )}
+            {order.adminNotes && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 mb-1">Admin Notes</div>
+                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                  {order.adminNotes}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
