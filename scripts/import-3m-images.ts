@@ -63,11 +63,16 @@ async function main() {
   console.log(`Parsed ${skuImageMap.size} unique SKUs from filenames\n`);
 
   // 4. Match SKUs with products in database
+  // SKUs in DB have "3M-" prefix (e.g., "3M-7000000318"), image files are just the number
   const skus = Array.from(skuImageMap.keys());
+  const prefixedSkus = skus.map(s => `3M-${s}`);
 
   const products = await db.product.findMany({
     where: {
-      sku: { in: skus },
+      OR: [
+        { sku: { in: skus } },
+        { sku: { in: prefixedSkus } },
+      ],
     },
     select: {
       id: true,
@@ -85,12 +90,27 @@ async function main() {
 
   console.log(`Matched ${products.length} products out of ${skus.length} SKUs\n`);
 
+  // Build a map from product SKU (with or without prefix) to the image SKU key
+  const productToImageSku = new Map<string, string>();
+  for (const product of products) {
+    // Try exact match first, then without "3M-" prefix
+    if (skuImageMap.has(product.sku)) {
+      productToImageSku.set(product.id, product.sku);
+    } else {
+      const stripped = product.sku.replace(/^3M-/i, '');
+      if (skuImageMap.has(stripped)) {
+        productToImageSku.set(product.id, stripped);
+      }
+    }
+  }
+
   // Log unmatched SKUs
-  const matchedSkus = new Set(products.map(p => p.sku));
-  const unmatchedSkus = skus.filter(s => !matchedSkus.has(s));
+  const matchedImageSkus = new Set(productToImageSku.values());
+  const unmatchedSkus = skus.filter(s => !matchedImageSkus.has(s));
   if (unmatchedSkus.length > 0) {
-    console.log(`Unmatched SKUs (${unmatchedSkus.length}):`);
-    unmatchedSkus.forEach(s => console.log(`  - ${s}`));
+    console.log(`Unmatched SKUs (${unmatchedSkus.length}) - first 20:`);
+    unmatchedSkus.slice(0, 20).forEach(s => console.log(`  - ${s}`));
+    if (unmatchedSkus.length > 20) console.log(`  ... and ${unmatchedSkus.length - 20} more`);
     console.log('');
   }
 
@@ -100,7 +120,9 @@ async function main() {
   let errors = 0;
 
   for (const product of products) {
-    const files = skuImageMap.get(product.sku);
+    const imageSku = productToImageSku.get(product.id);
+    if (!imageSku) continue;
+    const files = skuImageMap.get(imageSku);
     if (!files || files.length === 0) continue;
 
     const brandSlug = product.brand?.slug || product.brand?.name?.toLowerCase().replace(/\s+/g, '-') || '3m';
