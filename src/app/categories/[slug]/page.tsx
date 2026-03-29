@@ -821,7 +821,7 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
                       onChange={(e) => {
                         const newValue = e.target.checked;
                         setTaaApproved(newValue);
-                        fetchData(1, true, newValue);
+                        fetchData(1, true, { taaApproved: newValue });
                       }}
                       className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                     />
