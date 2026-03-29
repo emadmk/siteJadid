@@ -147,7 +147,7 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
   }, []);
 
   // Fetch category and products
-  const fetchData = useCallback(async (page: number, reset: boolean = false, overrideTaaApproved?: boolean) => {
+  const fetchData = useCallback(async (page: number, reset: boolean = false, overrides?: { taaApproved?: boolean; brand?: string }) => {
     if (page === 1) {
       setLoading(true);
     } else {
@@ -172,11 +172,12 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
       });
 
       if (searchQuery) queryParams.set('search', searchQuery);
-      if (selectedBrand) queryParams.set('brand', selectedBrand);
+      const effectiveBrand = overrides?.brand !== undefined ? overrides.brand : selectedBrand;
+      if (effectiveBrand) queryParams.set('brand', effectiveBrand);
       if (priceRange.min) queryParams.set('minPrice', priceRange.min);
       if (priceRange.max) queryParams.set('maxPrice', priceRange.max);
       // Use override value if provided, otherwise use state
-      const taaValue = overrideTaaApproved !== undefined ? overrideTaaApproved : taaApproved;
+      const taaValue = overrides?.taaApproved !== undefined ? overrides.taaApproved : taaApproved;
       if (taaValue) queryParams.set('taaApproved', 'true');
 
       // Add smart filters
@@ -568,7 +569,7 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
                       <button
                         onClick={() => {
                           setSelectedBrand('');
-                          setTimeout(() => fetchData(1, true), 0);
+                          fetchData(1, true, { brand: '' });
                         }}
                         className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
                           !selectedBrand
@@ -583,7 +584,7 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
                           key={brand.id}
                           onClick={() => {
                             setSelectedBrand(brand.slug);
-                            setTimeout(() => fetchData(1, true), 0);
+                            fetchData(1, true, { brand: brand.slug });
                           }}
                           className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
                             selectedBrand === brand.slug
@@ -636,7 +637,7 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
                       onChange={(e) => {
                         const newValue = e.target.checked;
                         setTaaApproved(newValue);
-                        fetchData(1, true, newValue);
+                        fetchData(1, true, { taaApproved: newValue });
                       }}
                       className="w-5 h-5 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
                     />

@@ -4266,3 +4266,21 @@ model SearchQuery {
   @@index([userId])
   @@index([createdAt])
 }
+
+// ============================================
+// NEWSLETTER SUBSCRIPTIONS
+// ============================================
+
+model NewsletterSubscriber {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  status         String   @default("ACTIVE") // ACTIVE, UNSUBSCRIBED
+  subscribedAt   DateTime @default(now())
+  unsubscribedAt DateTime?
+  source         String   @default("WEBSITE") // WEBSITE, IMPORT, ADMIN
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+}

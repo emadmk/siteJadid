@@ -197,7 +197,7 @@ function ProductsListingInner({
   }, [searchParams]);
 
   // Fetch products
-  const fetchProducts = useCallback(async (page: number, reset: boolean = false) => {
+  const fetchProducts = useCallback(async (page: number, reset: boolean = false, overrides?: { brand?: string; category?: string }) => {
     if (page === 1 && reset) {
       setLoading(true);
     } else {
@@ -209,9 +209,12 @@ function ProductsListingInner({
       params.set('page', page.toString());
       params.set('limit', '20');
 
+      const effectiveBrand = overrides?.brand !== undefined ? overrides.brand : selectedBrand;
+      const effectiveCategory = overrides?.category !== undefined ? overrides.category : selectedCategory;
+
       if (searchQuery) params.set('search', searchQuery);
-      if (selectedCategory) params.set('category', selectedCategory);
-      if (selectedBrand) params.set('brand', selectedBrand);
+      if (effectiveCategory) params.set('category', effectiveCategory);
+      if (effectiveBrand) params.set('brand', effectiveBrand);
       if (priceRange.min) params.set('minPrice', priceRange.min);
       if (priceRange.max) params.set('maxPrice', priceRange.max);
       if (sortBy) params.set('sort', sortBy);
@@ -294,37 +297,33 @@ function ProductsListingInner({
   const handleCategoryChange = (slug: string) => {
     setSelectedCategory(slug);
     setCurrentPage(1);
-    setTimeout(() => {
-      fetchProducts(1, true);
-      updateURL({
-        search: searchQuery,
-        category: slug,
-        brand: selectedBrand,
-        minPrice: priceRange.min,
-        maxPrice: priceRange.max,
-        sort: sortBy,
-        featured: featured ? 'true' : '',
-        taaApproved: taaApproved ? 'true' : '',
-      });
-    }, 0);
+    fetchProducts(1, true, { category: slug });
+    updateURL({
+      search: searchQuery,
+      category: slug,
+      brand: selectedBrand,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      sort: sortBy,
+      featured: featured ? 'true' : '',
+      taaApproved: taaApproved ? 'true' : '',
+    });
   };
 
   const handleBrandChange = (slug: string) => {
     setSelectedBrand(slug);
     setCurrentPage(1);
-    setTimeout(() => {
-      fetchProducts(1, true);
-      updateURL({
-        search: searchQuery,
-        category: selectedCategory,
-        brand: slug,
-        minPrice: priceRange.min,
-        maxPrice: priceRange.max,
-        sort: sortBy,
-        featured: featured ? 'true' : '',
-        taaApproved: taaApproved ? 'true' : '',
-      });
-    }, 0);
+    fetchProducts(1, true, { brand: slug });
+    updateURL({
+      search: searchQuery,
+      category: selectedCategory,
+      brand: slug,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      sort: sortBy,
+      featured: featured ? 'true' : '',
+      taaApproved: taaApproved ? 'true' : '',
+    });
   };
 
   const handleSortChange = (value: string) => {
