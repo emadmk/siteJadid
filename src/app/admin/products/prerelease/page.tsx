@@ -7,7 +7,8 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Package, Search, Eye, Pencil, Rocket, ChevronLeft, ChevronRight,
-  AlertCircle, CheckCircle2, Loader2, FolderOpen, X, Filter, Shield
+  AlertCircle, CheckCircle2, Loader2, FolderOpen, X, Filter, Shield,
+  CheckSquare, Square, XCircle
 } from 'lucide-react';
 
 interface Product {
@@ -29,7 +30,8 @@ interface Product {
 interface Category {
   id: string;
   name: string;
-  level: number;
+  slug: string;
+  parentId: string | null;
 }
 
 interface Brand {
@@ -44,6 +46,7 @@ export default function PreReleasePage() {
   // Read filters from URL search params
   const [products, setProducts] = useState<Product[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -54,6 +57,13 @@ export default function PreReleasePage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 50;
+
+  // Bulk selection state - persists across pages
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkCategoryId, setBulkCategoryId] = useState('');
+  const [bulkBrandId, setBulkBrandId] = useState('');
+  const [isReleasing, setIsReleasing] = useState(false);
+  const [releaseResult, setReleaseResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Update URL when filters change
   const updateURL = useCallback((overrides: Record<string, string> = {}) => {
@@ -126,10 +136,24 @@ export default function PreReleasePage() {
     }
   };
 
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/admin/categories?limit=500');
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     fetchProducts();
     fetchBrands();
+    fetchCategories();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Refetch when page changes (not on initial mount)
@@ -186,8 +210,185 @@ export default function PreReleasePage() {
 
   const hasActiveFilters = search || taaFilter || hasCategoryFilter || brandFilter;
 
+  // ---- Bulk selection helpers ----
+  const currentPageIds = products.map((p) => p.id);
+  const allCurrentPageSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedIds.has(id));
+  const someCurrentPageSelected = currentPageIds.some((id) => selectedIds.has(id));
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allCurrentPageSelected) {
+        // Deselect all on current page
+        currentPageIds.forEach((id) => next.delete(id));
+      } else {
+        // Select all on current page
+        currentPageIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setBulkCategoryId('');
+    setBulkBrandId('');
+    setReleaseResult(null);
+  };
+
+  const handleBulkRelease = async () => {
+    if (selectedIds.size === 0) return;
+    if (!bulkCategoryId) {
+      setReleaseResult({ type: 'error', message: 'Please select a category before releasing.' });
+      return;
+    }
+
+    setIsReleasing(true);
+    setReleaseResult(null);
+
+    try {
+      const payload: any = {
+        productIds: Array.from(selectedIds),
+        categoryId: bulkCategoryId,
+      };
+      if (bulkBrandId) {
+        payload.brandId = bulkBrandId;
+      }
+
+      const res = await fetch('/api/admin/products/bulk-release', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setReleaseResult({ type: 'success', message: data.message || `Released ${data.affected} product(s).` });
+        // Clear selection and refresh
+        setSelectedIds(new Set());
+        setBulkCategoryId('');
+        setBulkBrandId('');
+        fetchProducts();
+      } else {
+        setReleaseResult({ type: 'error', message: data.message || 'Bulk release failed.' });
+      }
+    } catch (error) {
+      console.error('Bulk release error:', error);
+      setReleaseResult({ type: 'error', message: 'Network error during bulk release.' });
+    } finally {
+      setIsReleasing(false);
+    }
+  };
+
   return (
     <div className="p-8">
+      {/* Bulk Action Bar - sticky at top when items are selected */}
+      {selectedIds.size > 0 && (
+        <div className="sticky top-0 z-50 -mx-8 -mt-8 mb-4 bg-blue-600 text-white px-8 py-4 shadow-lg">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2 font-medium">
+              <CheckSquare className="w-5 h-5" />
+              <span>{selectedIds.size} product{selectedIds.size !== 1 ? 's' : ''} selected</span>
+            </div>
+
+            <div className="h-6 w-px bg-blue-400" />
+
+            {/* Category dropdown (required) */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-blue-100">Category *</label>
+              <select
+                value={bulkCategoryId}
+                onChange={(e) => setBulkCategoryId(e.target.value)}
+                className="px-3 py-1.5 rounded text-sm text-gray-900 bg-white border-0 focus:ring-2 focus:ring-blue-300 min-w-[200px]"
+              >
+                <option value="">Select category...</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Brand dropdown (optional) */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-blue-100">Brand</label>
+              <select
+                value={bulkBrandId}
+                onChange={(e) => setBulkBrandId(e.target.value)}
+                className="px-3 py-1.5 rounded text-sm text-gray-900 bg-white border-0 focus:ring-2 focus:ring-blue-300 min-w-[160px]"
+              >
+                <option value="">Keep existing</option>
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="h-6 w-px bg-blue-400" />
+
+            {/* Release button */}
+            <Button
+              onClick={handleBulkRelease}
+              disabled={isReleasing}
+              className="bg-green-500 hover:bg-green-600 text-white border-0"
+            >
+              {isReleasing ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Releasing...
+                </>
+              ) : (
+                <>
+                  <Rocket className="w-4 h-4 mr-2" />
+                  Release Selected
+                </>
+              )}
+            </Button>
+
+            {/* Clear selection */}
+            <button
+              onClick={clearSelection}
+              className="text-blue-100 hover:text-white text-sm flex items-center gap-1 ml-auto"
+            >
+              <XCircle className="w-4 h-4" />
+              Clear Selection
+            </button>
+          </div>
+
+          {/* Release result message */}
+          {releaseResult && (
+            <div className={`mt-3 text-sm px-3 py-2 rounded ${
+              releaseResult.type === 'success'
+                ? 'bg-green-500/20 text-green-100'
+                : 'bg-red-500/20 text-red-100'
+            }`}>
+              {releaseResult.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 inline mr-1" />
+              ) : (
+                <AlertCircle className="w-4 h-4 inline mr-1" />
+              )}
+              {releaseResult.message}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -355,6 +556,26 @@ export default function PreReleasePage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
+                    <th className="px-4 py-3 text-center w-10">
+                      <button
+                        onClick={toggleSelectAll}
+                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                        title={allCurrentPageSelected ? 'Deselect all on this page' : 'Select all on this page'}
+                      >
+                        {allCurrentPageSelected ? (
+                          <CheckSquare className="w-5 h-5 text-blue-600" />
+                        ) : someCurrentPageSelected ? (
+                          <div className="relative">
+                            <Square className="w-5 h-5 text-blue-400" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-2.5 h-0.5 bg-blue-400 rounded" />
+                            </div>
+                          </div>
+                        ) : (
+                          <Square className="w-5 h-5" />
+                        )}
+                      </button>
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">
                       Product
                     </th>
@@ -379,86 +600,104 @@ export default function PreReleasePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                            {product.images?.[0] ? (
-                              <Image
-                                src={product.images[0]}
-                                alt={product.name}
-                                width={48}
-                                height={48}
-                                className="object-contain"
-                                unoptimized
-                              />
+                  {products.map((product) => {
+                    const isSelected = selectedIds.has(product.id);
+                    return (
+                      <tr
+                        key={product.id}
+                        className={`hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
+                      >
+                        <td className="px-4 py-4 text-center">
+                          <button
+                            onClick={() => toggleSelectOne(product.id)}
+                            className="focus:outline-none"
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-5 h-5 text-blue-600" />
                             ) : (
-                              <Package className="w-6 h-6 text-gray-400" />
+                              <Square className="w-5 h-5 text-gray-400 hover:text-gray-600" />
                             )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="font-medium text-gray-900 truncate max-w-xs">
-                              {product.name}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                              {product.images?.[0] ? (
+                                <Image
+                                  src={product.images[0]}
+                                  alt={product.name}
+                                  width={48}
+                                  height={48}
+                                  className="object-contain"
+                                  unoptimized
+                                />
+                              ) : (
+                                <Package className="w-6 h-6 text-gray-400" />
+                              )}
                             </div>
-                            {product.brand && (
-                              <div className="text-sm text-gray-500">{product.brand.name}</div>
-                            )}
+                            <div className="min-w-0">
+                              <div className="font-medium text-gray-900 truncate max-w-xs">
+                                {product.name}
+                              </div>
+                              {product.brand && (
+                                <div className="text-sm text-gray-500">{product.brand.name}</div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-mono text-sm text-gray-600">{product.sku}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {product.originalCategory ? (
-                          <div className="flex items-center gap-2">
-                            <FolderOpen className="w-4 h-4 text-orange-500" />
-                            <span className="text-sm text-orange-700 bg-orange-50 px-2 py-1 rounded">
-                              {product.originalCategory}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-mono text-sm text-gray-600">{product.sku}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {product.originalCategory ? (
+                            <div className="flex items-center gap-2">
+                              <FolderOpen className="w-4 h-4 text-orange-500" />
+                              <span className="text-sm text-orange-700 bg-orange-50 px-2 py-1 rounded">
+                                {product.originalCategory}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">Not specified</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {product.category ? (
+                            <span className="text-sm text-safety-green-700 bg-safety-green-50 px-2 py-1 rounded">
+                              {product.category.name}
                             </span>
+                          ) : (
+                            <span className="text-red-500 text-sm flex items-center gap-1">
+                              <AlertCircle className="w-4 h-4" />
+                              Not assigned
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-medium">${Number(product.basePrice).toFixed(2)}</span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {product.taaApproved ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded-full">
+                              <Shield className="w-3 h-3" />
+                              TAA
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link href={`/admin/products/prerelease/${product.id}/edit`}>
+                              <Button variant="outline" size="sm" className="border-gray-300">
+                                <Pencil className="w-4 h-4 mr-1" />
+                                Edit & Release
+                              </Button>
+                            </Link>
                           </div>
-                        ) : (
-                          <span className="text-gray-400 text-sm">Not specified</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {product.category ? (
-                          <span className="text-sm text-safety-green-700 bg-safety-green-50 px-2 py-1 rounded">
-                            {product.category.name}
-                          </span>
-                        ) : (
-                          <span className="text-red-500 text-sm flex items-center gap-1">
-                            <AlertCircle className="w-4 h-4" />
-                            Not assigned
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-medium">${Number(product.basePrice).toFixed(2)}</span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        {product.taaApproved ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded-full">
-                            <Shield className="w-3 h-3" />
-                            TAA
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 text-xs">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/admin/products/prerelease/${product.id}/edit`}>
-                            <Button variant="outline" size="sm" className="border-gray-300">
-                              <Pencil className="w-4 h-4 mr-1" />
-                              Edit & Release
-                            </Button>
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -468,6 +707,11 @@ export default function PreReleasePage() {
               <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
                 <div className="text-sm text-gray-600">
                   Showing {((page - 1) * pageSize) + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} products
+                  {selectedIds.size > 0 && (
+                    <span className="ml-2 text-blue-600 font-medium">
+                      ({selectedIds.size} selected across all pages)
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
