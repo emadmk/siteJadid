@@ -126,6 +126,7 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [sortBy, setSortBy] = useState('price-desc');
   const [taaApproved, setTaaApproved] = useState(false);
@@ -147,7 +148,7 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
   }, []);
 
   // Fetch category and products
-  const fetchData = useCallback(async (page: number, reset: boolean = false, overrides?: { taaApproved?: boolean; brand?: string }) => {
+  const fetchData = useCallback(async (page: number, reset: boolean = false, overrides?: { taaApproved?: boolean; brand?: string; subcategories?: string[] }) => {
     if (page === 1) {
       setLoading(true);
     } else {
@@ -186,6 +187,12 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
         queryParams.set('filters', JSON.stringify(activeSmartFilters));
       }
 
+      // Add subcategory filter
+      const effectiveSubs = overrides?.subcategories !== undefined ? overrides.subcategories : selectedSubcategories;
+      if (effectiveSubs.length > 0) {
+        queryParams.set('subcategories', effectiveSubs.join(','));
+      }
+
       const response = await fetch(`/api/storefront/categories/${params.slug}?${queryParams}`);
 
       if (!response.ok) {
@@ -220,12 +227,13 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [params.slug, sortBy, searchQuery, selectedBrand, priceRange, taaApproved, activeSmartFilters, router]);
+  }, [params.slug, sortBy, searchQuery, selectedBrand, selectedSubcategories, priceRange, taaApproved, activeSmartFilters, router]);
 
   // Initial fetch - use page from URL if available (for back button support)
   useEffect(() => {
+    setSelectedSubcategories([]);
     const pageFromUrl = parseInt(searchParams.get('page') || '1');
-    fetchData(pageFromUrl, true);
+    fetchData(pageFromUrl, true, { subcategories: [] });
   }, [params.slug]);
 
   // Handle browser back/forward navigation
@@ -301,12 +309,13 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedBrand('');
+    setSelectedSubcategories([]);
     setPriceRange({ min: '', max: '' });
     setSortBy('newest');
     setTaaApproved(false);
     setActiveSmartFilters({});
     setCurrentPage(1);
-    fetchData(1, true);
+    fetchData(1, true, { subcategories: [] });
     setShowMobileFilters(false);
   };
 
@@ -335,7 +344,7 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
     }));
   };
 
-  const hasActiveFilters = searchQuery || selectedBrand || priceRange.min || priceRange.max || taaApproved ||
+  const hasActiveFilters = searchQuery || selectedBrand || selectedSubcategories.length > 0 || priceRange.min || priceRange.max || taaApproved ||
     Object.values(activeSmartFilters).some(arr => arr.length > 0);
 
   if (loading) {
@@ -560,6 +569,38 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   </div>
                 </div>
+
+                {/* Subcategories Filter */}
+                {category.children && category.children.length > 0 && (
+                  <div className="border-t border-gray-100 pt-4">
+                    <h3 className="text-sm font-medium text-gray-900 mb-3">Subcategories</h3>
+                    <div className="space-y-1 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
+                      {category.children.map((child) => (
+                        <label
+                          key={child.id}
+                          className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedSubcategories.includes(child.id)}
+                            onChange={() => {
+                              const newSubs = selectedSubcategories.includes(child.id)
+                                ? selectedSubcategories.filter(id => id !== child.id)
+                                : [...selectedSubcategories, child.id];
+                              setSelectedSubcategories(newSubs);
+                              fetchData(1, true, { subcategories: newSubs });
+                            }}
+                            className="w-4 h-4 text-safety-green-600 border-gray-300 rounded focus:ring-safety-green-500 focus:ring-offset-0"
+                          />
+                          <div className="flex items-center justify-between flex-1">
+                            <span className="text-sm text-gray-700">{child.name}</span>
+                            <span className="text-xs text-gray-400">{child._count?.products || 0}</span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Brands */}
                 {brands && brands.length > 0 && (

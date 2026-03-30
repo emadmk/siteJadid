@@ -1103,6 +1103,7 @@ export async function GET(
     const brand = searchParams.get('brand');
     const taaApproved = searchParams.get('taaApproved') === 'true';
     const smartFilters = searchParams.get('filters'); // JSON string of active smart filters
+    const subcategories = searchParams.get('subcategories'); // Comma-separated subcategory IDs
 
     // Find the category
     const category = await db.category.findUnique({
@@ -1212,11 +1213,28 @@ export async function GET(
     // Sort children by product count (most products first)
     childrenWithTotals.sort((a, b) => b._count.products - a._count.products);
 
+    // If subcategory filter is active, narrow down to those subcategories and their descendants
+    let filteredCategoryIds = categoryIds;
+    if (subcategories) {
+      const subIds = subcategories.split(',').filter(Boolean);
+      if (subIds.length > 0) {
+        const subWithDescendants: string[] = [];
+        for (const subId of subIds) {
+          subWithDescendants.push(subId);
+          const descendants = await getAllDescendantCategoryIds(subId);
+          subWithDescendants.push(...descendants);
+        }
+        // Intersect with categoryIds to ensure we only include valid descendants
+        const validSet = new Set(categoryIds);
+        filteredCategoryIds = subWithDescendants.filter(id => validSet.has(id));
+      }
+    }
+
     // Build product filter
     const where: any = {
       status: 'ACTIVE',
       stockQuantity: { gt: 0 },
-      categoryId: { in: categoryIds },
+      categoryId: { in: filteredCategoryIds },
     };
 
     if (minPrice || maxPrice) {
