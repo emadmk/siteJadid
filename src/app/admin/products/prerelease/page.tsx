@@ -53,9 +53,12 @@ export default function PreReleasePage() {
   const [taaFilter, setTaaFilter] = useState(searchParams.get('taaApproved') || '');
   const [hasCategoryFilter, setHasCategoryFilter] = useState(searchParams.get('hasCategory') || '');
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
+  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
+  const [originalCategoryFilter, setOriginalCategoryFilter] = useState(searchParams.get('originalCategory') || '');
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'));
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [originalCategories, setOriginalCategories] = useState<string[]>([]);
   const pageSize = 50;
 
   // Bulk selection state - persists across pages
@@ -73,6 +76,8 @@ export default function PreReleasePage() {
       taaApproved: taaFilter,
       hasCategory: hasCategoryFilter,
       brand: brandFilter,
+      category: categoryFilter,
+      originalCategory: originalCategoryFilter,
       page: page.toString(),
       ...overrides,
     };
@@ -87,26 +92,35 @@ export default function PreReleasePage() {
 
     const qs = params.toString();
     router.replace(`/admin/products/prerelease${qs ? '?' + qs : ''}`, { scroll: false });
-  }, [search, taaFilter, hasCategoryFilter, brandFilter, page, router]);
+  }, [search, taaFilter, hasCategoryFilter, brandFilter, categoryFilter, originalCategoryFilter, page, router]);
 
   // Fetch prerelease products
-  const fetchProducts = useCallback(async (currentPage?: number, currentSearch?: string, currentTaa?: string, currentHasCategory?: string, currentBrand?: string) => {
+  const fetchProducts = useCallback(async (overrides?: {
+    page?: number; search?: string; taaApproved?: string; hasCategory?: string;
+    brand?: string; category?: string; originalCategory?: string;
+  }) => {
     setIsLoading(true);
     try {
+      const p = overrides?.page ?? page;
+      const s = overrides?.search ?? search;
+      const t = overrides?.taaApproved ?? taaFilter;
+      const h = overrides?.hasCategory ?? hasCategoryFilter;
+      const b = overrides?.brand ?? brandFilter;
+      const c = overrides?.category ?? categoryFilter;
+      const oc = overrides?.originalCategory ?? originalCategoryFilter;
+
       const params = new URLSearchParams({
         status: 'PRERELEASE',
-        page: (currentPage ?? page).toString(),
-        pageSize: pageSize.toString(),
+        page: p.toString(),
+        limit: pageSize.toString(),
       });
-      const s = currentSearch ?? search;
-      const t = currentTaa ?? taaFilter;
-      const h = currentHasCategory ?? hasCategoryFilter;
-      const b = currentBrand ?? brandFilter;
 
       if (s) params.set('search', s);
       if (t) params.set('taaApproved', t);
       if (h) params.set('hasCategory', h);
       if (b) params.set('brand', b);
+      if (c) params.set('category', c);
+      if (oc) params.set('originalCategory', oc);
 
       const res = await fetch(`/api/admin/products?${params}`);
       if (res.ok) {
@@ -121,7 +135,7 @@ export default function PreReleasePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, search, taaFilter, hasCategoryFilter, brandFilter]);
+  }, [page, search, taaFilter, hasCategoryFilter, brandFilter, categoryFilter, originalCategoryFilter]);
 
   // Fetch brands
   const fetchBrands = async () => {
@@ -149,53 +163,76 @@ export default function PreReleasePage() {
     }
   };
 
+  // Fetch distinct original categories for filter
+  const fetchOriginalCategories = async () => {
+    try {
+      const res = await fetch('/api/admin/products?status=PRERELEASE&limit=5000');
+      if (res.ok) {
+        const data = await res.json();
+        const cats = new Set<string>();
+        (data.products || []).forEach((p: any) => {
+          if (p.originalCategory) cats.add(p.originalCategory);
+        });
+        setOriginalCategories(Array.from(cats).sort());
+      }
+    } catch {}
+  };
+
   // Initial load
   useEffect(() => {
     fetchProducts();
     fetchBrands();
     fetchCategories();
+    fetchOriginalCategories();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Refetch when page changes (not on initial mount)
   useEffect(() => {
-    fetchProducts();
+    fetchProducts({ page });
     updateURL();
   }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    fetchProducts(1, search, taaFilter, hasCategoryFilter, brandFilter);
+    fetchProducts({ page: 1 });
     updateURL({ page: '1' });
   };
 
   const applyFilter = (filterName: string, value: string) => {
     setPage(1);
-    let newTaa = taaFilter;
-    let newHasCategory = hasCategoryFilter;
-    let newBrand = brandFilter;
+    const overrides: Record<string, string> = { page: '1' };
+    const fetchOverrides: any = { page: 1 };
 
     if (filterName === 'taaApproved') {
-      newTaa = taaFilter === value ? '' : value;
-      setTaaFilter(newTaa);
+      const v = taaFilter === value ? '' : value;
+      setTaaFilter(v);
+      overrides.taaApproved = v;
+      fetchOverrides.taaApproved = v;
     } else if (filterName === 'hasCategory') {
-      newHasCategory = hasCategoryFilter === value ? '' : value;
-      setHasCategoryFilter(newHasCategory);
+      const v = hasCategoryFilter === value ? '' : value;
+      setHasCategoryFilter(v);
+      overrides.hasCategory = v;
+      fetchOverrides.hasCategory = v;
     } else if (filterName === 'brand') {
-      newBrand = brandFilter === value ? '' : value;
-      setBrandFilter(newBrand);
+      const v = brandFilter === value ? '' : value;
+      setBrandFilter(v);
+      overrides.brand = v;
+      fetchOverrides.brand = v;
+    } else if (filterName === 'category') {
+      const v = categoryFilter === value ? '' : value;
+      setCategoryFilter(v);
+      overrides.category = v;
+      fetchOverrides.category = v;
+    } else if (filterName === 'originalCategory') {
+      const v = originalCategoryFilter === value ? '' : value;
+      setOriginalCategoryFilter(v);
+      overrides.originalCategory = v;
+      fetchOverrides.originalCategory = v;
     }
 
-    fetchProducts(1, search, newTaa, newHasCategory, newBrand);
-
-    // Update URL
-    const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    if (newTaa) params.set('taaApproved', newTaa);
-    if (newHasCategory) params.set('hasCategory', newHasCategory);
-    if (newBrand) params.set('brand', newBrand);
-    const qs = params.toString();
-    router.replace(`/admin/products/prerelease${qs ? '?' + qs : ''}`, { scroll: false });
+    fetchProducts(fetchOverrides);
+    updateURL(overrides);
   };
 
   const clearAllFilters = () => {
@@ -203,12 +240,14 @@ export default function PreReleasePage() {
     setTaaFilter('');
     setHasCategoryFilter('');
     setBrandFilter('');
+    setCategoryFilter('');
+    setOriginalCategoryFilter('');
     setPage(1);
-    fetchProducts(1, '', '', '', '');
+    fetchProducts({ page: 1, search: '', taaApproved: '', hasCategory: '', brand: '', category: '', originalCategory: '' });
     router.replace('/admin/products/prerelease', { scroll: false });
   };
 
-  const hasActiveFilters = search || taaFilter || hasCategoryFilter || brandFilter;
+  const hasActiveFilters = search || taaFilter || hasCategoryFilter || brandFilter || categoryFilter || originalCategoryFilter;
 
   // ---- Bulk selection helpers ----
   const currentPageIds = products.map((p) => p.id);
@@ -506,6 +545,46 @@ export default function PreReleasePage() {
               </option>
             ))}
           </select>
+
+          <span className="text-gray-300">|</span>
+
+          {/* Assigned Category Filter */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => applyFilter('category', e.target.value)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+              categoryFilter
+                ? 'bg-safety-green-600 text-white border-safety-green-600'
+                : 'bg-white text-gray-700 border-gray-300'
+            }`}
+          >
+            <option value="">All Categories</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Original Category Filter */}
+          {originalCategories.length > 0 && (
+            <select
+              value={originalCategoryFilter}
+              onChange={(e) => applyFilter('originalCategory', e.target.value)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                originalCategoryFilter
+                  ? 'bg-orange-600 text-white border-orange-600'
+                  : 'bg-white text-gray-700 border-gray-300'
+              }`}
+            >
+              <option value="">Original Category</option>
+              {originalCategories.map(cat => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Clear All */}
           {hasActiveFilters && (

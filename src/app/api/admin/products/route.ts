@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = parseInt(searchParams.get('limit') || searchParams.get('pageSize') || '50');
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status');
     const brandId = searchParams.get('brand');
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const warehouseId = searchParams.get('warehouse');
     const taaApproved = searchParams.get('taaApproved');
     const hasCategory = searchParams.get('hasCategory');
+    const originalCategory = searchParams.get('originalCategory');
     const includeOrderCount = searchParams.get('includeOrderCount') === 'true';
 
     const skip = (page - 1) * limit;
@@ -81,6 +82,10 @@ export async function GET(request: NextRequest) {
       where.AND.push({ categoryId: { not: null } });
     } else if (hasCategory === 'false') {
       where.AND.push({ categoryId: null });
+    }
+
+    if (originalCategory) {
+      where.AND.push({ originalCategory: { contains: originalCategory, mode: 'insensitive' } });
     }
 
     // If no filters, remove the AND wrapper
