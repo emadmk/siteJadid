@@ -22,8 +22,8 @@ const http = require('http');
 // ============ CONFIG ============
 const EXCEL_FILE = process.env.EXCEL_FILE || 'Purchase_History_Enriched_20260317_123850 2.xlsx';
 const IMAGE_DIR = path.join(process.cwd(), 'public/uploads/grainger');
-const STATUS_FILE = path.join(process.cwd(), '/tmp/grainger-status.json');
-const ERROR_FILE = path.join(process.cwd(), '/tmp/grainger-errors.json');
+const STATUS_FILE = '/tmp/grainger-status.json';
+const ERROR_FILE = '/tmp/grainger-errors.json';
 const PID_FILE = '/tmp/grainger-download.pid';
 
 const CONCURRENT = 3;           // Concurrent downloads (keep low to avoid ban)
