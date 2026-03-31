@@ -749,6 +749,34 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   'hand-protection': {
     include: ['material', 'size', 'color', 'protection'],
   },
+  // Abrasives - only material (brand, price, TAA handled by sidebar)
+  'abrasives': {
+    include: ['material'],
+  },
+  'abrasive-discs': {
+    include: ['material'],
+  },
+  'abrasive-disks': {
+    include: ['material'],
+  },
+  'abrasive-belts': {
+    include: ['material'],
+  },
+  'specialty-abrasives': {
+    include: ['material'],
+  },
+  'abrasive-sheets-rolls': {
+    include: ['material'],
+  },
+  'abrasive-sheets': {
+    include: ['material'],
+  },
+  'abrasive-wheels': {
+    include: ['material'],
+  },
+  'handheld-abrasives': {
+    include: ['material'],
+  },
   // EAR Protection - only NRR filter
   'ear-protection': {
     include: ['nrr', 'color'],
