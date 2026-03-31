@@ -1275,15 +1275,20 @@ export async function GET(
         const parsedFilters = JSON.parse(smartFilters) as Record<string, string[]>;
         const filterConditions: any[] = [];
 
+        // Gender exclusion map: when filtering for one gender, exclude opposite keywords
+        const GENDER_EXCLUSIONS: Record<string, string[]> = {
+          'Male': ['women', 'woman', 'ladies', 'lady', 'female', 'girl', 'feminine'],
+          'Female': ['\\bmen\\b'],  // Not used - Female keywords don't have this problem
+          'Unisex': [],
+        };
+
         for (const [filterKey, values] of Object.entries(parsedFilters)) {
           if (values && values.length > 0) {
-            // Map display values back to search keywords
             const pattern = SMART_FILTER_PATTERNS[filterKey];
             const keywordConditions: any[] = [];
 
             for (const displayValue of values) {
               if (pattern) {
-                // Find all keywords that map to this display value
                 const keywords = Object.entries(pattern.keywords)
                   .filter(([, normalized]) => normalized === displayValue)
                   .map(([keyword]) => keyword);
@@ -1294,7 +1299,6 @@ export async function GET(
                   );
                 }
               } else {
-                // Fallback: search by display value directly
                 keywordConditions.push(
                   { name: { contains: displayValue, mode: 'insensitive' } },
                   { description: { contains: displayValue, mode: 'insensitive' } },
@@ -1303,7 +1307,26 @@ export async function GET(
             }
 
             if (keywordConditions.length > 0) {
-              filterConditions.push({ OR: keywordConditions });
+              // For gender filter: exclude opposite gender to prevent "men" matching "women"
+              if (filterKey === 'gender' && values.length === 1 && GENDER_EXCLUSIONS[values[0]]) {
+                const excludes = GENDER_EXCLUSIONS[values[0]];
+                if (excludes.length > 0) {
+                  // Must match a keyword AND name must NOT contain opposite gender words
+                  const notConditions = excludes.map(word => ({
+                    name: { not: { contains: word }, mode: 'insensitive' as const },
+                  }));
+                  filterConditions.push({
+                    AND: [
+                      { OR: keywordConditions },
+                      ...notConditions,
+                    ],
+                  });
+                } else {
+                  filterConditions.push({ OR: keywordConditions });
+                }
+              } else {
+                filterConditions.push({ OR: keywordConditions });
+              }
             }
           }
         }

@@ -287,6 +287,13 @@ export async function GET(
         const parsedFilters = JSON.parse(smartFilters) as Record<string, string[]>;
         const filterConditions: any[] = [];
 
+        // Gender exclusion: when filtering Male, exclude female keywords to prevent "men" matching "women"
+        const GENDER_EXCLUSIONS: Record<string, string[]> = {
+          'Male': ['women', 'woman', 'ladies', 'lady', 'female', 'girl', 'feminine'],
+          'Female': [],
+          'Unisex': [],
+        };
+
         for (const [filterKey, values] of Object.entries(parsedFilters)) {
           if (values && values.length > 0) {
             const pattern = SMART_FILTER_PATTERNS[filterKey];
@@ -312,7 +319,24 @@ export async function GET(
             }
 
             if (keywordConditions.length > 0) {
-              filterConditions.push({ OR: keywordConditions });
+              if (filterKey === 'gender' && values.length === 1 && GENDER_EXCLUSIONS[values[0]]) {
+                const excludes = GENDER_EXCLUSIONS[values[0]];
+                if (excludes.length > 0) {
+                  const notConditions = excludes.map(word => ({
+                    name: { not: { contains: word }, mode: 'insensitive' as const },
+                  }));
+                  filterConditions.push({
+                    AND: [
+                      { OR: keywordConditions },
+                      ...notConditions,
+                    ],
+                  });
+                } else {
+                  filterConditions.push({ OR: keywordConditions });
+                }
+              } else {
+                filterConditions.push({ OR: keywordConditions });
+              }
             }
           }
         }
