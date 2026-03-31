@@ -233,12 +233,31 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const handleSetPrimaryImage = (index: number) => {
+  const handleSetPrimaryImage = async (index: number) => {
     if (index === 0) return; // Already primary
     const newImages = [...images];
     const [selectedImage] = newImages.splice(index, 1);
     newImages.unshift(selectedImage);
     setImages(newImages);
+
+    // Immediately persist the new image order via PATCH
+    try {
+      const response = await fetch(`/api/admin/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images: newImages }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update primary image');
+      }
+
+      toast.success('Primary image updated');
+    } catch (err: any) {
+      // Revert local state on failure
+      setImages(images);
+      toast.error(err.message || 'Failed to set primary image');
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
