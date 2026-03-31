@@ -972,6 +972,10 @@ const KEYWORD_FILTER_CONFIG: { keywords: string[]; config: { include: string[] }
     keywords: ['abrasiv'],
     config: { include: ['material'] },
   },
+  {
+    keywords: ['nozzle', 'adhesive', 'sealant', 'filler', 'structural-adhesive'],
+    config: { include: [] },
+  },
 ];
 
 // Check if a category or its ancestors match any filter config
