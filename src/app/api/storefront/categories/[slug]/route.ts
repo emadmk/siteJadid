@@ -966,6 +966,14 @@ const CATEGORY_FILTER_CONFIG: Record<string, {
   },
 };
 
+// Keyword-based filter config: if slug CONTAINS any of these keywords, use the config
+const KEYWORD_FILTER_CONFIG: { keywords: string[]; config: { include: string[] } }[] = [
+  {
+    keywords: ['abrasiv'],
+    config: { include: ['material'] },
+  },
+];
+
 // Check if a category or its ancestors match any filter config
 function getCategoryFilterConfig(categorySlug: string, hierarchy: { slug: string }[]): { include?: string[]; exclude?: string[] } | null {
   // Normalize slug - lowercase and handle URL encoding
@@ -984,6 +992,13 @@ function getCategoryFilterConfig(categorySlug: string, hierarchy: { slug: string
     }
   }
 
+  // Check keyword-based matching (slug contains keyword)
+  for (const { keywords, config } of KEYWORD_FILTER_CONFIG) {
+    if (keywords.some(kw => normalizedSlug.includes(kw))) {
+      return config;
+    }
+  }
+
   // Check ancestors (from nearest to root)
   for (let i = hierarchy.length - 1; i >= 0; i--) {
     const ancestorSlug = hierarchy[i].slug.toLowerCase();
@@ -996,6 +1011,13 @@ function getCategoryFilterConfig(categorySlug: string, hierarchy: { slug: string
     for (const slug of ancestorVariations) {
       if (CATEGORY_FILTER_CONFIG[slug]) {
         return CATEGORY_FILTER_CONFIG[slug];
+      }
+    }
+
+    // Keyword-based matching for ancestors too
+    for (const { keywords, config } of KEYWORD_FILTER_CONFIG) {
+      if (keywords.some(kw => ancestorSlug.includes(kw))) {
+        return config;
       }
     }
   }
