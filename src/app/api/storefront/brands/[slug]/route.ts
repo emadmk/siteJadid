@@ -287,15 +287,32 @@ export async function GET(
         const parsedFilters = JSON.parse(smartFilters) as Record<string, string[]>;
         const filterConditions: any[] = [];
 
-        for (const [, values] of Object.entries(parsedFilters)) {
+        for (const [filterKey, values] of Object.entries(parsedFilters)) {
           if (values && values.length > 0) {
-            for (const value of values) {
-              filterConditions.push({
-                OR: [
-                  { name: { contains: value, mode: 'insensitive' } },
-                  { description: { contains: value, mode: 'insensitive' } },
-                ],
-              });
+            const pattern = SMART_FILTER_PATTERNS[filterKey];
+            const keywordConditions: any[] = [];
+
+            for (const displayValue of values) {
+              if (pattern) {
+                const keywords = Object.entries(pattern.keywords)
+                  .filter(([, normalized]) => normalized === displayValue)
+                  .map(([keyword]) => keyword);
+                for (const keyword of keywords) {
+                  keywordConditions.push(
+                    { name: { contains: keyword, mode: 'insensitive' } },
+                    { description: { contains: keyword, mode: 'insensitive' } },
+                  );
+                }
+              } else {
+                keywordConditions.push(
+                  { name: { contains: displayValue, mode: 'insensitive' } },
+                  { description: { contains: displayValue, mode: 'insensitive' } },
+                );
+              }
+            }
+
+            if (keywordConditions.length > 0) {
+              filterConditions.push({ OR: keywordConditions });
             }
           }
         }
