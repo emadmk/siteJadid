@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { rateLimit } from '@/lib/rate-limit';
 import { sendContactConfirmation, sendAdminContactFormNotification } from '@/lib/email-notifications';
+import { verifyTurnstileToken } from '@/lib/turnstile';
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
@@ -13,7 +14,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, email, phone, subject, message, accountType } = body;
+    const { name, email, phone, subject, message, accountType, turnstileToken } = body;
+
+    // Verify Turnstile captcha
+    const isHuman = await verifyTurnstileToken(turnstileToken);
+    if (!isHuman) {
+      return NextResponse.json({ error: 'Captcha verification failed. Please try again.' }, { status: 400 });
+    }
 
     // Validate required fields
     if (!name || !email || !subject || !message) {

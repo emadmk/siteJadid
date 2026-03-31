@@ -15,10 +15,12 @@ import {
   ArrowLeft,
   Loader2
 } from 'lucide-react';
+import { Turnstile } from '@/components/Turnstile';
 
 export default function RequestQuotePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [formData, setFormData] = useState({
     companyName: '',
     contactName: '',
@@ -38,7 +40,7 @@ export default function RequestQuotePage() {
       const res = await fetch('/api/quote-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, turnstileToken }),
       });
 
       if (res.ok) {
@@ -268,6 +270,13 @@ export default function RequestQuotePage() {
                     </div>
                   </div>
                 </div>
+
+                <Turnstile
+                  onVerify={setTurnstileToken}
+                  onExpire={() => setTurnstileToken('')}
+                  theme="light"
+                  className="mb-2"
+                />
 
                 <Button
                   type="submit"

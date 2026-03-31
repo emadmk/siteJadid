@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 import { sendAdminQuoteRequestNotification } from '@/lib/email-notifications';
+import { verifyTurnstileToken } from '@/lib/turnstile';
+import { rateLimit } from '@/lib/rate-limit';
 
 const quoteRequestSchema = z.object({
   companyName: z.string().min(1, 'Company name is required'),
@@ -13,12 +15,26 @@ const quoteRequestSchema = z.object({
   quantity: z.string().min(1, 'Quantity is required'),
   timeline: z.string().optional(),
   message: z.string().optional(),
+  turnstileToken: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 5 requests per 15 minutes per IP
+  const ip = request.headers.get('x-forwarded-for') || 'unknown';
+  const { success: rateLimitOk } = await rateLimit(`quote:${ip}`, 5, 15 * 60 * 1000);
+  if (!rateLimitOk) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
   try {
     const body = await request.json();
     const validatedData = quoteRequestSchema.parse(body);
+
+    // Verify Turnstile captcha
+    const isHuman = await verifyTurnstileToken(validatedData.turnstileToken);
+    if (!isHuman) {
+      return NextResponse.json({ error: 'Captcha verification failed. Please try again.' }, { status: 400 });
+    }
 
     const quoteRequest = await db.quoteRequest.create({
       data: {

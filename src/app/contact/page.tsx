@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, Mail, Phone, MapPin, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { Turnstile } from '@/components/Turnstile';
 
 export default function ContactPage() {
   const [companyInfo, setCompanyInfo] = useState({
@@ -37,6 +38,7 @@ export default function ContactPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
@@ -56,7 +58,7 @@ export default function ContactPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, turnstileToken }),
       });
 
       const data = await response.json();
@@ -230,6 +232,13 @@ export default function ContactPage() {
                     placeholder="Tell us more about your inquiry..."
                   />
                 </div>
+
+                <Turnstile
+                  onVerify={setTurnstileToken}
+                  onExpire={() => setTurnstileToken('')}
+                  theme="light"
+                  className="mb-2"
+                />
 
                 <Button
                   type="submit"
