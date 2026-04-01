@@ -88,6 +88,11 @@ export async function GET(request: NextRequest) {
         orderBy = { createdAt: 'desc' };
     }
 
+    // When searching with default sort, use name sort for better relevance
+    if (isSearchMode && sort === 'newest') {
+      orderBy = { name: 'asc' };
+    }
+
     const productSelect = {
       id: true,
       sku: true,
