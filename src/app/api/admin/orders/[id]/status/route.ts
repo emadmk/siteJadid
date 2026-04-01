@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 import { sendOrderStatusUpdate, sendAdminOrderStatusChangeNotification } from '@/lib/email-notifications';
+import { logAdminAction, getClientIp } from '@/lib/audit-log';
 
 const updateStatusSchema = z.object({
   status: z.enum([
@@ -150,6 +151,16 @@ export async function PUT(
           orderId: params.id,
       }).catch(err => console.error('Failed to send admin order status notification:', err));
     }
+
+    // Audit log (non-blocking)
+    logAdminAction({
+      userId: session.user.id,
+      action: 'UPDATE',
+      entity: 'Order',
+      entityId: params.id,
+      description: `Changed order ${order.orderNumber} status to ${status}`,
+      ipAddress: getClientIp(req.headers),
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { logAdminAction, getClientIp } from '@/lib/audit-log';
 
 // GET single product with all details
 export async function GET(
@@ -216,6 +217,16 @@ export async function PUT(
       }
     }
 
+    // Audit log (non-blocking)
+    logAdminAction({
+      userId: session.user.id,
+      action: 'UPDATE',
+      entity: 'Product',
+      entityId: params.id,
+      description: `Updated product ${data.name}`,
+      ipAddress: getClientIp(request.headers),
+    }).catch(() => {});
+
     return NextResponse.json(product);
   } catch (error: any) {
     console.error('Update product error:', error);
@@ -266,6 +277,16 @@ export async function PATCH(
       },
     });
 
+    // Audit log (non-blocking)
+    logAdminAction({
+      userId: session.user.id,
+      action: 'UPDATE',
+      entity: 'Product',
+      entityId: params.id,
+      description: `Updated product ${product.name}`,
+      ipAddress: getClientIp(request.headers),
+    }).catch(() => {});
+
     return NextResponse.json(product);
   } catch (error: any) {
     console.error('Patch product error:', error);
@@ -291,9 +312,25 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only super admins can delete products' }, { status: 403 });
     }
 
+    // Fetch product before deleting to capture SKU for audit log
+    const product = await db.product.findUnique({
+      where: { id: params.id },
+      select: { sku: true },
+    });
+
     await db.product.delete({
       where: { id: params.id },
     });
+
+    // Audit log (non-blocking)
+    logAdminAction({
+      userId: session.user.id,
+      action: 'DELETE',
+      entity: 'Product',
+      entityId: params.id,
+      description: `Deleted product ${product?.sku || params.id}`,
+      ipAddress: getClientIp(request.headers),
+    }).catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
