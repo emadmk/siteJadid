@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { logAdminAction, getClientIp } from '@/lib/audit-log';
 import { UserRole } from '@prisma/client';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
@@ -155,6 +156,15 @@ export async function POST(request: NextRequest) {
         createdAt: true,
       },
     });
+
+    logAdminAction({
+      userId: session.user.id,
+      action: 'CREATE',
+      entity: 'User',
+      entityId: user.id,
+      description: `Created staff user ${user.name} (${user.role})`,
+      ipAddress: getClientIp(request.headers),
+    }).catch(() => {});
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {

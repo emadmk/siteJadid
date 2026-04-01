@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { sendAccountApprovalNotification } from '@/lib/email-notifications';
+import { logAdminAction, getClientIp } from '@/lib/audit-log';
 
 // GET /api/admin/gsa-approvals - Get all GSA users
 export async function GET() {
@@ -79,6 +80,16 @@ export async function PUT(request: NextRequest) {
         userId: user.id,
       }).catch(err => console.error('Failed to send GSA approval email:', err));
     }
+
+    logAdminAction({
+      userId: session.user.id,
+      action: 'UPDATE',
+      entity: 'User',
+      entityId: userId,
+      description: `${status} account for ${user.email} (${user.accountType})`,
+      metadata: { status, accountType: user.accountType },
+      ipAddress: getClientIp(request.headers),
+    }).catch(() => {});
 
     return NextResponse.json(user);
   } catch (error) {

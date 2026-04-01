@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { logAdminAction, getClientIp } from '@/lib/audit-log';
 
 // PUT /api/admin/orders/[id] - Update order admin notes
 export async function PUT(
@@ -41,6 +42,15 @@ export async function PUT(
       where: { id: params.id },
       data: { adminNotes },
     });
+
+    logAdminAction({
+      userId: session.user.id,
+      action: 'UPDATE',
+      entity: 'Order',
+      entityId: params.id,
+      description: `Updated admin notes on order`,
+      ipAddress: getClientIp(req.headers),
+    }).catch(() => {});
 
     return NextResponse.json(updatedOrder);
   } catch (error: any) {
@@ -116,6 +126,15 @@ export async function DELETE(
       // 6. Finally delete the order itself
       await tx.order.delete({ where: { id: params.id } });
     });
+
+    logAdminAction({
+      userId: session.user.id,
+      action: 'DELETE',
+      entity: 'Order',
+      entityId: params.id,
+      description: `Deleted order ${order.orderNumber}`,
+      ipAddress: getClientIp(req.headers),
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,

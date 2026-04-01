@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { logAdminAction, getClientIp } from '@/lib/audit-log';
 
 // POST - Bulk release products: set status to ACTIVE, assign category, optionally set brand
 export async function POST(request: NextRequest) {
@@ -74,6 +75,15 @@ export async function POST(request: NextRequest) {
     );
 
     await db.$transaction(categoryUpserts);
+
+    logAdminAction({
+      userId: session.user.id,
+      action: 'UPDATE',
+      entity: 'Product',
+      description: `Bulk released ${result.count} products`,
+      metadata: { productIds, categoryId, brandId },
+      ipAddress: getClientIp(request.headers),
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,

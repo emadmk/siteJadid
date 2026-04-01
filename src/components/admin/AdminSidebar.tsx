@@ -40,6 +40,7 @@ import {
   Upload,
   Trash2,
   ExternalLink,
+  Activity,
 } from 'lucide-react';
 import { useState, createContext, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -205,7 +206,8 @@ const menuItems: MenuItem[] = [
     permissions: ['settings.view'],
     children: [
       { title: 'General', href: '/admin/settings', icon: Settings, permissions: ['settings.view'] },
-      { title: 'Integrations', href: '/admin/settings/integrations', icon: Link2, permissions: ['settings.view'] },
+      { title: 'Integrations', href: '/admin/settings/integrations', icon: Settings, permissions: ['settings.view'] },
+      { title: 'Activity Logs', href: '/admin/activity-logs', icon: Activity, permissions: ['settings.manage'] },
     ],
   },
 ];

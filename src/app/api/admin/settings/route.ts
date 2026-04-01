@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { logAdminAction, getClientIp } from '@/lib/audit-log';
 
 // Default settings structure
 const DEFAULT_SETTINGS = {
@@ -264,6 +265,15 @@ export async function PUT(request: NextRequest) {
       update: { value: stringValue, type, category },
       create: { key, value: stringValue, type, category },
     });
+
+    logAdminAction({
+      userId: session.user.id,
+      action: 'UPDATE',
+      entity: 'Settings',
+      entityId: key,
+      description: `Updated setting: ${category || 'general'}.${key.split('.').pop()}`,
+      ipAddress: getClientIp(request.headers),
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, setting });
   } catch (error: any) {
