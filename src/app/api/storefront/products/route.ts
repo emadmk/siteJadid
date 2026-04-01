@@ -24,14 +24,8 @@ export async function GET(request: NextRequest) {
       stockQuantity: { gt: 0 },
     };
 
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-        { vendorPartNumber: { contains: search, mode: 'insensitive' } },
-      ];
-    }
+    // Search is handled separately below for relevance ranking
+    const isSearchMode = !!search;
 
     if (category) {
       // Get category and its children
@@ -94,52 +88,86 @@ export async function GET(request: NextRequest) {
         orderBy = { createdAt: 'desc' };
     }
 
-    // Fetch products
-    const [products, total] = await Promise.all([
-      db.product.findMany({
-        where,
-        select: {
-          id: true,
-          sku: true,
-          vendorPartNumber: true,
-          name: true,
-          slug: true,
-          description: true,
-          basePrice: true,
-          salePrice: true,
-          images: true,
-          isFeatured: true,
-          stockQuantity: true,
-          minimumOrderQty: true,
-          category: {
-            select: {
-              name: true,
-              slug: true,
-            },
-          },
-          brand: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              logo: true,
-            },
-          },
-          _count: {
-            select: {
-              reviews: {
-                where: { status: 'APPROVED' },
-              },
-              variants: true,
-            },
-          },
-        },
+    const productSelect = {
+      id: true,
+      sku: true,
+      vendorPartNumber: true,
+      name: true,
+      slug: true,
+      description: true,
+      basePrice: true,
+      salePrice: true,
+      images: true,
+      isFeatured: true,
+      stockQuantity: true,
+      minimumOrderQty: true,
+      category: { select: { name: true, slug: true } },
+      brand: { select: { id: true, name: true, slug: true, logo: true } },
+      _count: { select: { reviews: { where: { status: 'APPROVED' } }, variants: true } },
+    };
+
+    let products: any[];
+    let total: number;
+
+    if (isSearchMode) {
+      // Two-tier relevance search: name/SKU first, then description
+      const nameWhere = { ...where, OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
+        { vendorPartNumber: { contains: search, mode: 'insensitive' } },
+      ]};
+      const descWhere = { ...where, OR: [
+        { description: { contains: search, mode: 'insensitive' } },
+      ]};
+      const allSearchWhere = { ...where, OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
+        { vendorPartNumber: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ]};
+
+      total = await db.product.count({ where: allSearchWhere });
+
+      // Get name/SKU matches first
+      const nameMatches = await db.product.findMany({
+        where: nameWhere,
+        select: productSelect,
         orderBy,
         skip,
         take: limit,
-      }),
-      db.product.count({ where }),
-    ]);
+      });
+
+      if (nameMatches.length >= limit) {
+        products = nameMatches;
+      } else {
+        // Fill remaining with description matches
+        const nameIds = nameMatches.map(p => p.id);
+        const remaining = limit - nameMatches.length;
+        const descSkip = Math.max(0, skip - await db.product.count({ where: nameWhere }));
+
+        const descMatches = await db.product.findMany({
+          where: { ...descWhere, id: { notIn: nameIds } },
+          select: productSelect,
+          orderBy,
+          skip: descSkip,
+          take: remaining,
+        });
+
+        products = [...nameMatches, ...descMatches];
+      }
+    } else {
+      // Normal browsing (no search)
+      [products, total] = await Promise.all([
+        db.product.findMany({
+          where,
+          select: productSelect,
+          orderBy,
+          skip,
+          take: limit,
+        }),
+        db.product.count({ where }),
+      ]);
+    }
 
     // Get average ratings for products
     const productIds = products.map((p) => p.id);
