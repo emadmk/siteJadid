@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       orderBy = { name: 'asc' };
     }
 
-    const productSelect = {
+    const productSelect: any = {
       id: true,
       sku: true,
       vendorPartNumber: true,
