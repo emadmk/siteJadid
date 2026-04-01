@@ -980,7 +980,6 @@ const KEYWORD_FILTER_CONFIG: { keywords: string[]; config: { include: string[] }
     keywords: ['tape', 'foil-tape', 'masking'],
     config: { include: ['color'] },
   },
-  },
 ];
 
 // Check if a category or its ancestors match any filter config
