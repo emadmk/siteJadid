@@ -13,13 +13,12 @@ const getClient = async () => {
 
   try {
     const { Client } = await import('@elastic/elasticsearch');
+    const username = process.env.ELASTICSEARCH_USERNAME || 'elastic';
+    const password = process.env.ELASTICSEARCH_PASSWORD;
     esClientInstance = new Client({
       node: getElasticsearchNode(),
-      auth: process.env.ELASTICSEARCH_USERNAME && process.env.ELASTICSEARCH_PASSWORD
-        ? {
-            username: process.env.ELASTICSEARCH_USERNAME,
-            password: process.env.ELASTICSEARCH_PASSWORD,
-          }
+      auth: password
+        ? { username, password }
         : undefined,
       maxRetries: 3,
       requestTimeout: 30000,
@@ -52,16 +51,48 @@ export async function initializeIndices() {
       await esClient.indices.create({
         index: INDICES.PRODUCTS,
         body: {
+          settings: {
+            analysis: {
+              analyzer: {
+                ngram_analyzer: {
+                  type: 'custom',
+                  tokenizer: 'ngram_tokenizer',
+                  filter: ['lowercase'],
+                },
+              },
+              tokenizer: {
+                ngram_tokenizer: {
+                  type: 'ngram',
+                  min_gram: 3,
+                  max_gram: 4,
+                  token_chars: ['letter', 'digit'],
+                },
+              },
+            },
+            max_ngram_diff: 1,
+          },
           mappings: {
             properties: {
               id: { type: 'keyword' },
-              sku: { type: 'keyword' },
+              sku: {
+                type: 'text',
+                fields: { keyword: { type: 'keyword' } },
+                analyzer: 'standard',
+              },
+              vendorPartNumber: {
+                type: 'text',
+                fields: { keyword: { type: 'keyword' } },
+              },
               name: {
                 type: 'text',
                 fields: {
                   keyword: { type: 'keyword' },
-                  suggest: { type: 'completion' }
-                }
+                  suggest: { type: 'completion' },
+                  ngram: {
+                    type: 'text',
+                    analyzer: 'ngram_analyzer',
+                  },
+                },
               },
               slug: { type: 'keyword' },
               description: { type: 'text' },
@@ -72,12 +103,17 @@ export async function initializeIndices() {
               wholesalePrice: { type: 'double' },
               gsaPrice: { type: 'double' },
               stockQuantity: { type: 'integer' },
+              minimumOrderQty: { type: 'integer' },
               categoryId: { type: 'keyword' },
-              categoryName: { type: 'text' },
+              categoryName: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+              categorySlug: { type: 'keyword' },
+              brandName: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+              brandSlug: { type: 'keyword' },
               images: { type: 'keyword' },
               isFeatured: { type: 'boolean' },
               isBestSeller: { type: 'boolean' },
               isNewArrival: { type: 'boolean' },
+              taaApproved: { type: 'boolean' },
               createdAt: { type: 'date' },
               updatedAt: { type: 'date' },
             },
@@ -165,22 +201,28 @@ export const productSearch = {
         {
           id: product.id,
           sku: product.sku,
+          vendorPartNumber: product.vendorPartNumber,
           name: product.name,
           slug: product.slug,
           description: product.description,
           shortDescription: product.shortDescription,
           status: product.status,
-          basePrice: parseFloat(product.basePrice.toString()),
+          basePrice: parseFloat(product.basePrice?.toString() || '0'),
           salePrice: product.salePrice ? parseFloat(product.salePrice.toString()) : null,
           wholesalePrice: product.wholesalePrice ? parseFloat(product.wholesalePrice.toString()) : null,
           gsaPrice: product.gsaPrice ? parseFloat(product.gsaPrice.toString()) : null,
           stockQuantity: product.stockQuantity,
+          minimumOrderQty: product.minimumOrderQty,
           categoryId: product.categoryId,
           categoryName: product.category?.name,
+          categorySlug: product.category?.slug,
+          brandName: product.brand?.name,
+          brandSlug: product.brand?.slug,
           images: product.images,
           isFeatured: product.isFeatured,
           isBestSeller: product.isBestSeller,
           isNewArrival: product.isNewArrival,
+          taaApproved: product.taaApproved,
           createdAt: product.createdAt,
           updatedAt: product.updatedAt,
         },
@@ -202,21 +244,52 @@ export const productSearch = {
       }
 
       const must: any[] = [];
+      const should: any[] = [];
 
       if (query) {
         must.push({
-          multi_match: {
-            query,
-            fields: ['name^3', 'description', 'shortDescription', 'sku^2'],
-            fuzziness: 'AUTO',
+          bool: {
+            should: [
+              // Exact name match (highest boost)
+              { match_phrase: { name: { query, boost: 10 } } },
+              // Name fuzzy match
+              { match: { name: { query, fuzziness: 'AUTO', boost: 5 } } },
+              // Name ngram (partial/instant match)
+              { match: { 'name.ngram': { query, boost: 3 } } },
+              // SKU match
+              { match: { sku: { query, fuzziness: 'AUTO', boost: 4 } } },
+              { wildcard: { 'sku.keyword': { value: `*${query.toUpperCase()}*`, boost: 3 } } },
+              // Vendor part number
+              { match: { vendorPartNumber: { query, fuzziness: 'AUTO', boost: 3 } } },
+              // Brand name
+              { match: { brandName: { query, fuzziness: 'AUTO', boost: 2 } } },
+              // Category name
+              { match: { categoryName: { query, fuzziness: 'AUTO', boost: 2 } } },
+              // Description (lowest priority)
+              { match: { description: { query, fuzziness: 'AUTO', boost: 1 } } },
+            ],
+            minimum_should_match: 1,
           },
         });
+
+        // Boost featured/bestseller products
+        should.push(
+          { term: { isFeatured: { value: true, boost: 2 } } },
+          { term: { isBestSeller: { value: true, boost: 1.5 } } },
+        );
       }
 
-      const filter: any[] = [{ term: { status: 'ACTIVE' } }];
+      const filter: any[] = [
+        { term: { status: 'ACTIVE' } },
+        { range: { stockQuantity: { gt: 0 } } },
+      ];
 
       if (filters?.categoryId) {
         filter.push({ term: { categoryId: filters.categoryId } });
+      }
+
+      if (filters?.brandSlug) {
+        filter.push({ term: { brandSlug: filters.brandSlug } });
       }
 
       if (filters?.minPrice || filters?.maxPrice) {
@@ -230,18 +303,28 @@ export const productSearch = {
         filter.push({ term: { isFeatured: true } });
       }
 
+      if (filters?.taaApproved) {
+        filter.push({ term: { taaApproved: true } });
+      }
+
       const result = await esClient.search({
         index: INDICES.PRODUCTS,
         body: {
           query: {
             bool: {
               must: must.length > 0 ? must : [{ match_all: {} }],
+              should,
               filter,
             },
           },
           from: (page - 1) * limit,
           size: limit,
-          sort: filters?.sort || [{ _score: 'desc' }, { createdAt: 'desc' }],
+          sort: query ? [{ _score: 'desc' }] : [{ createdAt: 'desc' }],
+          highlight: query ? {
+            fields: { name: {}, description: { fragment_size: 150 } },
+            pre_tags: ['<mark>'],
+            post_tags: ['</mark>'],
+          } : undefined,
         },
       });
 

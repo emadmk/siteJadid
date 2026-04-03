@@ -56,14 +56,15 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const search = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
+    const trimmed = searchQuery.trim();
+    if (!trimmed || trimmed.length < 2) {
       setResults([]);
       return;
     }
 
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=20`);
       if (res.ok) {
         const data = await res.json();
         setResults(data.results || []);
