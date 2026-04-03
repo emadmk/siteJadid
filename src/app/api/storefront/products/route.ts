@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { productSearch } from '@/lib/elasticsearch';
 
 export async function GET(request: NextRequest) {
   try {
@@ -115,50 +116,33 @@ export async function GET(request: NextRequest) {
     let total: number;
 
     if (isSearchMode) {
-      // Two-tier relevance search: name/SKU first, then description
-      const nameWhere = { ...where, OR: [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-        { vendorPartNumber: { contains: search, mode: 'insensitive' } },
-      ]};
-      const descWhere = { ...where, OR: [
-        { description: { contains: search, mode: 'insensitive' } },
-      ]};
-      const allSearchWhere = { ...where, OR: [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-        { vendorPartNumber: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ]};
+      // Try Elasticsearch first for best relevance
+      try {
+        const esResult = await productSearch.search(search!, {
+          ...(brand && { brandSlug: brand }),
+          ...(minPrice && { minPrice: parseFloat(minPrice) }),
+          ...(maxPrice && { maxPrice: parseFloat(maxPrice) }),
+          ...(taaApproved && { taaApproved: true }),
+        }, page, limit);
 
-      total = await db.product.count({ where: allSearchWhere });
-
-      // Get name/SKU matches first
-      const nameMatches = await db.product.findMany({
-        where: nameWhere,
-        select: productSelect,
-        orderBy,
-        skip,
-        take: limit,
-      });
-
-      if (nameMatches.length >= limit) {
-        products = nameMatches;
-      } else {
-        // Fill remaining with description matches
-        const nameIds = nameMatches.map(p => p.id);
-        const remaining = limit - nameMatches.length;
-        const descSkip = Math.max(0, skip - await db.product.count({ where: nameWhere }));
-
-        const descMatches = await db.product.findMany({
-          where: { ...descWhere, id: { notIn: nameIds } },
-          select: productSelect,
-          orderBy,
-          skip: descSkip,
-          take: remaining,
+        if (esResult.hits && esResult.hits.length > 0) {
+          total = esResult.total;
+          products = esResult.hits;
+        } else {
+          throw new Error('Fallback to DB');
+        }
+      } catch {
+        // Fallback to PostgreSQL two-tier search
+        const allSearchWhere = { ...where, OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { sku: { contains: search, mode: 'insensitive' } },
+          { vendorPartNumber: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ]};
+        total = await db.product.count({ where: allSearchWhere });
+        products = await db.product.findMany({
+          where: allSearchWhere, select: productSelect, orderBy, skip, take: limit,
         });
-
-        products = [...nameMatches, ...descMatches];
       }
     } else {
       // Normal browsing (no search)

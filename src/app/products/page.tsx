@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { ProductsListing } from '@/components/storefront/products/ProductsListing';
+import { productSearch } from '@/lib/elasticsearch';
 
 // Disable caching - always fetch fresh data
 export const revalidate = 0;
@@ -98,46 +99,72 @@ async function getInitialData(searchParams: ProductsPageProps['searchParams']) {
     _count: { select: { reviews: { where: { status: 'APPROVED' } }, variants: true } },
   };
 
-  // Two-tier search: name/SKU matches first, then description
+  // Two-tier search: use Elasticsearch when available, fallback to PostgreSQL
   let products: any[];
   let total: number;
 
   if (isSearchMode) {
     const search = searchParams.search!;
-    const nameWhere = { ...where, OR: [
-      { name: { contains: search, mode: 'insensitive' } },
-      { sku: { contains: search, mode: 'insensitive' } },
-    ]};
-    const allSearchWhere = { ...where, OR: [
-      { name: { contains: search, mode: 'insensitive' } },
-      { sku: { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } },
-    ]};
 
-    total = await db.product.count({ where: allSearchWhere });
+    // Try Elasticsearch first
+    try {
+      const esResult = await productSearch.search(search, {
+        ...(searchParams.category && { categorySlug: searchParams.category }),
+        ...(searchParams.brand && { brandSlug: searchParams.brand }),
+        ...(searchParams.minPrice && { minPrice: parseFloat(searchParams.minPrice) }),
+        ...(searchParams.maxPrice && { maxPrice: parseFloat(searchParams.maxPrice) }),
+        ...(searchParams.featured === 'true' && { isFeatured: true }),
+      }, 1, limit);
 
-    const nameMatches = await db.product.findMany({
-      where: nameWhere,
-      select: productSelect,
-      orderBy,
-      take: limit,
-    });
+      if (esResult.hits && esResult.hits.length > 0) {
+        // ES returned results - use them
+        total = esResult.total;
+        products = esResult.hits.map((hit: any) => ({
+          id: hit.id,
+          sku: hit.sku,
+          vendorPartNumber: hit.vendorPartNumber,
+          name: hit.name,
+          slug: hit.slug,
+          description: hit.description,
+          basePrice: hit.basePrice,
+          salePrice: hit.salePrice,
+          images: hit.images || [],
+          isFeatured: hit.isFeatured,
+          stockQuantity: hit.stockQuantity,
+          minimumOrderQty: hit.minimumOrderQty,
+          category: hit.categoryName ? { name: hit.categoryName, slug: hit.categorySlug } : null,
+          brand: hit.brandName ? { id: '', name: hit.brandName, slug: hit.brandSlug, logo: null } : null,
+          _count: { reviews: 0, variants: 0 },
+        }));
+      } else {
+        throw new Error('No ES results, fallback to DB');
+      }
+    } catch {
+      // Fallback to PostgreSQL
+      const nameWhere = { ...where, OR: [
+        { name: { contains: search, mode: 'insensitive' as const } },
+        { sku: { contains: search, mode: 'insensitive' as const } },
+      ]};
+      const allSearchWhere = { ...where, OR: [
+        { name: { contains: search, mode: 'insensitive' as const } },
+        { sku: { contains: search, mode: 'insensitive' as const } },
+        { description: { contains: search, mode: 'insensitive' as const } },
+      ]};
 
-    if (nameMatches.length >= limit) {
-      products = nameMatches;
-    } else {
-      const nameIds = nameMatches.map((p: any) => p.id);
-      const descMatches = await db.product.findMany({
-        where: {
-          ...where,
-          id: { notIn: nameIds },
-          description: { contains: search, mode: 'insensitive' },
-        },
-        select: productSelect,
-        orderBy,
-        take: limit - nameMatches.length,
+      total = await db.product.count({ where: allSearchWhere });
+      const nameMatches = await db.product.findMany({
+        where: nameWhere, select: productSelect, orderBy, take: limit,
       });
-      products = [...nameMatches, ...descMatches];
+      if (nameMatches.length >= limit) {
+        products = nameMatches;
+      } else {
+        const nameIds = nameMatches.map((p: any) => p.id);
+        const descMatches = await db.product.findMany({
+          where: { ...where, id: { notIn: nameIds }, description: { contains: search, mode: 'insensitive' as const } },
+          select: productSelect, orderBy, take: limit - nameMatches.length,
+        });
+        products = [...nameMatches, ...descMatches];
+      }
     }
   } else {
     [products, total] = await Promise.all([
