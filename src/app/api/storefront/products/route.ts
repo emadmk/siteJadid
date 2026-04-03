@@ -176,26 +176,26 @@ export async function GET(request: NextRequest) {
     );
 
     // Format products
-    const formattedProducts = products.map((product) => ({
+    const formattedProducts = products.map((product: any) => ({
       id: product.id,
-      sku: product.vendorPartNumber || product.sku, // Display vendorPartNumber as SKU
+      sku: product.vendorPartNumber || product.sku,
       manufacturerPartNumber: product.sku,
       name: product.name,
       slug: product.slug,
       description: product.description,
-      basePrice: Number(product.basePrice),
+      basePrice: Number(product.basePrice || 0),
       salePrice: product.salePrice ? Number(product.salePrice) : null,
-      images: product.images as string[],
+      images: (product.images || []) as string[],
       isFeatured: product.isFeatured,
       stockQuantity: product.stockQuantity,
       minimumOrderQty: product.minimumOrderQty,
-      category: product.category,
-      brand: product.brand,
+      category: product.category || (product.categoryName ? { name: product.categoryName, slug: product.categorySlug } : undefined),
+      brand: product.brand || (product.brandName ? { id: '', name: product.brandName, slug: product.brandSlug, logo: null } : undefined),
       averageRating: ratingMap.get(product.id) || 0,
-      reviewCount: product._count.reviews,
-      hasVariants: product._count.variants > 0,
+      reviewCount: product._count?.reviews || 0,
+      hasVariants: (product._count?.variants || 0) > 0,
       _count: {
-        variants: product._count.variants,
+        variants: product._count?.variants || 0,
       },
     }));
 
