@@ -247,37 +247,7 @@ export const productSearch = {
       const should: any[] = [];
 
       if (query) {
-        const queryLower = query.toLowerCase().trim();
-        const words = queryLower.split(/\s+/);
-
-        // Synonyms map for safety industry
-        const synonyms: Record<string, string[]> = {
-          'mask': ['respirator', 'facepiece', 'face mask'],
-          'respirator': ['mask', 'facepiece', 'face mask'],
-          'shoe': ['boot', 'footwear', 'oxford'],
-          'boot': ['shoe', 'footwear', 'work boot'],
-          'glasses': ['eyewear', 'spectacles', 'safety glasses'],
-          'goggles': ['eye protection', 'safety goggles'],
-          'glove': ['hand protection', 'work glove'],
-          'helmet': ['hard hat', 'head protection'],
-          'hard hat': ['helmet', 'head protection'],
-          'vest': ['hi-vis vest', 'safety vest'],
-          'earplug': ['ear plug', 'hearing protection'],
-          'earmuff': ['ear muff', 'hearing protection'],
-          'tape': ['adhesive tape', 'masking tape'],
-        };
-
-        // Build synonym queries
-        const synonymQueries: any[] = [];
-        for (const word of words) {
-          if (synonyms[word]) {
-            for (const syn of synonyms[word]) {
-              synonymQueries.push(
-                { match_phrase: { name: { query: syn, boost: 3 } } },
-              );
-            }
-          }
-        }
+        const words = query.trim().split(/\s+/);
 
         must.push({
           bool: {
@@ -288,8 +258,8 @@ export const productSearch = {
               // TIER 2: All words must appear in name
               { match: { name: { query, operator: 'and', boost: 30 } } },
 
-              // TIER 3: Most words in name (fuzzy)
-              { match: { name: { query, fuzziness: 'AUTO', minimum_should_match: '75%', boost: 15 } } },
+              // TIER 3: Name fuzzy (for typos) - all words must match
+              { match: { name: { query, fuzziness: 'AUTO', operator: 'and', boost: 15 } } },
 
               // TIER 4: SKU exact or partial
               { term: { 'sku.keyword': { value: query.toUpperCase(), boost: 40 } } },
@@ -297,27 +267,32 @@ export const productSearch = {
               { match: { vendorPartNumber: { query, boost: 15 } } },
 
               // TIER 5: Brand + product combo (e.g. "3M mask")
-              ...(words.length >= 2 ? [
-                { match: { brandName: { query: words[0], boost: 10 } } },
-              ] : []),
+              ...(words.length >= 2 ? [{
+                bool: {
+                  must: [
+                    { match: { brandName: { query: words[0], boost: 5 } } },
+                    { match: { name: { query: words.slice(1).join(' '), boost: 20 } } },
+                  ],
+                },
+              }] : []),
 
               // TIER 6: Category match
-              { match: { categoryName: { query, boost: 5 } } },
+              { match_phrase: { categoryName: { query, boost: 5 } } },
 
-              // TIER 7: Synonyms
-              ...synonymQueries,
+              // TIER 7: Some words in name (for partial matches)
+              { match: { name: { query, minimum_should_match: '50%', boost: 8 } } },
 
-              // TIER 8: Description (lowest - just for recall, not ranking)
-              { match: { description: { query, fuzziness: 'AUTO', minimum_should_match: '60%', boost: 1 } } },
+              // TIER 8: Description - all words must appear
+              { match: { description: { query, operator: 'and', boost: 2 } } },
             ],
             minimum_should_match: 1,
           },
         });
 
-        // Boost featured/bestseller
+        // Small boost for featured/bestseller
         should.push(
-          { term: { isFeatured: { value: true, boost: 1.5 } } },
-          { term: { isBestSeller: { value: true, boost: 1.2 } } },
+          { term: { isFeatured: { value: true, boost: 1.3 } } },
+          { term: { isBestSeller: { value: true, boost: 1.1 } } },
         );
       }
 
