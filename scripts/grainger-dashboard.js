@@ -14,12 +14,22 @@ const { spawn, execSync } = require('child_process');
 
 const PORT = 9876;
 const PASSWORD = '110110';
+
+// Standard quality downloader
 const STATUS_FILE = '/tmp/grainger-status.json';
 const ERROR_FILE = '/tmp/grainger-errors.json';
 const PID_FILE = '/tmp/grainger-download.pid';
 const LOG_FILE = '/tmp/grainger-download.log';
 const SCRIPT_PATH = path.join(__dirname, 'grainger-download.js');
 const IMAGE_DIR = path.join(process.cwd(), 'public/uploads/grainger');
+
+// HQ downloader
+const HQ_STATUS_FILE = '/tmp/grainger-hq-status.json';
+const HQ_ERROR_FILE = '/tmp/grainger-hq-errors.json';
+const HQ_PID_FILE = '/tmp/grainger-hq-download.pid';
+const HQ_LOG_FILE = '/tmp/grainger-hq.log';
+const HQ_SCRIPT_PATH = path.join(__dirname, 'grainger-download-hq.js');
+const HQ_IMAGE_DIR = path.join(process.cwd(), 'public/uploads/grainger-hq');
 
 function getStatus() {
   try {
@@ -59,6 +69,65 @@ function getDiskUsage() {
     const result = execSync(`du -sh "${IMAGE_DIR}" 2>/dev/null`).toString().split('\t')[0];
     return { files, size: result.trim() };
   } catch { return { files: 0, size: '0 MB' }; }
+}
+
+function getStatusFor(file) {
+  try { if (!fs.existsSync(file)) return null; return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+}
+function getErrorsFor(file) {
+  try { if (!fs.existsSync(file)) return []; return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; }
+}
+function isRunningFor(pidFile) {
+  try { if (!fs.existsSync(pidFile)) return false; const pid = parseInt(fs.readFileSync(pidFile, 'utf8').trim()); process.kill(pid, 0); return true; } catch { return false; }
+}
+function getDiskFor(dir) {
+  try { if (!fs.existsSync(dir)) return { files: 0, size: '0 MB' }; const files = fs.readdirSync(dir).length; const r = execSync(`du -sh "${dir}" 2>/dev/null`).toString().split('\t')[0]; return { files, size: r.trim() }; } catch { return { files: 0, size: '0 MB' }; }
+}
+function getLogFor(file, lines = 20) {
+  try { if (!fs.existsSync(file)) return ''; return execSync(`tail -${lines} "${file}" 2>/dev/null`).toString(); } catch { return ''; }
+}
+
+function renderPanel(label, statusFile, errorFile, pidFile, logFile, imageDir, startAction, resumeAction, stopAction, token) {
+  const status = getStatusFor(statusFile);
+  const running = isRunningFor(pidFile);
+  const disk = getDiskFor(imageDir);
+  const errors = getErrorsFor(errorFile);
+  const recentErrors = errors.slice(-5).reverse();
+  const log = getLogFor(logFile, 10);
+  const pct = status ? ((status.downloaded / Math.max(status.total, 1)) * 100).toFixed(1) : 0;
+  const elapsed = status && status.startedAt ? Math.round((Date.now() - status.startedAt) / 60000) : 0;
+  const rate = elapsed > 0 && status ? Math.round(status.downloaded / elapsed) : 0;
+  const eta = rate > 0 && status ? Math.round((status.total - status.downloaded - status.skipped) / rate) : 0;
+
+  return `
+<div style="margin-bottom:32px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <h2 style="font-size:18px;color:#fff;margin:0">${label}</h2>
+    <span class="badge ${running ? 'running' : 'stopped'}">${running ? 'RUNNING' : 'STOPPED'}</span>
+  </div>
+  ${status && status.banned ? '<div class="warn">WARNING: Possible IP ban detected!</div>' : ''}
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+    <div class="card green"><div class="value">${status ? status.downloaded.toLocaleString() : 0}</div><div class="label">Downloaded</div></div>
+    <div class="card blue"><div class="value">${status ? status.total.toLocaleString() : 0}</div><div class="label">Total</div></div>
+    <div class="card"><div class="value">${status ? status.skipped.toLocaleString() : 0}</div><div class="label">Skipped</div></div>
+    <div class="card red"><div class="value">${status ? status.errors : 0}</div><div class="label">Errors</div></div>
+    <div class="card yellow"><div class="value">${rate}/min</div><div class="label">Speed</div></div>
+    <div class="card"><div class="value">${disk.files.toLocaleString()}</div><div class="label">Files</div></div>
+    <div class="card"><div class="value">${disk.size}</div><div class="label">Disk</div></div>
+    <div class="card"><div class="value">${eta > 0 ? eta + 'm' : '-'}</div><div class="label">ETA</div></div>
+  </div>
+  <div class="progress-wrap">
+    <div style="display:flex;justify-content:space-between"><span>Progress</span><span style="font-weight:700;color:#22c55e">${pct}%</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%">${pct > 5 ? pct + '%' : ''}</div></div>
+  </div>
+  <div class="actions">
+    ${!running ? `<a href="?action=${startAction}&token=${token}" class="btn btn-green">Start</a>` : ''}
+    ${!running ? `<a href="?action=${resumeAction}&token=${token}" class="btn btn-blue">Resume</a>` : ''}
+    ${running ? `<a href="?action=${stopAction}&token=${token}" class="btn btn-red">Stop</a>` : ''}
+  </div>
+  ${recentErrors.length > 0 ? `<div class="section"><h2>Recent Errors (${errors.length} total)</h2><table><tr><th>SKU</th><th>Error</th></tr>${recentErrors.map(e => `<tr><td>${e.sku}</td><td style="color:#ef4444">${e.error}</td></tr>`).join('')}</table></div>` : ''}
+  <div class="section"><h2>Log</h2><div class="log">${log || 'No log output.'}</div></div>
+</div>`;
 }
 
 function renderPage(authenticated, action) {
@@ -178,6 +247,10 @@ ${recentErrors.length > 0 ? `
   <div class="log">${log || 'No log output yet. Start a download to see logs.'}</div>
 </div>
 
+<hr style="border-color:#334155;margin:32px 0">
+
+${renderPanel('HQ Images (Original Quality)', HQ_STATUS_FILE, HQ_ERROR_FILE, HQ_PID_FILE, HQ_LOG_FILE, HQ_IMAGE_DIR, 'start-hq', 'resume-hq', 'stop-hq', PASSWORD)}
+
 <div style="text-align:center;color:#475569;font-size:12px;margin-top:20px">
   Auto-refreshes every 10 seconds &bull; <a href="/" style="color:#64748b">Logout</a>
 </div>
@@ -232,6 +305,32 @@ const server = http.createServer((req, res) => {
     try {
       if (fs.existsSync(PID_FILE)) {
         const pid = parseInt(fs.readFileSync(PID_FILE, 'utf8').trim());
+        process.kill(pid, 'SIGTERM');
+      }
+    } catch {}
+    res.writeHead(302, { Location: `/?token=${PASSWORD}&action=stopped` });
+    res.end();
+    return;
+  }
+
+  // HQ actions
+  if (action === 'start-hq' || action === 'resume-hq') {
+    const mode = action === 'resume-hq' ? 'resume' : 'start';
+    const child = spawn('node', [HQ_SCRIPT_PATH, mode], {
+      cwd: process.cwd(),
+      detached: true,
+      stdio: ['ignore', fs.openSync(HQ_LOG_FILE, 'a'), fs.openSync(HQ_LOG_FILE, 'a')],
+    });
+    child.unref();
+    res.writeHead(302, { Location: `/?token=${PASSWORD}&action=started` });
+    res.end();
+    return;
+  }
+
+  if (action === 'stop-hq') {
+    try {
+      if (fs.existsSync(HQ_PID_FILE)) {
+        const pid = parseInt(fs.readFileSync(HQ_PID_FILE, 'utf8').trim());
         process.kill(pid, 'SIGTERM');
       }
     } catch {}
