@@ -14,7 +14,7 @@ const { PrismaClient } = require('/var/www/siteJadid/node_modules/@prisma/client
 
 const db = new PrismaClient();
 
-const ES_NODE = process.env.ELASTICSEARCH_NODE || 'http://localhost:9200';
+const ES_NODE = process.env.ELASTICSEARCH_NODE || 'http://127.0.0.1:9200';
 const ES_USER = process.env.ELASTICSEARCH_USERNAME || 'elastic';
 const ES_PASS = process.env.ELASTICSEARCH_PASSWORD || 'L9ycbTXIRfetvmOFcHGVr5EWVOjvqaou';
 const INDEX = 'products';
