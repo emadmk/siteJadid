@@ -1146,12 +1146,23 @@ async function getTotalProductCount(categoryIds: string[]): Promise<number> {
   });
 }
 
+import { cache } from '@/lib/redis';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
     const { searchParams } = new URL(request.url);
+    const queryString = searchParams.toString();
+    const cacheKey = `cat:${params.slug}:${queryString}`;
+
+    // Try cache first (5 min TTL)
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const sort = searchParams.get('sort') || 'newest';
@@ -1568,7 +1579,7 @@ export async function GET(
       hierarchy, // Full path from root to parent (not including current category)
     };
 
-    return NextResponse.json({
+    const responseData = {
       category: categoryResponse,
       products: formattedProducts,
       total,
@@ -1577,7 +1588,12 @@ export async function GET(
       smartFilters: availableSmartFilters,
       smartFilterLabels,
       brands,
-    });
+    };
+
+    // Cache for 5 minutes
+    cache.set(cacheKey, responseData, 300).catch(() => {});
+
+    return NextResponse.json(responseData);
   } catch (error: any) {
     console.error('Category fetch error:', error);
     return NextResponse.json(

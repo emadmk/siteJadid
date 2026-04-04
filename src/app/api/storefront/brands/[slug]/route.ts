@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { cache } from '@/lib/redis';
 
 // Smart filter keywords - these are extracted from product names/descriptions
 // Keywords map to their normalized display value
@@ -189,6 +190,15 @@ export async function GET(
 ) {
   try {
     const { searchParams } = new URL(request.url);
+    const queryString = searchParams.toString();
+    const cacheKey = `brand:${params.slug}:${queryString}`;
+
+    // Try cache first (5 min TTL)
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const sort = searchParams.get('sort') || 'newest';
@@ -465,7 +475,7 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({
+    const responseData = {
       brand,
       products: formattedProducts,
       total,
@@ -474,7 +484,12 @@ export async function GET(
       categories,
       smartFilters: availableSmartFilters,
       smartFilterLabels,
-    });
+    };
+
+    // Cache for 5 minutes
+    cache.set(cacheKey, responseData, 300).catch(() => {});
+
+    return NextResponse.json(responseData);
   } catch (error: any) {
     console.error('Brand fetch error:', error);
     return NextResponse.json(

@@ -2,10 +2,19 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { productSearch } from '@/lib/elasticsearch';
+import { cache } from '@/lib/redis';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const queryString = searchParams.toString();
+    const cacheKey = `products:${queryString}`;
+
+    // Try cache first (3 min TTL)
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search');
@@ -199,12 +208,17 @@ export async function GET(request: NextRequest) {
       },
     }));
 
-    return NextResponse.json({
+    const responseData = {
       products: formattedProducts,
       total,
       pages: Math.ceil(total / limit),
       currentPage: page,
-    });
+    };
+
+    // Cache for 3 minutes
+    cache.set(cacheKey, responseData, 180).catch(() => {});
+
+    return NextResponse.json(responseData);
   } catch (error: any) {
     console.error('Products fetch error:', error);
     return NextResponse.json(

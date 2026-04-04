@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { productSearch } from '@/lib/elasticsearch';
 import { db } from '@/lib/db';
+import { cache } from '@/lib/redis';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,16 +14,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ results: [], total: 0 });
     }
 
+    // Try cache first (2 min TTL)
+    const cacheKey = `search:${query.toLowerCase().trim()}:${limit}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     // Try Elasticsearch first
     try {
       const esResults = await productSearch.search(query, {}, 1, limit);
 
       if (esResults.hits && esResults.hits.length > 0) {
-        return NextResponse.json({
+        const esResponse = {
           results: esResults.hits,
           total: esResults.total,
           source: 'elasticsearch',
-        });
+        };
+        cache.set(cacheKey, esResponse, 120).catch(() => {});
+        return NextResponse.json(esResponse);
       }
     } catch (esError) {
       console.warn('Elasticsearch search failed, falling back to database:', esError);
@@ -102,11 +112,13 @@ export async function GET(request: NextRequest) {
       } : undefined,
     }));
 
-    return NextResponse.json({
+    const dbResponse = {
       results,
       total: results.length,
       source: 'database',
-    });
+    };
+    cache.set(cacheKey, dbResponse, 120).catch(() => {});
+    return NextResponse.json(dbResponse);
   } catch (error) {
     console.error('Search error:', error);
     return NextResponse.json(
