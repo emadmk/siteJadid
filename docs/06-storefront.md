@@ -23,7 +23,6 @@ RootLayout (src/app/layout.tsx)
 - `BrandsSection` - Brand logos carousel
 - `PromoSection` - Featured promotions
 - `RecentlyViewedSection` - Recently viewed products (localStorage)
-- `PhoneNotice` - Temporary phone number popup (session-based)
 
 ### Products (`/products`)
 - `ProductsListing` - Grid/list view, infinite scroll (5 pages), filters sidebar
@@ -89,7 +88,6 @@ RootLayout (src/app/layout.tsx)
 | `VariantSelector` | Size/color/type selector |
 | `CheckoutForm` | Multi-step checkout with Stripe |
 | `HeroSection` | Dynamic banner slider |
-| `PhoneNotice` | Temporary announcement popup |
 | `Turnstile` | Cloudflare captcha component |
 
 ## Contexts
