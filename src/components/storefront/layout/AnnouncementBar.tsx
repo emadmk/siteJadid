@@ -15,7 +15,7 @@ export function AnnouncementBar() {
   }, []);
 
   return (
-    <div className="bg-white border-b border-gray-200 text-[1.3125rem]">
+    <div className="bg-white border-b border-gray-200 text-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between py-2.5">
           {/* Left - Welcome Message */}
@@ -26,14 +26,14 @@ export function AnnouncementBar() {
           </div>
 
           {/* Mobile - Short message */}
-          <div className="md:hidden text-gray-700 text-[1.125rem]">
+          <div className="md:hidden text-gray-700 text-xs">
             <span className="font-semibold text-black">ADA Supplies</span> | Safety Equipment
           </div>
 
           {/* Right - Support & Logos */}
           <div className="flex items-center gap-4 lg:gap-5">
             {/* Support Links */}
-            <div className="hidden lg:flex items-center gap-4 text-gray-600 text-[1.125rem]">
+            <div className="hidden lg:flex items-center gap-4 text-gray-600 text-xs">
               <span>Support: <a href={`tel:${phone}`} className="hover:text-safety-green-600 transition-colors">{phone}</a></span>
               <span className="text-gray-300">|</span>
               <Link href="/contact" className="hover:text-safety-green-600 transition-colors">Contact us</Link>
