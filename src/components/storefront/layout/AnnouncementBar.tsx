@@ -15,9 +15,9 @@ export function AnnouncementBar() {
   }, []);
 
   return (
-    <div className="bg-white border-b border-gray-200 text-sm">
+    <div className="bg-white border-b border-gray-200 text-[1.3125rem]">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between py-2">
+        <div className="flex items-center justify-between py-4">
           {/* Left - Welcome Message */}
           <div className="hidden md:flex items-center">
             <span className="text-gray-700">
@@ -26,14 +26,14 @@ export function AnnouncementBar() {
           </div>
 
           {/* Mobile - Short message */}
-          <div className="md:hidden text-gray-700 text-xs">
+          <div className="md:hidden text-gray-700 text-[1.125rem]">
             <span className="font-semibold text-black">ADA Supplies</span> | Safety Equipment
           </div>
 
           {/* Right - Support & Logos */}
-          <div className="flex items-center gap-3 lg:gap-4">
+          <div className="flex items-center gap-6 lg:gap-8">
             {/* Support Links */}
-            <div className="hidden lg:flex items-center gap-3 text-gray-600 text-xs">
+            <div className="hidden lg:flex items-center gap-6 text-gray-600 text-[1.125rem]">
               <span>Support: <a href={`tel:${phone}`} className="hover:text-safety-green-600 transition-colors">{phone}</a></span>
               <span className="text-gray-300">|</span>
               <Link href="/contact" className="hover:text-safety-green-600 transition-colors">Contact us</Link>
@@ -43,14 +43,14 @@ export function AnnouncementBar() {
             </div>
 
             {/* Partner Logos */}
-            <div className="flex items-center gap-2 lg:gap-3">
+            <div className="flex items-center gap-4 lg:gap-6">
               {/* FedMall */}
               <Image
                 src="/images/imagesite/02.jpg"
                 alt="FedMall"
-                width={70}
-                height={24}
-                className="h-5 lg:h-6 w-auto object-contain"
+                width={140}
+                height={48}
+                className="h-10 lg:h-12 w-auto object-contain"
                 quality={100}
                 unoptimized
               />
@@ -58,9 +58,9 @@ export function AnnouncementBar() {
               <Image
                 src="/images/imagesite/01.jpg"
                 alt="GSA"
-                width={28}
-                height={28}
-                className="h-6 lg:h-7 w-auto object-contain"
+                width={56}
+                height={56}
+                className="h-12 lg:h-14 w-auto object-contain"
                 quality={100}
                 unoptimized
               />
@@ -68,9 +68,9 @@ export function AnnouncementBar() {
               <Image
                 src="/images/imagesite/03.png"
                 alt="AbilityOne & MRO"
-                width={120}
-                height={24}
-                className="h-5 lg:h-6 w-auto object-contain hidden sm:block"
+                width={240}
+                height={48}
+                className="h-10 lg:h-12 w-auto object-contain hidden sm:block"
                 quality={100}
                 unoptimized
               />
