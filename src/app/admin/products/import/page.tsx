@@ -26,7 +26,7 @@ import {
   Footprints,
 } from 'lucide-react';
 
-type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine' | 'carhartt' | '3m';
+type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine' | 'carhartt' | '3m' | 'rocky';
 
 interface Brand {
   id: string;
@@ -208,6 +208,8 @@ export default function ProductImportPage() {
         ? '/api/admin/carhartt-import'
         : importType === '3m'
         ? '/api/admin/threem-import'
+        : importType === 'rocky'
+        ? '/api/admin/rocky-import'
         : '/api/admin/bulk-import';
 
       const response = await fetch(apiUrl, {
@@ -362,6 +364,21 @@ export default function ProductImportPage() {
           </button>
           <button
             onClick={() => {
+              setImportType('rocky');
+              setFile(null);
+              setResult(null);
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              importType === 'rocky'
+                ? 'bg-stone-700 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Footprints className="w-5 h-5" />
+            Rocky / Georgia Boots
+          </button>
+          <button
+            onClick={() => {
               setImportType('gsa');
               setFile(null);
               setResult(null);
@@ -387,6 +404,8 @@ export default function ProductImportPage() {
             ? 'Import Carhartt workwear products. Creates size variants automatically and maps to Footwear category.'
             : importType === '3m'
             ? 'Import 3M products (Mar 2026 format). Creates categories (inactive). TAA auto-set by country. Prices = unit × min order qty. No images.'
+            : importType === 'rocky'
+            ? 'Import Rocky / Georgia Boots / Durango / XtraTuf / Muck. Groups by Supplier Part Number into size variants. Maps images from /var/www/static-uploads/rocky/. Creates as PRERELEASE.'
             : 'Import GSA products with custom field mapping and compliance data.'}
         </p>
       </div>
@@ -406,6 +425,8 @@ export default function ProductImportPage() {
               ? 'bg-orange-50 border-orange-200'
               : importType === '3m'
               ? 'bg-red-50 border-red-200'
+              : importType === 'rocky'
+              ? 'bg-stone-50 border-stone-300'
               : 'bg-blue-50 border-blue-200'
           }`}>
             <h2 className={`text-lg font-semibold mb-3 ${
@@ -419,9 +440,11 @@ export default function ProductImportPage() {
                 ? 'text-orange-800'
                 : importType === '3m'
                 ? 'text-red-800'
+                : importType === 'rocky'
+                ? 'text-stone-800'
                 : 'text-blue-800'
             }`}>
-              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : importType === 'wolverine' ? 'Wolverine Bates Import' : importType === 'carhartt' ? 'Carhartt Import' : importType === '3m' ? '3M Import' : 'GSA Import'} Selected
+              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : importType === 'wolverine' ? 'Wolverine Bates Import' : importType === 'carhartt' ? 'Carhartt Import' : importType === '3m' ? '3M Import' : importType === 'rocky' ? 'Rocky / Georgia Boots Import' : 'GSA Import'} Selected
             </h2>
             {importType === 'occunomix' ? (
               <div className="space-y-2 text-sm text-safety-green-700">
@@ -489,6 +512,22 @@ export default function ProductImportPage() {
                   <li>No images imported (upload manually later)</li>
                   <li>Auto-creates 3M brand</li>
                   <li>Physical dimensions, UPC, HS Code, lead time captured</li>
+                </ul>
+              </div>
+            ) : importType === 'rocky' ? (
+              <div className="space-y-2 text-sm text-stone-700">
+                <p><strong>Expected Columns:</strong> Product Code, Supplier Part Number, Product Short Description, Brand, Product Category, Cost Price, Personal Buyer Price, Gov Buyer Price, MSRP, COO, TAA Approved, UPC, GSA Number (EXTMEMO1), Length/Width/Height/Weight</p>
+                <p><strong>Features:</strong></p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Groups rows by Supplier Part Number into a single product with size variants</li>
+                  <li>Size extracted from Product Code (e.g., GB-G050-<strong>14M</strong>, RB-FQ0000102-<strong>3ME</strong>)</li>
+                  <li>Auto-creates brands: Rocky, Georgia Boot, Durango, XtraTuf, Muck, etc.</li>
+                  <li>Images mapped from <code>/var/www/static-uploads/rocky/&#123;PartNumber&#125;/</code></li>
+                  <li>Image priority: main → front → profile → birdseye → instep_profile → outsole → back</li>
+                  <li>Pricing: Personal Buyer → base price, Gov Buyer → GSA/Government price, Cost Price → cost, MSRP → retail</li>
+                  <li>TAA: auto-true for USA/Puerto Rico or TAA Approved = Yes</li>
+                  <li>All products go to <strong>PRERELEASE</strong> status for review</li>
+                  <li>Maps to Footwear category (originalCategory = "&#123;Brand&#125; Footwear")</li>
                 </ul>
               </div>
             ) : (
