@@ -1,7 +1,9 @@
 import * as XLSX from 'xlsx';
 import path from 'path';
+import fsPromises from 'fs/promises';
 import { existsSync, readdirSync } from 'fs';
 import { prisma } from '@/lib/prisma';
+import { imageProcessor } from './image-processor';
 import { Decimal } from '@prisma/client/runtime/library';
 
 /**
@@ -61,7 +63,6 @@ export interface RockyImportOptions {
   updateExisting?: boolean;
   importImages?: boolean;
   imageBasePath?: string;
-  imageUrlPrefix?: string;
   dryRun?: boolean;
   defaultStockQuantity?: number;
   defaultStatus?: 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'PRERELEASE';
@@ -308,15 +309,13 @@ export class RockyImportService {
   }
 
   /**
-   * Build image URL list for a Supplier Part Number.
-   * Looks in filesystem to determine which images exist, then returns URLs.
+   * Get sorted image file paths for a Supplier Part Number.
+   * Returns full filesystem paths for reading with imageProcessor.
    */
-  private buildImageUrls(
+  private getImageFiles(
     supplierPartNumber: string,
-    imageBasePath: string,
-    imageUrlPrefix: string
+    imageBasePath: string
   ): string[] {
-    // Priority order - first is primary image
     const angleOrder = ['main', 'front', 'profile', 'birdseye', 'instep_profile', 'outsole', 'back'];
 
     const folderPath = path.join(imageBasePath, supplierPartNumber);
@@ -332,7 +331,6 @@ export class RockyImportService {
 
     const byAngle = new Map<string, string>();
     for (const f of files) {
-      // file: G050_main.jpg → angle: main
       const base = f.replace(/\.[^.]+$/, '');
       const angleMatch = base.match(/_([a-z0-9_]+)$/i);
       const angle = angleMatch ? angleMatch[1].toLowerCase() : 'main';
@@ -343,13 +341,11 @@ export class RockyImportService {
     for (const angle of angleOrder) {
       if (byAngle.has(angle)) sortedFiles.push(byAngle.get(angle)!);
     }
-    // Add any remaining files not in priority list
     for (const [angle, fn] of byAngle) {
       if (!angleOrder.includes(angle)) sortedFiles.push(fn);
     }
 
-    const prefix = imageUrlPrefix.replace(/\/$/, '');
-    return sortedFiles.map(f => `${prefix}/${supplierPartNumber}/${f}`);
+    return sortedFiles.map(f => path.join(folderPath, f));
   }
 
   /**
@@ -477,7 +473,6 @@ export class RockyImportService {
       updateExisting = true,
       importImages = true,
       imageBasePath = '/var/www/static-uploads/rocky',
-      imageUrlPrefix = '/uploads/rocky',
       dryRun = false,
       defaultStockQuantity = 0,
       defaultStatus = 'PRERELEASE',
@@ -531,7 +526,6 @@ export class RockyImportService {
           updateExisting,
           importImages,
           imageBasePath,
-          imageUrlPrefix,
           dryRun,
           defaultStockQuantity,
           defaultStatus,
@@ -576,7 +570,6 @@ export class RockyImportService {
       updateExisting: boolean;
       importImages: boolean;
       imageBasePath: string;
-      imageUrlPrefix: string;
       dryRun: boolean;
       defaultStockQuantity: number;
       defaultStatus: string;
@@ -632,12 +625,12 @@ export class RockyImportService {
     const uomMap: Record<string, string> = { PAIR: 'pr', PR: 'pr', EA: 'ea', PK: 'pk', DZ: 'DZ' };
     const priceUnit = uomMap[(group.uom || '').toUpperCase()] || 'ea';
 
-    // Images
-    const imageUrls = opts.importImages
-      ? this.buildImageUrls(baseSku, opts.imageBasePath, opts.imageUrlPrefix)
+    // Images - get file paths (will be processed after product is created)
+    const imageFiles = opts.importImages
+      ? this.getImageFiles(baseSku, opts.imageBasePath)
       : [];
 
-    if (opts.importImages && imageUrls.length === 0) {
+    if (opts.importImages && imageFiles.length === 0) {
       this.skippedNoImage++;
       this.warnings.push({
         row: firstRow.rowNumber,
@@ -683,7 +676,6 @@ export class RockyImportService {
       metaDescription: seo.metaDescription,
       metaKeywords: seo.metaKeywords,
       ...(firstRow.internalPartNumber && { vendorPartNumber: firstRow.internalPartNumber }),
-      ...(imageUrls.length > 0 && { images: imageUrls }),
     };
 
     if (opts.dryRun) {
@@ -757,32 +749,105 @@ export class RockyImportService {
       });
     }
 
-    // Create ProductImage records from URLs
-    if (imageUrls.length > 0 && savedProduct) {
-      for (let i = 0; i < imageUrls.length; i++) {
-        const url = imageUrls[i];
-        try {
-          await prisma.productImage.create({
-            data: {
-              productId: savedProduct.id,
-              originalUrl: url,
-              largeUrl: url,
-              mediumUrl: url,
-              thumbUrl: url,
-              originalName: path.basename(url),
-              position: i,
-              isPrimary: i === 0,
-            },
-          });
-        } catch {
-          // Ignore individual image errors
-        }
-      }
+    // Process and save images (convert to WebP, generate sizes)
+    if (imageFiles.length > 0 && savedProduct) {
+      await this.processProductImages(
+        savedProduct.id,
+        baseSku,
+        group.brandNormalized,
+        imageFiles,
+        existingProduct !== null
+      );
     }
 
     // Warehouse stock
     if (opts.defaultWarehouseId && savedProduct) {
       await this.createWarehouseStock(savedProduct.id, opts.defaultWarehouseId, totalStock);
+    }
+  }
+
+  /**
+   * Process product images: read from disk, convert to WebP, generate 4 sizes,
+   * save to public/uploads/products/{brand}/{sku}/, create ProductImage records.
+   */
+  private async processProductImages(
+    productId: string,
+    partNumber: string,
+    brandName: string,
+    imagePaths: string[],
+    isUpdate: boolean
+  ): Promise<void> {
+    const imageFiles: Array<{ buffer: Buffer; filename: string }> = [];
+
+    for (const imgPath of imagePaths) {
+      try {
+        const buffer = await fsPromises.readFile(imgPath);
+        const filename = path.basename(imgPath);
+        imageFiles.push({ buffer, filename });
+      } catch (error) {
+        console.error(`Error reading image ${imgPath}:`, error);
+      }
+    }
+
+    if (imageFiles.length === 0) {
+      this.warnings.push({
+        row: 0,
+        field: 'images',
+        message: `No readable images for ${partNumber}`,
+      });
+      return;
+    }
+
+    // Delete existing images if updating
+    if (isUpdate) {
+      await prisma.productImage.deleteMany({ where: { productId } });
+    }
+
+    try {
+      const brandSlug = brandName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const processedImages = await imageProcessor.processImages(imageFiles, {
+        brandSlug,
+        productSku: partNumber,
+        convertToWebp: true,
+      });
+
+      for (let i = 0; i < processedImages.length; i++) {
+        const img = processedImages[i];
+        await prisma.productImage.create({
+          data: {
+            productId,
+            originalUrl: img.originalUrl,
+            largeUrl: img.largeUrl,
+            mediumUrl: img.mediumUrl,
+            thumbUrl: img.thumbUrl,
+            originalName: imageFiles[i].filename,
+            fileSize: img.fileSize,
+            width: img.width,
+            height: img.height,
+            hash: img.hash,
+            storagePath: img.storagePath,
+            position: i,
+            isPrimary: i === 0,
+          },
+        });
+      }
+
+      // Update product images array (medium URLs for display)
+      await prisma.product.update({
+        where: { id: productId },
+        data: {
+          images: processedImages
+            .map(img => img.mediumUrl || img.thumbUrl)
+            .filter(Boolean) as string[],
+        },
+      });
+    } catch (error) {
+      console.error(`Error processing images for ${partNumber}:`, error);
+      this.warnings.push({
+        row: 0,
+        field: 'images',
+        message: `Failed to process images for ${partNumber}: ${error instanceof Error ? error.message : 'Unknown'}`,
+      });
     }
   }
 
