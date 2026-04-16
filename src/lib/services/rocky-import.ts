@@ -679,7 +679,7 @@ export class RockyImportService {
     };
 
     if (opts.dryRun) {
-      console.log(`[DRY RUN] Would upsert: ${baseSku} (${group.rows.length} variants, ${imageUrls.length} images)`);
+      console.log(`[DRY RUN] Would upsert: ${baseSku} (${group.rows.length} variants, ${imageFiles.length} images)`);
       return;
     }
 
