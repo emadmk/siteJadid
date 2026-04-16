@@ -655,7 +655,6 @@ export class RockyImportService {
         gsaPrice: new Decimal(govPrice),
         governmentPrice: new Decimal(govPrice),
       }),
-      ...(group.msrp && group.msrp > basePrice && { salePrice: new Decimal(basePrice), basePrice: new Decimal(group.msrp) }),
       ...(group.gsaNumber && { gsaSin: group.gsaNumber }),
       priceUnit,
       qtyPerPack: 1,
