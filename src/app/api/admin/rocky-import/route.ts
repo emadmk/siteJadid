@@ -45,17 +45,16 @@ export async function POST(request: NextRequest) {
 
     const options = optionsStr ? JSON.parse(optionsStr) : {};
 
-    // Auto-detect image base path
-    let imageBasePath = options.imageBasePath;
-    if (!imageBasePath) {
-      for (const p of IMAGE_PATHS) {
-        if (existsSync(p)) {
-          imageBasePath = p;
-          break;
-        }
+    // Always use Rocky image path (ignore frontend's generic imageBasePath)
+    let imageBasePath: string | undefined;
+    for (const p of IMAGE_PATHS) {
+      if (existsSync(p)) {
+        imageBasePath = p;
+        break;
       }
-      if (!imageBasePath) imageBasePath = IMAGE_PATHS[0];
     }
+    if (!imageBasePath) imageBasePath = IMAGE_PATHS[0];
+    console.log(`Rocky import: using image path: ${imageBasePath}`);
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
