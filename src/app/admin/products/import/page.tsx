@@ -26,7 +26,7 @@ import {
   Footprints,
 } from 'lucide-react';
 
-type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine' | 'carhartt' | '3m' | 'rocky';
+type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine' | 'carhartt' | '3m' | 'rocky' | 'portwest';
 
 interface Brand {
   id: string;
@@ -210,6 +210,8 @@ export default function ProductImportPage() {
         ? '/api/admin/threem-import'
         : importType === 'rocky'
         ? '/api/admin/rocky-import'
+        : importType === 'portwest'
+        ? '/api/admin/portwest-import'
         : '/api/admin/bulk-import';
 
       const response = await fetch(apiUrl, {
@@ -379,6 +381,21 @@ export default function ProductImportPage() {
           </button>
           <button
             onClick={() => {
+              setImportType('portwest');
+              setFile(null);
+              setResult(null);
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              importType === 'portwest'
+                ? 'bg-teal-700 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Package className="w-5 h-5" />
+            PortWest
+          </button>
+          <button
+            onClick={() => {
               setImportType('gsa');
               setFile(null);
               setResult(null);
@@ -406,6 +423,8 @@ export default function ProductImportPage() {
             ? 'Import 3M products (Mar 2026 format). Creates categories (inactive). TAA auto-set by country. Prices = unit × min order qty. No images.'
             : importType === 'rocky'
             ? 'Import Rocky / Georgia Boots / Durango / XtraTuf / Muck. Groups by Supplier Part Number into size variants. Maps images from /var/www/static-uploads/rocky/. Creates as PRERELEASE.'
+            : importType === 'portwest'
+            ? 'Import PortWest workwear and PPE. Groups by base style into color+size variants. Downloads images from CloudFront CDN on-the-fly, converts to WebP. Matches to existing site categories. Creates as PRERELEASE.'
             : 'Import GSA products with custom field mapping and compliance data.'}
         </p>
       </div>
@@ -427,6 +446,8 @@ export default function ProductImportPage() {
               ? 'bg-red-50 border-red-200'
               : importType === 'rocky'
               ? 'bg-stone-50 border-stone-300'
+              : importType === 'portwest'
+              ? 'bg-teal-50 border-teal-200'
               : 'bg-blue-50 border-blue-200'
           }`}>
             <h2 className={`text-lg font-semibold mb-3 ${
@@ -442,9 +463,11 @@ export default function ProductImportPage() {
                 ? 'text-red-800'
                 : importType === 'rocky'
                 ? 'text-stone-800'
+                : importType === 'portwest'
+                ? 'text-teal-800'
                 : 'text-blue-800'
             }`}>
-              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : importType === 'wolverine' ? 'Wolverine Bates Import' : importType === 'carhartt' ? 'Carhartt Import' : importType === '3m' ? '3M Import' : importType === 'rocky' ? 'Rocky / Georgia Boots Import' : 'GSA Import'} Selected
+              {importType === 'occunomix' ? 'OccuNomix Import' : importType === 'pip' ? 'PiP Import' : importType === 'wolverine' ? 'Wolverine Bates Import' : importType === 'carhartt' ? 'Carhartt Import' : importType === '3m' ? '3M Import' : importType === 'rocky' ? 'Rocky / Georgia Boots Import' : importType === 'portwest' ? 'PortWest Import' : 'GSA Import'} Selected
             </h2>
             {importType === 'occunomix' ? (
               <div className="space-y-2 text-sm text-safety-green-700">
@@ -528,6 +551,25 @@ export default function ProductImportPage() {
                   <li>TAA: auto-true for USA/Puerto Rico or TAA Approved = Yes</li>
                   <li>All products go to <strong>PRERELEASE</strong> status for review</li>
                   <li>Maps to Footwear category (originalCategory = "&#123;Brand&#125; Footwear")</li>
+                </ul>
+              </div>
+            ) : importType === 'portwest' ? (
+              <div className="space-y-2 text-sm text-teal-700">
+                <p><strong>Expected Columns:</strong> Product Code, Supplier Part Number, Product Short Description, Brand, Product Category, Cost Price, Personal Buyer Price, Gov Price, MSRP, Image_Path, COO, TAA Approved, UPC, EAN13, SIN Number, Length/Width/Height/Weight</p>
+                <p><strong>Features:</strong></p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Groups by <strong>base style</strong> (extracted from image URL) → one product with color + size variants</li>
+                  <li>Example: <code>2886CGR42</code>, <code>2886CGR44</code>, <code>2886NAR42</code> → one product "2886" with variants (Charcoal Gray/Navy × sizes)</li>
+                  <li>Variant name = "Color Size Fit" (e.g., "Charcoal Gray 42 Regular")</li>
+                  <li>Downloads images from <code>cloudfront.net</code> on-the-fly during import</li>
+                  <li>Converts JPG → WebP in 4 sizes (original, large, medium, thumb)</li>
+                  <li>Each color has its own image (via product.colorImages mapping)</li>
+                  <li>Categories matched to existing site categories: PPE, Clothing, Hand Protection, Footwear, etc.</li>
+                  <li>Auto-creates PortWest brand</li>
+                  <li>BOM characters (<code>\uFEFF</code>) cleaned from part numbers</li>
+                  <li>Pricing: Personal Buyer → base, Gov Price → GSA/Government, Cost Price → cost (salePrice = null)</li>
+                  <li>TAA: auto-true for USA/Puerto Rico or TAA Approved = Yes</li>
+                  <li>All products go to <strong>PRERELEASE</strong> status for review</li>
                 </ul>
               </div>
             ) : (
