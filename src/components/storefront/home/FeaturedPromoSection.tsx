@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronRight, ChevronLeft, Star } from 'lucide-react';
 import { getImageSize } from '@/lib/image-utils';
+import { formatPrice } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -151,15 +152,15 @@ export function FeaturedPromoSection() {
                           {product.salePrice ? (
                             <>
                               <span className="text-sm font-bold text-safety-green-600">
-                                ${Number(product.salePrice).toFixed(2)}
+                                ${formatPrice(product.salePrice)}
                               </span>
                               <span className="text-xs text-gray-400 line-through">
-                                ${Number(product.basePrice).toFixed(2)}
+                                ${formatPrice(product.basePrice)}
                               </span>
                             </>
                           ) : (
                             <span className="text-sm font-bold text-gray-900">
-                              ${Number(product.basePrice).toFixed(2)}
+                              ${formatPrice(product.basePrice)}
                             </span>
                           )}
                         </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Heart, ShoppingCart, Star, Eye, Loader2 } from 'lucide-react';
+import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { getImageSize } from '@/lib/image-utils';
@@ -209,11 +210,11 @@ export function FeaturedProducts() {
                   {/* Price */}
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-bold text-black">
-                      ${Number(price).toFixed(2)}
+                      ${formatPrice(price)}
                     </span>
                     {hasDiscount && (
                       <span className="text-sm text-gray-400 line-through">
-                        ${Number(product.basePrice).toFixed(2)}
+                        ${formatPrice(product.basePrice)}
                       </span>
                     )}
                   </div>

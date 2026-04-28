@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPrice } from '@/lib/utils';
 import {
   X,
   Save,
@@ -800,14 +801,14 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
                   <div>
                     <div className="text-gray-500">Base</div>
                     <div className="font-medium text-black">
-                      ${parseFloat(formData.basePrice || '0').toFixed(2)}
+                      ${formatPrice(formData.basePrice || '0')}
                     </div>
                   </div>
                   {formData.salePrice && (
                     <div>
                       <div className="text-gray-500">Sale</div>
                       <div className="font-medium text-red-600">
-                        ${parseFloat(formData.salePrice).toFixed(2)}
+                        ${formatPrice(formData.salePrice)}
                       </div>
                     </div>
                   )}
@@ -815,7 +816,7 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
                     <div>
                       <div className="text-gray-500">B2B</div>
                       <div className="font-medium text-blue-600">
-                        ${parseFloat(formData.wholesalePrice).toFixed(2)}
+                        ${formatPrice(formData.wholesalePrice)}
                       </div>
                     </div>
                   )}
@@ -823,7 +824,7 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
                     <div>
                       <div className="text-gray-500">GSA</div>
                       <div className="font-medium text-purple-600">
-                        ${parseFloat(formData.gsaPrice).toFixed(2)}
+                        ${formatPrice(formData.gsaPrice)}
                       </div>
                     </div>
                   )}
@@ -1004,21 +1005,21 @@ export function ProductInlineEditor({ product, isOpen, onClose }: ProductInlineE
                                 </span>
                               </td>
                               <td className="px-3 py-2 text-right text-sm">
-                                ${Number(variant.basePrice).toFixed(2)}
+                                ${formatPrice(variant.basePrice)}
                               </td>
                               <td className="px-3 py-2 text-right text-sm text-red-600">
                                 {variant.salePrice
-                                  ? `$${Number(variant.salePrice).toFixed(2)}`
+                                  ? `$${formatPrice(variant.salePrice)}`
                                   : '-'}
                               </td>
                               <td className="px-3 py-2 text-right text-sm text-blue-600">
                                 {variant.wholesalePrice
-                                  ? `$${Number(variant.wholesalePrice).toFixed(2)}`
+                                  ? `$${formatPrice(variant.wholesalePrice)}`
                                   : '-'}
                               </td>
                               <td className="px-3 py-2 text-right text-sm text-purple-600">
                                 {variant.gsaPrice
-                                  ? `$${Number(variant.gsaPrice).toFixed(2)}`
+                                  ? `$${formatPrice(variant.gsaPrice)}`
                                   : '-'}
                               </td>
                               <td className="px-3 py-2 text-right text-sm">

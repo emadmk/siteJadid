@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, Eye, X } from 'lucide-react';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { getImageSize } from '@/lib/image-utils';
+import { formatPrice } from '@/lib/utils';
 
 export function RecentlyViewedSection() {
   const { products, clearProducts } = useRecentlyViewed();
@@ -48,7 +49,7 @@ export function RecentlyViewedSection() {
                 {product.name}
               </h3>
               <p className="text-sm font-semibold text-black mt-1">
-                ${Number(product.salePrice || product.basePrice).toFixed(2)}
+                ${formatPrice(product.salePrice || product.basePrice)}
               </p>
             </Link>
           ))}

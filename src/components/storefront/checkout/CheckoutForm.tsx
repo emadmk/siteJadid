@@ -20,6 +20,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatPrice } from '@/lib/utils';
 
 interface CartItem {
   id: string;
@@ -1009,7 +1010,7 @@ export function CheckoutForm({
                         {isFreeEligible ? (
                           <span className="text-safety-green-600">FREE</span>
                         ) : (
-                          `$${rate.cost.toFixed(2)}`
+                          `$${formatPrice(rate.cost)}`
                         )}
                       </div>
                     </label>
@@ -1019,7 +1020,7 @@ export function CheckoutForm({
                 {/* Free shipping notice */}
                 {shippingSettings.freeShippingEnabled && subtotal < shippingSettings.freeThreshold && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
-                    Add ${(shippingSettings.freeThreshold - subtotal).toFixed(2)} more for free shipping!
+                    Add ${formatPrice(shippingSettings.freeThreshold - subtotal)} more for free shipping!
                   </div>
                 )}
               </div>
@@ -1191,7 +1192,7 @@ export function CheckoutForm({
                     </div>
                     {govPriceSavings > 0 ? (
                       <span className="text-lg font-bold text-green-700">
-                        Saving ${govPriceSavings.toFixed(2)}
+                        Saving ${formatPrice(govPriceSavings)}
                       </span>
                     ) : (
                       <span className="text-sm text-gray-600">
@@ -1525,7 +1526,7 @@ export function CheckoutForm({
                     {activeTier && currentSavings > 0 && (
                       <div className="text-right">
                         <div className="text-emerald-100 text-[9px] uppercase tracking-wide">Savings</div>
-                        <div className="text-white text-lg font-bold">${currentSavings.toFixed(2)}</div>
+                        <div className="text-white text-lg font-bold">${formatPrice(currentSavings)}</div>
                       </div>
                     )}
                   </div>
@@ -1563,7 +1564,7 @@ export function CheckoutForm({
                   {nextTier && amountToNextTier > 0 && (
                     <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-2.5 mt-2">
                       <span className="text-[11px] font-semibold text-amber-800">
-                        Add ${amountToNextTier.toFixed(2)} for {nextTier.discountPercentage}% off
+                        Add ${formatPrice(amountToNextTier)} for {nextTier.discountPercentage}% off
                       </span>
                       <div className="w-full bg-amber-200 rounded-full h-1.5 overflow-hidden mt-1">
                         <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progressToNext}%` }} />
@@ -1613,7 +1614,7 @@ export function CheckoutForm({
                     <div className="text-xs text-gray-600">Qty: {item.quantity}</div>
                   </div>
                   <div className="text-sm font-semibold text-black">
-                    ${(price * item.quantity).toFixed(2)}
+                    ${formatPrice(price * item.quantity)}
                   </div>
                 </div>
               );
@@ -1642,7 +1643,7 @@ export function CheckoutForm({
             {appliedCoupon && (
               <div className="mt-2 text-sm text-safety-green-600 flex items-center gap-2">
                 <Check className="w-4 h-4" />
-                {appliedCoupon.code} applied: -${appliedCoupon.discount.toFixed(2)}
+                {appliedCoupon.code} applied: -${formatPrice(appliedCoupon.discount)}
               </div>
             )}
           </div>
@@ -1651,18 +1652,18 @@ export function CheckoutForm({
           <div className="border-t border-gray-200 pt-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Subtotal</span>
-              <span className="font-medium">${subtotal.toFixed(2)}</span>
+              <span className="font-medium">${formatPrice(subtotal)}</span>
             </div>
             {couponDiscount > 0 && (
               <div className="flex justify-between text-safety-green-600">
                 <span>Coupon Discount</span>
-                <span>-${couponDiscount.toFixed(2)}</span>
+                <span>-${formatPrice(couponDiscount)}</span>
               </div>
             )}
             {isGovBuyer && govPriceSavings > 0 && (
               <div className="flex justify-between text-blue-600">
                 <span>Government Pricing</span>
-                <span>Saving ${govPriceSavings.toFixed(2)}</span>
+                <span>Saving ${formatPrice(govPriceSavings)}</span>
               </div>
             )}
             <div className="flex justify-between">
@@ -1673,14 +1674,14 @@ export function CheckoutForm({
                 ) : shippingCost === 0 ? (
                   <span className="text-safety-green-600">FREE</span>
                 ) : (
-                  `$${shippingCost.toFixed(2)}`
+                  `$${formatPrice(shippingCost)}`
                 )}
               </span>
             </div>
             {tax > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-600">Tax</span>
-                <span className="font-medium">${tax.toFixed(2)}</span>
+                <span className="font-medium">${formatPrice(tax)}</span>
               </div>
             )}
             {(isB2BAccount || isGSAAccount || isGovBuyer) && (
@@ -1693,11 +1694,11 @@ export function CheckoutForm({
               <span className="text-lg font-semibold text-black">Total</span>
               {!selectedRate ? (
                 <div className="text-right">
-                  <span className="text-xl font-bold text-black">${(subtotal - discount + tax).toFixed(2)}</span>
+                  <span className="text-xl font-bold text-black">${formatPrice(subtotal - discount + tax)}</span>
                   <div className="text-xs text-gray-500">+ shipping</div>
                 </div>
               ) : (
-                <span className="text-2xl font-bold text-black">${total.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-black">${formatPrice(total)}</span>
               )}
             </div>
           </div>

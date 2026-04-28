@@ -111,22 +111,8 @@ export default function GSAContractPage() {
               Serving the government for over 25 years !
             </p>
 
-            {/* Partner Logos - 4 columns x 2 rows grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-8 w-full max-w-3xl">
-              {/* SBA WOSB Certified */}
-              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
-                <div className="h-20 flex items-center justify-center mb-2">
-                  <Image
-                    src="/uploads/logos (4).png"
-                    alt="SBA WOSB Certified"
-                    width={160}
-                    height={80}
-                    className="object-contain h-full w-auto"
-                  />
-                </div>
-                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">SBA WOSB Certified</span>
-              </div>
-
+            {/* Partner Logos - Row 1: GSA, FedMall, AbilityOne, DLA */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-4 w-full max-w-3xl">
               {/* GSA */}
               <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
                 <div className="h-20 flex items-center justify-center mb-2">
@@ -169,20 +155,6 @@ export default function GSAContractPage() {
                 <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">AbilityOne Program</span>
               </div>
 
-              {/* HUBZone Certified */}
-              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
-                <div className="h-20 flex items-center justify-center mb-2">
-                  <Image
-                    src="/uploads/logos (3).jpeg"
-                    alt="HUBZone Certified"
-                    width={160}
-                    height={80}
-                    className="object-contain h-full w-auto"
-                  />
-                </div>
-                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">HUBZone Certified</span>
-              </div>
-
               {/* Defense Logistics Agency */}
               <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
                 <div className="h-20 flex items-center justify-center mb-2">
@@ -196,33 +168,36 @@ export default function GSAContractPage() {
                 </div>
                 <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">Defense Logistics Agency</span>
               </div>
+            </div>
 
-              {/* MRO Xpress */}
-              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
+            {/* Row 2: SBA & WOSB */}
+            <div className="flex justify-center gap-5 mb-8 w-full max-w-md">
+              {/* SBA */}
+              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center flex-1">
                 <div className="h-20 flex items-center justify-center mb-2">
                   <Image
-                    src="/uploads/logos (2).png"
-                    alt="MRO Xpress"
+                    src="/uploads/logos (4).png"
+                    alt="SBA Certified"
                     width={160}
                     height={80}
                     className="object-contain h-full w-auto"
                   />
                 </div>
-                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">MRO Xpress</span>
+                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">SBA Certified</span>
               </div>
 
-              {/* Tunnel to Towers */}
-              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center">
+              {/* WOSB */}
+              <div className="group bg-white rounded-2xl p-5 shadow-[0_4px_14px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.14)] transition-all duration-300 flex flex-col items-center justify-center flex-1">
                 <div className="h-20 flex items-center justify-center mb-2">
                   <Image
-                    src="/uploads/logos (1).jpeg"
-                    alt="Tunnel to Towers Foundation"
+                    src="/uploads/logos (4).png"
+                    alt="WOSB Certified"
                     width={160}
                     height={80}
                     className="object-contain h-full w-auto"
                   />
                 </div>
-                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">Tunnel to Towers</span>
+                <span className="text-xs font-medium text-gray-500 group-hover:text-white/90 transition-colors text-center">WOSB Certified</span>
               </div>
             </div>
 

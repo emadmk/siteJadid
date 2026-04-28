@@ -13,6 +13,12 @@ export function formatCurrency(amount: number | string, currency: string = 'USD'
   }).format(numAmount);
 }
 
+export function formatPrice(amount: number | string): string {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(num)) return '0.00';
+  return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function formatDate(date: Date | string, format: 'short' | 'long' | 'full' = 'short'): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
 

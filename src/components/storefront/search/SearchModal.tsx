@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Search, X, Clock, TrendingUp, ArrowRight, Package, Loader2 } from 'lucide-react';
 import { useSearch } from '@/contexts/SearchContext';
 import { getImageSize } from '@/lib/image-utils';
+import { formatPrice } from '@/lib/utils';
 
 export function SearchModal() {
   const router = useRouter();
@@ -209,15 +210,15 @@ export function SearchModal() {
                           {product.salePrice ? (
                             <div>
                               <span className="font-semibold text-safety-green-600">
-                                ${Number(product.salePrice).toFixed(2)}
+                                ${formatPrice(product.salePrice)}
                               </span>
                               <span className="text-sm text-gray-400 line-through ml-2">
-                                ${Number(product.basePrice).toFixed(2)}
+                                ${formatPrice(product.basePrice)}
                               </span>
                             </div>
                           ) : (
                             <span className="font-semibold text-gray-900">
-                              ${Number(product.basePrice).toFixed(2)}
+                              ${formatPrice(product.basePrice)}
                             </span>
                           )}
                         </div>

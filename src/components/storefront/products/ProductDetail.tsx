@@ -29,6 +29,7 @@ import { useWishlist } from '@/hooks/useWishlist';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { toast } from '@/lib/toast';
 import { getImageSize, getOptimizedImageUrl } from '@/lib/image-utils';
+import { formatPrice } from '@/lib/utils';
 import { VariantSelector } from './VariantSelector';
 import { ProductInlineEditor } from './ProductInlineEditor';
 
@@ -645,7 +646,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
               {/* Main Price */}
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-4xl font-bold text-gray-900">
-                  ${Number(currentPrice).toFixed(2)}
+                  ${formatPrice(currentPrice)}
                 </span>
                 <span className="text-lg text-gray-500 font-medium">
                   per {unitLabel}
@@ -653,7 +654,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                 {hasDiscount && (
                   <>
                     <span className="text-lg text-gray-400 line-through">
-                      ${Number(currentBasePrice).toFixed(2)}
+                      ${formatPrice(currentBasePrice)}
                     </span>
                     <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
                       SAVE {discountPercent}%
@@ -668,13 +669,13 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                   {canSeeGovernmentPrice && currentGsaPrice && (
                     <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-medium">
                       <FileText className="w-4 h-4" />
-                      Government Price: ${Number(currentGsaPrice).toFixed(2)}
+                      Government Price: ${formatPrice(currentGsaPrice)}
                     </div>
                   )}
                   {canSeeVolumeBuyerPrice && currentWholesalePrice && (
                     <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium">
                       <Building2 className="w-4 h-4" />
-                      Volume Buyer: ${Number(currentWholesalePrice).toFixed(2)}
+                      Volume Buyer: ${formatPrice(currentWholesalePrice)}
                     </div>
                   )}
                   {product.taaApproved && (
@@ -697,7 +698,7 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                           {tier.minQuantity}{tier.maxQuantity ? `-${tier.maxQuantity}` : '+'} units
                         </div>
                         <div className="text-safety-green-600 font-bold">
-                          ${Number(tier.price).toFixed(2)}
+                          ${formatPrice(tier.price)}
                         </div>
                       </div>
                     ))}
@@ -1023,11 +1024,11 @@ export function ProductDetail({ product, relatedProducts }: ProductDetailProps) 
                       </h3>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-bold text-black">
-                          ${Number(relatedProduct.salePrice || relatedProduct.basePrice).toFixed(2)}
+                          ${formatPrice(relatedProduct.salePrice || relatedProduct.basePrice)}
                         </span>
                         {relatedProduct.salePrice && relatedProduct.salePrice < relatedProduct.basePrice && (
                           <span className="text-sm text-gray-500 line-through">
-                            ${Number(relatedProduct.basePrice).toFixed(2)}
+                            ${formatPrice(relatedProduct.basePrice)}
                           </span>
                         )}
                       </div>

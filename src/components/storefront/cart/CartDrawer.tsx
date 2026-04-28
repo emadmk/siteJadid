@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { X, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Loader2, Tag, Truck, Shield, BadgePercent } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useSession } from 'next-auth/react';
+import { formatPrice } from '@/lib/utils';
 
 export function CartDrawer() {
   const { cart, isCartOpen, closeCart, updateQuantity, removeFromCart, isLoading } = useCart();
@@ -146,7 +147,7 @@ export function CartDrawer() {
                 <div className="flex items-center gap-2 text-sm mb-2">
                   <Truck className="w-4 h-4 text-gray-500" />
                   <span className="text-gray-600">
-                    Add <span className="font-semibold text-safety-green-600">${remainingForFreeShipping.toFixed(2)}</span> for free shipping
+                    Add <span className="font-semibold text-safety-green-600">${formatPrice(remainingForFreeShipping)}</span> for free shipping
                   </span>
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -255,7 +256,7 @@ export function CartDrawer() {
                             </span>
                             {Number(gsaPrice) < Number(regularPrice) && (
                               <span className="text-xs text-green-600 font-medium">
-                                Save ${((Number(regularPrice) - Number(gsaPrice)) * item.quantity).toFixed(2)}
+                                Save ${formatPrice((Number(regularPrice) - Number(gsaPrice)) * item.quantity)}
                               </span>
                             )}
                           </div>
@@ -291,7 +292,7 @@ export function CartDrawer() {
                           {/* Price & Remove */}
                           <div className="flex items-center gap-3">
                             <span className="font-semibold text-gray-900">
-                              ${(Number(price) * item.quantity).toFixed(2)}
+                              ${formatPrice(Number(price) * item.quantity)}
                             </span>
                             <button
                               onClick={() => handleRemoveItem(item.id)}
@@ -358,7 +359,7 @@ export function CartDrawer() {
                       {activeTier && currentSavings > 0 && (
                         <div className="text-right">
                           <div className="text-emerald-100 text-[9px] uppercase tracking-wide">Savings</div>
-                          <div className="text-white text-base font-bold">${currentSavings.toFixed(2)}</div>
+                          <div className="text-white text-base font-bold">${formatPrice(currentSavings)}</div>
                         </div>
                       )}
                     </div>
@@ -396,7 +397,7 @@ export function CartDrawer() {
                     {nextTier && amountToNextTier > 0 && (
                       <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-2 mt-2">
                         <span className="text-[11px] font-semibold text-amber-800">
-                          Add ${amountToNextTier.toFixed(2)} for {nextTier.discountPercentage}% off
+                          Add ${formatPrice(amountToNextTier)} for {nextTier.discountPercentage}% off
                         </span>
                         <div className="w-full bg-amber-200 rounded-full h-1.5 overflow-hidden mt-1">
                           <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progressToNext}%` }} />
@@ -452,7 +453,7 @@ export function CartDrawer() {
             <div className="px-6 py-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="font-semibold text-gray-900">${subtotal.toFixed(2)}</span>
+                <span className="font-semibold text-gray-900">${formatPrice(subtotal)}</span>
               </div>
               <p className="text-xs text-gray-500 mb-4">Shipping and taxes calculated at checkout</p>
 

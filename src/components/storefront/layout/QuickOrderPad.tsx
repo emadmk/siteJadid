@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Plus, X, ShoppingCart, Upload, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { formatPrice } from '@/lib/utils';
 
 interface QuickOrderItem {
   sku: string;
@@ -220,7 +221,7 @@ export function QuickOrderPad({ isOpen, onClose }: QuickOrderPadProps) {
           <div className="flex items-center gap-4">
             {validCount > 0 && (
               <span className="text-sm text-gray-600">
-                {validCount} item{validCount !== 1 ? 's' : ''} &bull; ${totalAmount.toFixed(2)}
+                {validCount} item{validCount !== 1 ? 's' : ''} &bull; ${formatPrice(totalAmount)}
               </span>
             )}
             <button
