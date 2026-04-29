@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -40,7 +40,7 @@ function AdvancedSearchFiltersInner({ categories, priceRange }: AdvancedSearchFi
   });
   const certifications = ['ANSI Z87.1', 'OSHA', 'CE', 'CSA', 'NFPA', 'UL Listed'];
 
-  const applyFilters = (overrides?: Partial<{
+  const applyFilters = useCallback((overrides?: Partial<{
     categories: string[];
     minPrice: string;
     maxPrice: string;
@@ -61,7 +61,7 @@ function AdvancedSearchFiltersInner({ categories, priceRange }: AdvancedSearchFi
     certs.length > 0 ? params.set('certifications', certs.join(',')) : params.delete('certifications');
 
     router.push(`${pathname}?${params.toString()}`);
-  };
+  }, [searchParams, selectedCategories, minPrice, maxPrice, inStockOnly, selectedCertifications, pathname, router]);
 
   // Auto-apply: price debounce
   const priceDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,6 +72,7 @@ function AdvancedSearchFiltersInner({ categories, priceRange }: AdvancedSearchFi
     if (priceDebounceRef.current) clearTimeout(priceDebounceRef.current);
     priceDebounceRef.current = setTimeout(() => applyFilters(), 600);
     return () => { if (priceDebounceRef.current) clearTimeout(priceDebounceRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minPrice, maxPrice]);
 
   // Auto-apply: categories immediate
@@ -79,6 +80,7 @@ function AdvancedSearchFiltersInner({ categories, priceRange }: AdvancedSearchFi
   useEffect(() => {
     if (isFirstCatRef.current) { isFirstCatRef.current = false; return; }
     applyFilters();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategories]);
 
   // Auto-apply: inStock immediate
@@ -86,6 +88,7 @@ function AdvancedSearchFiltersInner({ categories, priceRange }: AdvancedSearchFi
   useEffect(() => {
     if (isFirstStockRef.current) { isFirstStockRef.current = false; return; }
     applyFilters();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inStockOnly]);
 
   // Auto-apply: certifications immediate
@@ -93,6 +96,7 @@ function AdvancedSearchFiltersInner({ categories, priceRange }: AdvancedSearchFi
   useEffect(() => {
     if (isFirstCertRef.current) { isFirstCertRef.current = false; return; }
     applyFilters();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCertifications]);
 
   const clearFilters = () => {
