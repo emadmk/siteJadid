@@ -2,187 +2,14 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { cache } from '@/lib/redis';
+import {
+  SMART_FILTER_PATTERNS,
+  buildSmartFilterWhere,
+  computeCascadingSmartFilters,
+} from '@/lib/smart-filters';
 
 // Smart filter keywords - these are extracted from product names/descriptions
 // Keywords map to their normalized display value
-const SMART_FILTER_PATTERNS: Record<string, { keywords: Record<string, string>; label: string }> = {
-  gender: {
-    keywords: {
-      "men's": "Male",
-      "mens": "Male",
-      "men": "Male",
-      "male": "Male",
-      "man": "Male",
-      "women's": "Female",
-      "womens": "Female",
-      "women": "Female",
-      "woman": "Female",
-      "ladies": "Female",
-      "female": "Female",
-      "unisex": "Unisex",
-    },
-    label: 'Gender',
-  },
-  toeType: {
-    keywords: {
-      'steel toe': 'Steel Toe',
-      'soft toe': 'Soft Toe',
-      'casual': 'Soft Toe / Casual',
-      'composite toe': 'Composite Toe',
-      'safety toe': 'Safety Toe',
-      'alloy toe': 'Alloy Toe',
-      'carbon toe': 'Carbon Toe',
-    },
-    label: 'Toe Type',
-  },
-  material: {
-    keywords: {
-      'leather': 'Leather',
-      'rubber': 'Rubber',
-      'synthetic': 'Synthetic',
-      'nylon': 'Nylon',
-      'polyester': 'Polyester',
-      'cotton': 'Cotton',
-      'kevlar': 'Kevlar',
-      'neoprene': 'Neoprene',
-      'latex': 'Latex',
-      'nitrile': 'Nitrile',
-      'vinyl': 'Vinyl',
-      'fleece': 'Fleece',
-      'mesh': 'Mesh',
-      'tricot': 'Tricot / Solid',
-    },
-    label: 'Material',
-  },
-  size: {
-    keywords: {
-      'small': 'Small',
-      'medium': 'Medium',
-      'large': 'Large',
-      'xl': 'XL',
-      'xxl': 'XXL',
-      'xxxl': 'XXXL',
-      'one size': 'One Size',
-    },
-    label: 'Size',
-  },
-  color: {
-    keywords: {
-      'black': 'Black',
-      'white': 'White',
-      'red': 'Red',
-      'blue': 'Blue',
-      'green': 'Green',
-      'yellow': 'Yellow',
-      'orange': 'Orange',
-      'brown': 'Brown',
-      'gray': 'Gray',
-      'grey': 'Gray',
-      'navy': 'Navy',
-      'pink': 'Pink',
-      'hi-vis': 'Hi-Vis',
-      'hi vis': 'Hi-Vis',
-      'high visibility': 'Hi-Vis',
-      'multi color': 'Multi Color',
-      'multicolor': 'Multi Color',
-    },
-    label: 'Color',
-  },
-  protection: {
-    keywords: {
-      'waterproof': 'Waterproof',
-      'water resistant': 'Water Resistant',
-      'fire resistant': 'Fire Resistant',
-      'fire retardant': 'Fire Retardant',
-      'fr': 'Fire Resistant',
-      'flame resistant': 'Fire Resistant',
-      'cut resistant': 'Cut Resistant',
-      'puncture resistant': 'Puncture Resistant',
-      'slip resistant': 'Slip Resistant',
-      'non-slip': 'Slip Resistant',
-      'anti-slip': 'Slip Resistant',
-      'insulated': 'Insulated',
-      'thermal': 'Thermal',
-      'anti-static': 'Anti-Static',
-      'anti static': 'Anti-Static',
-      'uv protection': 'UV Protection',
-      'bug repellant': 'Bug Repellant',
-      'bug repellent': 'Bug Repellant',
-    },
-    label: 'Protection',
-  },
-  style: {
-    keywords: {
-      'boot': 'Boot',
-      'shoe': 'Shoe',
-      'sneaker': 'Sneaker',
-      'loafer': 'Loafer',
-      'oxford': 'Oxford',
-      'hiker': 'Hiker',
-      'athletic': 'Athletic',
-      'work boot': 'Work Boot',
-      '6 inch': '6 Inch',
-      '6"': '6 Inch',
-      '8 inch': '8 Inch',
-      '8"': '8 Inch',
-      'tactical': 'Tactical',
-      'wellington': 'Wellington',
-      'gum': 'Gum / Wellington',
-      'windbreaker': 'Windbreaker',
-      'parka': 'Full Length / Parka',
-      'bomber': 'Bomber Style',
-      'long sleeve': 'Long Sleeve',
-      'short sleeve': 'Short Sleeve',
-      'zipper': 'Zipper',
-      'velcro': 'Velcro',
-      'breakaway': 'Breakaway',
-    },
-    label: 'Style',
-  },
-  type: {
-    keywords: {
-      'ansi class 2': 'ANSI Class 2',
-      'class 2': 'ANSI Class 2',
-      'ansi class 3': 'ANSI Class 3',
-      'class 3': 'ANSI Class 3',
-      'non ansi': 'Non ANSI',
-      'non-ansi': 'Non ANSI',
-      'incident command': 'Incident Command',
-    },
-    label: 'Type',
-  },
-};
-
-function extractSmartFilters(products: { name: string; description: string | null }[]): Record<string, string[]> {
-  const filters: Record<string, Set<string>> = {};
-
-  for (const product of products) {
-    const text = `${product.name} ${product.description || ''}`.toLowerCase();
-
-    for (const [filterKey, { keywords }] of Object.entries(SMART_FILTER_PATTERNS)) {
-      if (!filters[filterKey]) {
-        filters[filterKey] = new Set();
-      }
-
-      // keywords is now a Record<string, string> where key is the search term and value is the normalized display name
-      for (const [searchTerm, displayName] of Object.entries(keywords)) {
-        if (text.includes(searchTerm.toLowerCase())) {
-          // Add the normalized display name (this prevents duplicates like Men/Men's)
-          filters[filterKey].add(displayName);
-        }
-      }
-    }
-  }
-
-  const result: Record<string, string[]> = {};
-  for (const [key, values] of Object.entries(filters)) {
-    if (values.size > 0) {
-      result[key] = Array.from(values).sort();
-    }
-  }
-
-  return result;
-}
 
 export async function GET(
   request: NextRequest,
@@ -292,65 +119,11 @@ export async function GET(
       where.taaApproved = true;
     }
 
+    let parsedSmartFilters: Record<string, string[]> = {};
     if (smartFilters) {
       try {
-        const parsedFilters = JSON.parse(smartFilters) as Record<string, string[]>;
-        const filterConditions: any[] = [];
-
-        // Gender exclusion: when filtering Male, exclude female keywords to prevent "men" matching "women"
-        const GENDER_EXCLUSIONS: Record<string, string[]> = {
-          'Male': ['women', 'woman', 'ladies', 'lady', 'female', 'girl', 'feminine'],
-          'Female': [],
-          'Unisex': [],
-        };
-
-        for (const [filterKey, values] of Object.entries(parsedFilters)) {
-          if (values && values.length > 0) {
-            const pattern = SMART_FILTER_PATTERNS[filterKey];
-            const keywordConditions: any[] = [];
-
-            for (const displayValue of values) {
-              if (pattern) {
-                const keywords = Object.entries(pattern.keywords)
-                  .filter(([, normalized]) => normalized === displayValue)
-                  .map(([keyword]) => keyword);
-                for (const keyword of keywords) {
-                  keywordConditions.push(
-                    { name: { contains: keyword, mode: 'insensitive' } },
-                    { description: { contains: keyword, mode: 'insensitive' } },
-                  );
-                }
-              } else {
-                keywordConditions.push(
-                  { name: { contains: displayValue, mode: 'insensitive' } },
-                  { description: { contains: displayValue, mode: 'insensitive' } },
-                );
-              }
-            }
-
-            if (keywordConditions.length > 0) {
-              if (filterKey === 'gender' && values.length === 1 && GENDER_EXCLUSIONS[values[0]]) {
-                const excludes = GENDER_EXCLUSIONS[values[0]];
-                if (excludes.length > 0) {
-                  const notConditions = excludes.map(word => ({
-                    name: { not: { contains: word }, mode: 'insensitive' as const },
-                  }));
-                  filterConditions.push({
-                    AND: [
-                      { OR: keywordConditions },
-                      ...notConditions,
-                    ],
-                  });
-                } else {
-                  filterConditions.push({ OR: keywordConditions });
-                }
-              } else {
-                filterConditions.push({ OR: keywordConditions });
-              }
-            }
-          }
-        }
-
+        parsedSmartFilters = JSON.parse(smartFilters) as Record<string, string[]>;
+        const filterConditions = buildSmartFilterWhere(parsedSmartFilters);
         if (filterConditions.length > 0) {
           where.AND = filterConditions;
         }
@@ -453,20 +226,22 @@ export async function GET(
       reviewCount: product._count.reviews,
     }));
 
-    // Get all products for smart filter extraction
+    // Get all products for cascading smart filter computation (no smart filters in base query)
     const allProductsForFilters = await db.product.findMany({
       where: {
         status: 'ACTIVE',
         stockQuantity: { gt: 0 },
         brandId: brand.id,
       },
-      select: {
-        name: true,
-        description: true,
-      },
+      select: { name: true, description: true },
     });
 
-    const availableSmartFilters = extractSmartFilters(allProductsForFilters);
+    // Compute cascading smart filters: each facet reflects active filters in OTHER groups
+    const availableSmartFilters = computeCascadingSmartFilters(
+      allProductsForFilters,
+      parsedSmartFilters,
+      null,
+    );
 
     const smartFilterLabels: Record<string, string> = {};
     for (const key of Object.keys(availableSmartFilters)) {

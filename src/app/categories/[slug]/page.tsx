@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/hooks/useWishlist';
 import { getImageSize } from '@/lib/image-utils';
+import { ActiveFiltersBar, type ActiveFilter } from '@/components/storefront/filters/ActiveFiltersBar';
 
 interface Category {
   id: string;
@@ -300,22 +301,53 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
     await toggleWishlist(productId);
   };
 
-  const applyFilters = () => {
+  // Auto-apply: debounced price range
+  const priceDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevPriceRef = useRef(priceRange);
+  useEffect(() => {
+    if (prevPriceRef.current.min === priceRange.min && prevPriceRef.current.max === priceRange.max) return;
+    prevPriceRef.current = priceRange;
+    if (priceDebounceRef.current) clearTimeout(priceDebounceRef.current);
+    priceDebounceRef.current = setTimeout(() => {
+      setCurrentPage(1);
+      fetchData(1, true);
+    }, 600);
+    return () => { if (priceDebounceRef.current) clearTimeout(priceDebounceRef.current); };
+  }, [priceRange]);
+
+  // Auto-apply: search debounce
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevSearchRef = useRef(searchQuery);
+  useEffect(() => {
+    if (prevSearchRef.current === searchQuery) return;
+    prevSearchRef.current = searchQuery;
+    if (!data) return;
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setCurrentPage(1);
+      fetchData(1, true);
+    }, 500);
+    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+  }, [searchQuery]);
+
+  // Auto-apply: smart filters (immediate)
+  const isFirstSmartFilterRender = useRef(true);
+  useEffect(() => {
+    if (isFirstSmartFilterRender.current) { isFirstSmartFilterRender.current = false; return; }
+    if (!data) return;
     setCurrentPage(1);
     fetchData(1, true);
-    setShowMobileFilters(false);
-  };
+  }, [activeSmartFilters]);
 
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedBrand('');
     setSelectedSubcategories([]);
     setPriceRange({ min: '', max: '' });
-    setSortBy('newest');
     setTaaApproved(false);
     setActiveSmartFilters({});
     setCurrentPage(1);
-    fetchData(1, true, { subcategories: [] });
+    fetchData(1, true, { subcategories: [], brand: '', taaApproved: false });
     setShowMobileFilters(false);
   };
 
@@ -344,8 +376,52 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
     }));
   };
 
-  const hasActiveFilters = searchQuery || selectedBrand || selectedSubcategories.length > 0 || priceRange.min || priceRange.max || taaApproved ||
-    Object.values(activeSmartFilters).some(arr => arr.length > 0);
+  const hasActiveFilters = !!(searchQuery || selectedBrand || selectedSubcategories.length > 0 || priceRange.min || priceRange.max || taaApproved ||
+    Object.values(activeSmartFilters).some((arr: string[]) => arr.length > 0));
+
+  // Build active filter chips list for display bar
+  const activeFilterChips: ActiveFilter[] = [];
+  if (searchQuery) activeFilterChips.push({ key: 'search', label: 'Search', value: searchQuery, displayValue: searchQuery });
+  if (selectedBrand && data) {
+    const brandObj = data.brands.find(b => b.slug === selectedBrand);
+    activeFilterChips.push({ key: 'brand', label: 'Brand', value: selectedBrand, displayValue: brandObj?.name || selectedBrand });
+  }
+  if (data) {
+    selectedSubcategories.forEach(subId => {
+      const sub = data.category.children.find(c => c.id === subId);
+      if (sub) activeFilterChips.push({ key: 'subcategory', label: 'Subcategory', value: subId, displayValue: sub.name });
+    });
+  }
+  if (priceRange.min || priceRange.max) {
+    const priceLabel = priceRange.min && priceRange.max ? `$${priceRange.min} - $${priceRange.max}` : priceRange.min ? `From $${priceRange.min}` : `Up to $${priceRange.max}`;
+    activeFilterChips.push({ key: 'price', label: 'Price', value: 'price', displayValue: priceLabel });
+  }
+  if (taaApproved) activeFilterChips.push({ key: 'taa', label: 'Compliance', value: 'taa', displayValue: 'TAA/BAA Approved' });
+  Object.entries(activeSmartFilters).forEach(([filterKey, values]) => {
+    (values as string[]).forEach(v => {
+      const label = data?.smartFilterLabels?.[filterKey] || filterKey;
+      activeFilterChips.push({ key: filterKey, label, value: v, displayValue: v });
+    });
+  });
+
+  const handleRemoveFilter = (key: string, value: string) => {
+    if (key === 'search') { setSearchQuery(''); fetchData(1, true); }
+    else if (key === 'brand') { setSelectedBrand(''); fetchData(1, true, { brand: '' }); }
+    else if (key === 'subcategory') {
+      const newSubs = selectedSubcategories.filter(id => id !== value);
+      setSelectedSubcategories(newSubs);
+      fetchData(1, true, { subcategories: newSubs });
+    }
+    else if (key === 'price') { setPriceRange({ min: '', max: '' }); }
+    else if (key === 'taa') { setTaaApproved(false); fetchData(1, true, { taaApproved: false }); }
+    else {
+      setActiveSmartFilters(prev => {
+        const updated = { ...prev, [key]: ((prev[key] || []) as string[]).filter((v2: string) => v2 !== value) };
+        if ((updated[key] as string[]).length === 0) delete updated[key];
+        return updated;
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -562,7 +638,7 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                      onKeyDown={(e) => e.key === 'Enter' && fetchData(1, true)}
                       placeholder="Search products..."
                       className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500 focus:border-transparent transition-all"
                     />
@@ -735,16 +811,30 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-                <Button onClick={applyFilters} className="w-full bg-safety-green-600 hover:bg-safety-green-700 font-medium py-2.5 rounded-lg">
-                  Apply Filters
-                </Button>
-              </div>
+              {hasActiveFilters && (
+                <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                  <Button onClick={clearFilters} variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50 font-medium py-2.5 rounded-lg">
+                    <X className="w-4 h-4 mr-1" />
+                    Clear All Filters
+                  </Button>
+                </div>
+              )}
             </div>
           </aside>
 
           {/* Products Grid */}
           <main className="lg:col-span-3">
+            {/* Active Filter Chips */}
+            {activeFilterChips.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 px-4 py-2 mb-3">
+                <ActiveFiltersBar
+                  filters={activeFilterChips}
+                  onRemove={handleRemoveFilter}
+                  onClearAll={clearFilters}
+                />
+              </div>
+            )}
+
             {/* Toolbar */}
             <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -896,16 +986,12 @@ function CategoryPageContent({ params }: { params: { slug: string } }) {
                     </div>
                   ))}
 
-                  <div className="flex gap-2">
-                    <Button onClick={applyFilters} className="flex-1 bg-safety-green-600 hover:bg-safety-green-700">
-                      Apply Filters
+                  {hasActiveFilters && (
+                    <Button onClick={clearFilters} variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50">
+                      <X className="w-4 h-4 mr-1" />
+                      Clear All Filters
                     </Button>
-                    {hasActiveFilters && (
-                      <Button onClick={clearFilters} variant="outline" className="border-red-500 text-red-500">
-                        Clear
-                      </Button>
-                    )}
-                  </div>
+                  )}
                 </div>
               )}
             </div>

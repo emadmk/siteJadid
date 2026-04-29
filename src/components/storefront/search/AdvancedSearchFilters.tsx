@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Filter, X, Loader2 } from 'lucide-react';
+import { Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface Category {
@@ -38,51 +38,62 @@ function AdvancedSearchFiltersInner({ categories, priceRange }: AdvancedSearchFi
     const certs = searchParams.get('certifications');
     return certs ? certs.split(',') : [];
   });
-  const [isApplying, setIsApplying] = useState(false);
-
   const certifications = ['ANSI Z87.1', 'OSHA', 'CE', 'CSA', 'NFPA', 'UL Listed'];
 
-  const applyFilters = () => {
-    setIsApplying(true);
+  const applyFilters = (overrides?: Partial<{
+    categories: string[];
+    minPrice: string;
+    maxPrice: string;
+    inStock: boolean;
+    certs: string[];
+  }>) => {
     const params = new URLSearchParams(searchParams.toString());
+    const cats = overrides?.categories ?? selectedCategories;
+    const min = overrides?.minPrice ?? minPrice;
+    const max = overrides?.maxPrice ?? maxPrice;
+    const stock = overrides?.inStock ?? inStockOnly;
+    const certs = overrides?.certs ?? selectedCertifications;
 
-    // Category filter
-    if (selectedCategories.length > 0) {
-      params.set('category', selectedCategories.join(','));
-    } else {
-      params.delete('category');
-    }
-
-    // Price filters
-    if (minPrice) {
-      params.set('minPrice', minPrice);
-    } else {
-      params.delete('minPrice');
-    }
-
-    if (maxPrice) {
-      params.set('maxPrice', maxPrice);
-    } else {
-      params.delete('maxPrice');
-    }
-
-    // In stock filter
-    if (inStockOnly) {
-      params.set('inStock', 'true');
-    } else {
-      params.delete('inStock');
-    }
-
-    // Certifications
-    if (selectedCertifications.length > 0) {
-      params.set('certifications', selectedCertifications.join(','));
-    } else {
-      params.delete('certifications');
-    }
+    cats.length > 0 ? params.set('category', cats.join(',')) : params.delete('category');
+    min ? params.set('minPrice', min) : params.delete('minPrice');
+    max ? params.set('maxPrice', max) : params.delete('maxPrice');
+    stock ? params.set('inStock', 'true') : params.delete('inStock');
+    certs.length > 0 ? params.set('certifications', certs.join(',')) : params.delete('certifications');
 
     router.push(`${pathname}?${params.toString()}`);
-    setTimeout(() => setIsApplying(false), 500);
   };
+
+  // Auto-apply: price debounce
+  const priceDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevPriceRef = useRef({ minPrice, maxPrice });
+  useEffect(() => {
+    if (prevPriceRef.current.minPrice === minPrice && prevPriceRef.current.maxPrice === maxPrice) return;
+    prevPriceRef.current = { minPrice, maxPrice };
+    if (priceDebounceRef.current) clearTimeout(priceDebounceRef.current);
+    priceDebounceRef.current = setTimeout(() => applyFilters(), 600);
+    return () => { if (priceDebounceRef.current) clearTimeout(priceDebounceRef.current); };
+  }, [minPrice, maxPrice]);
+
+  // Auto-apply: categories immediate
+  const isFirstCatRef = useRef(true);
+  useEffect(() => {
+    if (isFirstCatRef.current) { isFirstCatRef.current = false; return; }
+    applyFilters();
+  }, [selectedCategories]);
+
+  // Auto-apply: inStock immediate
+  const isFirstStockRef = useRef(true);
+  useEffect(() => {
+    if (isFirstStockRef.current) { isFirstStockRef.current = false; return; }
+    applyFilters();
+  }, [inStockOnly]);
+
+  // Auto-apply: certifications immediate
+  const isFirstCertRef = useRef(true);
+  useEffect(() => {
+    if (isFirstCertRef.current) { isFirstCertRef.current = false; return; }
+    applyFilters();
+  }, [selectedCertifications]);
 
   const clearFilters = () => {
     setSelectedCategories([]);
@@ -223,28 +234,13 @@ function AdvancedSearchFiltersInner({ categories, priceRange }: AdvancedSearchFi
         </div>
       </div>
 
-      {/* Apply Button */}
-      <Button
-        onClick={applyFilters}
-        disabled={isApplying}
-        className="w-full bg-safety-green-600 hover:bg-safety-green-700"
-      >
-        {isApplying ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Applying...
-          </>
-        ) : (
-          'Apply Filters'
-        )}
-      </Button>
-
       {hasActiveFilters && (
         <Button
           variant="outline"
           onClick={clearFilters}
-          className="w-full mt-2 border-gray-300"
+          className="w-full border-red-300 text-red-600 hover:bg-red-50"
         >
+          <X className="w-4 h-4 mr-1" />
           Clear All Filters
         </Button>
       )}
