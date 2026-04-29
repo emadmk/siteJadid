@@ -16,6 +16,7 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
