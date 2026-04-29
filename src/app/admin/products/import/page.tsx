@@ -26,7 +26,7 @@ import {
   Footprints,
 } from 'lucide-react';
 
-type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine' | 'carhartt' | '3m' | 'rocky' | 'portwest' | 'milwaukee';
+type ImportType = 'gsa' | 'occunomix' | 'pip' | 'wolverine' | 'carhartt' | '3m' | 'rocky' | 'portwest' | 'milwaukee' | 'grainger';
 
 interface Brand {
   id: string;
@@ -214,6 +214,8 @@ export default function ProductImportPage() {
         ? '/api/admin/portwest-import'
         : importType === 'milwaukee'
         ? '/api/admin/milwaukee-import'
+        : importType === 'grainger'
+        ? '/api/admin/grainger-import'
         : '/api/admin/bulk-import';
 
       const response = await fetch(apiUrl, {
@@ -224,7 +226,21 @@ export default function ProductImportPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setResult(data.result);
+        if (importType === 'grainger' && data.jobId) {
+          setResult({
+            success: true,
+            totalRows: 0,
+            processedRows: 0,
+            successCount: 0,
+            errorCount: 0,
+            errors: [],
+            warnings: [{ row: 0, field: 'job', value: data.jobId, message: `Background import started. Job ID: ${data.jobId}. Track progress at /admin/products/imports/grainger or via tail -f ${data.logPath}. Products will appear in /admin/products/prerelease as they import.` }],
+            createdProducts: [],
+            updatedProducts: [],
+          } as any);
+        } else {
+          setResult(data.result);
+        }
       } else {
         setResult({
           success: false,
@@ -413,6 +429,21 @@ export default function ProductImportPage() {
           </button>
           <button
             onClick={() => {
+              setImportType('grainger');
+              setFile(null);
+              setResult(null);
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+              importType === 'grainger'
+                ? 'bg-emerald-700 text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Package className="w-5 h-5" />
+            Grainger (162K)
+          </button>
+          <button
+            onClick={() => {
               setImportType('gsa');
               setFile(null);
               setResult(null);
@@ -444,6 +475,8 @@ export default function ProductImportPage() {
             ? 'Import PortWest workwear and PPE. Groups by base style into color+size variants. Downloads images from CloudFront CDN on-the-fly, converts to WebP. Matches to existing site categories. Creates as PRERELEASE.'
             : importType === 'milwaukee'
             ? 'Import Milwaukee products. Each row = one product (no variants). Reads images from /var/www/static-uploads/milwaukee/. Level 1 → base price, Level 3 → gov price. Creates as PRERELEASE.'
+            : importType === 'grainger'
+            ? 'Import Grainger catalog (162K rows). Runs in background — site stays online. Catalog Price → base, Gov Price → cost & government. Brands & 3-level categories auto-created (inactive). Images linked directly from /var/www/static-uploads/grainger-hq/{SKU}_HQ.jpg (no WebP conversion). All products created as PRERELEASE.'
             : 'Import GSA products with custom field mapping and compliance data.'}
         </p>
       </div>
