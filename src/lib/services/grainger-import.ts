@@ -431,14 +431,13 @@ async function upsertProduct(row: GraingerRow, opts: Required<Pick<GraingerImpor
     vendorPartNumber: `WWG-${row.sku}`,
   };
 
-  // sku is unique, vendorPartNumber is unique - need to find by either
-  const existing = await prisma.product.findFirst({
-    where: {
-      OR: [
-        { sku: row.sku },
-        ...(row.nonCondensedMfgNumber ? [{ vendorPartNumber: row.nonCondensedMfgNumber }] : []),
-      ],
-    },
+  // Match existing only by Grainger SKU. We deliberately do NOT match by
+  // vendorPartNumber/mfg part number — manufacturer part numbers are not
+  // globally unique and can collide across Grainger SKUs (e.g. multiple
+  // products with mfg part "41"), which previously caused unrelated rows
+  // to overwrite each other.
+  const existing = await prisma.product.findUnique({
+    where: { sku: row.sku },
     select: { id: true },
   });
 
