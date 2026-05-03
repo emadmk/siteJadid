@@ -391,7 +391,7 @@ async function upsertProduct(row: GraingerRow, opts: Required<Pick<GraingerImpor
     priceUnit: (row.uoi || 'EA').toLowerCase().substring(0, 8),
     qtyPerPack: row.itemsPerUoi,
     minimumOrderQty: row.moq,
-    stockQuantity: 0,
+    stockQuantity: 100,
     hasVariants: false,
     taaApproved: row.taaApproved,
     ...(brandId && { brandId }),
@@ -428,7 +428,7 @@ async function upsertProduct(row: GraingerRow, opts: Required<Pick<GraingerImpor
       },
     } as any,
     images: imageExists ? [imageUrl] : [],
-    ...(row.nonCondensedMfgNumber && { vendorPartNumber: row.nonCondensedMfgNumber }),
+    vendorPartNumber: `WWG-${row.sku}`,
   };
 
   // sku is unique, vendorPartNumber is unique - need to find by either
