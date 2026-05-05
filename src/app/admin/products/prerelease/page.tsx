@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { formatPrice } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -39,6 +40,102 @@ interface Brand {
   name: string;
 }
 
+interface Warehouse {
+  id: string;
+  name: string;
+}
+
+interface Supplier {
+  id: string;
+  name: string;
+}
+
+function SearchableSelect({
+  value, onChange, options, placeholder, className
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filtered = options.filter(o =>
+    o.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectedLabel = options.find(o => o.value === value)?.label;
+
+  return (
+    <div ref={ref} className={`relative ${className || ''}`}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-3 py-1.5 rounded-full text-sm font-medium border transition-colors text-left flex items-center justify-between gap-2 bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+      >
+        <span className={value ? 'text-gray-900' : 'text-gray-500'}>
+          {selectedLabel || placeholder}
+        </span>
+        {value && (
+          <X
+            className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600"
+            onClick={(e) => { e.stopPropagation(); onChange(''); setSearchTerm(''); }}
+          />
+        )}
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-hidden">
+          <div className="p-2 border-b border-gray-100">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search..."
+              className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-safety-green-500"
+              autoFocus
+            />
+          </div>
+          <div className="overflow-y-auto max-h-48">
+            <button
+              type="button"
+              onClick={() => { onChange(''); setIsOpen(false); setSearchTerm(''); }}
+              className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-gray-50"
+            >
+              {placeholder}
+            </button>
+            {filtered.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { onChange(opt.value); setIsOpen(false); setSearchTerm(''); }}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-safety-green-50 ${
+                  opt.value === value ? 'bg-safety-green-50 text-safety-green-700 font-medium' : 'text-gray-700'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className="px-3 py-2 text-sm text-gray-400">No results</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PreReleasePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -47,6 +144,8 @@ export default function PreReleasePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -55,7 +154,10 @@ export default function PreReleasePage() {
   const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || '');
   const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || '');
   const [originalCategoryFilter, setOriginalCategoryFilter] = useState(searchParams.get('originalCategory') || '');
+  const [warehouseFilter, setWarehouseFilter] = useState(searchParams.get('warehouse') || '');
+  const [supplierFilter, setSupplierFilter] = useState(searchParams.get('supplier') || '');
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'));
+  const [goToPage, setGoToPage] = useState('');
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [originalCategories, setOriginalCategories] = useState<string[]>([]);
@@ -78,6 +180,8 @@ export default function PreReleasePage() {
       brand: brandFilter,
       category: categoryFilter,
       originalCategory: originalCategoryFilter,
+      warehouse: warehouseFilter,
+      supplier: supplierFilter,
       page: page.toString(),
       ...overrides,
     };
@@ -92,12 +196,13 @@ export default function PreReleasePage() {
 
     const qs = params.toString();
     router.replace(`/admin/products/prerelease${qs ? '?' + qs : ''}`, { scroll: false });
-  }, [search, taaFilter, hasCategoryFilter, brandFilter, categoryFilter, originalCategoryFilter, page, router]);
+  }, [search, taaFilter, hasCategoryFilter, brandFilter, categoryFilter, originalCategoryFilter, warehouseFilter, supplierFilter, page, router]);
 
   // Fetch prerelease products
   const fetchProducts = useCallback(async (overrides?: {
     page?: number; search?: string; taaApproved?: string; hasCategory?: string;
     brand?: string; category?: string; originalCategory?: string;
+    warehouse?: string; supplier?: string;
   }) => {
     setIsLoading(true);
     try {
@@ -108,6 +213,8 @@ export default function PreReleasePage() {
       const b = overrides?.brand ?? brandFilter;
       const c = overrides?.category ?? categoryFilter;
       const oc = overrides?.originalCategory ?? originalCategoryFilter;
+      const w = overrides?.warehouse ?? warehouseFilter;
+      const sup = overrides?.supplier ?? supplierFilter;
 
       const params = new URLSearchParams({
         status: 'PRERELEASE',
@@ -121,6 +228,8 @@ export default function PreReleasePage() {
       if (b) params.set('brand', b);
       if (c) params.set('category', c);
       if (oc) params.set('originalCategory', oc);
+      if (w) params.set('warehouse', w);
+      if (sup) params.set('supplier', sup);
 
       const res = await fetch(`/api/admin/products?${params}`);
       if (res.ok) {
@@ -135,7 +244,7 @@ export default function PreReleasePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, search, taaFilter, hasCategoryFilter, brandFilter, categoryFilter, originalCategoryFilter]);
+  }, [page, search, taaFilter, hasCategoryFilter, brandFilter, categoryFilter, originalCategoryFilter, warehouseFilter, supplierFilter]);
 
   // Fetch brands
   const fetchBrands = async () => {
@@ -178,12 +287,40 @@ export default function PreReleasePage() {
     } catch {}
   };
 
+  // Fetch warehouses
+  const fetchWarehouses = async () => {
+    try {
+      const res = await fetch('/api/admin/warehouses');
+      if (res.ok) {
+        const data = await res.json();
+        setWarehouses(data.warehouses || data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch warehouses:', error);
+    }
+  };
+
+  // Fetch suppliers
+  const fetchSuppliers = async () => {
+    try {
+      const res = await fetch('/api/admin/suppliers');
+      if (res.ok) {
+        const data = await res.json();
+        setSuppliers(data.suppliers || data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch suppliers:', error);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     fetchProducts();
     fetchBrands();
     fetchCategories();
     fetchOriginalCategories();
+    fetchWarehouses();
+    fetchSuppliers();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Refetch when page changes (not on initial mount)
@@ -229,6 +366,16 @@ export default function PreReleasePage() {
       setOriginalCategoryFilter(v);
       overrides.originalCategory = v;
       fetchOverrides.originalCategory = v;
+    } else if (filterName === 'warehouse') {
+      const v = warehouseFilter === value ? '' : value;
+      setWarehouseFilter(v);
+      overrides.warehouse = v;
+      fetchOverrides.warehouse = v;
+    } else if (filterName === 'supplier') {
+      const v = supplierFilter === value ? '' : value;
+      setSupplierFilter(v);
+      overrides.supplier = v;
+      fetchOverrides.supplier = v;
     }
 
     fetchProducts(fetchOverrides);
@@ -242,12 +389,14 @@ export default function PreReleasePage() {
     setBrandFilter('');
     setCategoryFilter('');
     setOriginalCategoryFilter('');
+    setWarehouseFilter('');
+    setSupplierFilter('');
     setPage(1);
-    fetchProducts({ page: 1, search: '', taaApproved: '', hasCategory: '', brand: '', category: '', originalCategory: '' });
+    fetchProducts({ page: 1, search: '', taaApproved: '', hasCategory: '', brand: '', category: '', originalCategory: '', warehouse: '', supplier: '' });
     router.replace('/admin/products/prerelease', { scroll: false });
   };
 
-  const hasActiveFilters = search || taaFilter || hasCategoryFilter || brandFilter || categoryFilter || originalCategoryFilter;
+  const hasActiveFilters = search || taaFilter || hasCategoryFilter || brandFilter || categoryFilter || originalCategoryFilter || warehouseFilter || supplierFilter;
 
   // ---- Bulk selection helpers ----
   const currentPageIds = products.map((p) => p.id);
@@ -348,35 +497,25 @@ export default function PreReleasePage() {
             {/* Category dropdown (required) */}
             <div className="flex items-center gap-2">
               <label className="text-sm text-blue-100">Category *</label>
-              <select
+              <SearchableSelect
                 value={bulkCategoryId}
-                onChange={(e) => setBulkCategoryId(e.target.value)}
-                className="px-3 py-1.5 rounded text-sm text-gray-900 bg-white border-0 focus:ring-2 focus:ring-blue-300 min-w-[200px]"
-              >
-                <option value="">Select category...</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setBulkCategoryId(v)}
+                options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+                placeholder="Select category..."
+                className="min-w-[200px]"
+              />
             </div>
 
             {/* Brand dropdown (optional) */}
             <div className="flex items-center gap-2">
               <label className="text-sm text-blue-100">Brand</label>
-              <select
+              <SearchableSelect
                 value={bulkBrandId}
-                onChange={(e) => setBulkBrandId(e.target.value)}
-                className="px-3 py-1.5 rounded text-sm text-gray-900 bg-white border-0 focus:ring-2 focus:ring-blue-300 min-w-[160px]"
-              >
-                <option value="">Keep existing</option>
-                {brands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setBulkBrandId(v)}
+                options={brands.map(b => ({ value: b.id, label: b.name }))}
+                placeholder="Keep existing"
+                className="min-w-[160px]"
+              />
             </div>
 
             <div className="h-6 w-px bg-blue-400" />
@@ -529,62 +668,50 @@ export default function PreReleasePage() {
           <span className="text-gray-300">|</span>
 
           {/* Brand Filter */}
-          <select
+          <SearchableSelect
             value={brandFilter}
-            onChange={(e) => applyFilter('brand', e.target.value)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-              brandFilter
-                ? 'bg-purple-600 text-white border-purple-600'
-                : 'bg-white text-gray-700 border-gray-300'
-            }`}
-          >
-            <option value="">All Brands</option>
-            {brands.map(brand => (
-              <option key={brand.id} value={brand.id}>
-                {brand.name}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => applyFilter('brand', v)}
+            options={brands.map(b => ({ value: b.id, label: b.name }))}
+            placeholder="All Brands"
+          />
 
           <span className="text-gray-300">|</span>
 
           {/* Assigned Category Filter */}
-          <select
+          <SearchableSelect
             value={categoryFilter}
-            onChange={(e) => applyFilter('category', e.target.value)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-              categoryFilter
-                ? 'bg-safety-green-600 text-white border-safety-green-600'
-                : 'bg-white text-gray-700 border-gray-300'
-            }`}
-          >
-            <option value="">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => applyFilter('category', v)}
+            options={categories.map(c => ({ value: c.id, label: c.name }))}
+            placeholder="All Categories"
+          />
 
           {/* Original Category Filter */}
           {originalCategories.length > 0 && (
-            <select
+            <SearchableSelect
               value={originalCategoryFilter}
-              onChange={(e) => applyFilter('originalCategory', e.target.value)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                originalCategoryFilter
-                  ? 'bg-orange-600 text-white border-orange-600'
-                  : 'bg-white text-gray-700 border-gray-300'
-              }`}
-            >
-              <option value="">Original Category</option>
-              {originalCategories.map(cat => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => applyFilter('originalCategory', v)}
+              options={originalCategories.map(cat => ({ value: cat, label: cat }))}
+              placeholder="Original Category"
+            />
           )}
+
+          <span className="text-gray-300">|</span>
+
+          {/* Warehouse Filter */}
+          <SearchableSelect
+            value={warehouseFilter}
+            onChange={(v) => applyFilter('warehouse', v)}
+            options={warehouses.map(w => ({ value: w.id, label: w.name }))}
+            placeholder="All Warehouses"
+          />
+
+          {/* Supplier Filter */}
+          <SearchableSelect
+            value={supplierFilter}
+            onChange={(v) => applyFilter('supplier', v)}
+            options={suppliers.map(s => ({ value: s.id, label: s.name }))}
+            placeholder="All Suppliers"
+          />
 
           {/* Clear All */}
           {hasActiveFilters && (
@@ -752,7 +879,7 @@ export default function PreReleasePage() {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <span className="font-medium">${Number(product.basePrice).toFixed(2)}</span>
+                          <span className="font-medium">${formatPrice(product.basePrice)}</span>
                         </td>
                         <td className="px-6 py-4 text-center">
                           {product.taaApproved ? (
@@ -792,28 +919,103 @@ export default function PreReleasePage() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {/* First page */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(1)}
+                    disabled={page === 1}
+                    className="border-gray-300 px-2"
+                  >
+                    <ChevronLeft className="w-4 h-4" /><ChevronLeft className="w-4 h-4 -ml-2" />
+                  </Button>
+                  {/* Previous */}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="border-gray-300"
+                    className="border-gray-300 px-2"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <span className="px-3 py-1 text-sm">
-                    Page {page} of {totalPages}
-                  </span>
+
+                  {/* Page numbers */}
+                  {(() => {
+                    const pages: (number | string)[] = [];
+                    const range = 2;
+                    const start = Math.max(2, page - range);
+                    const end = Math.min(totalPages - 1, page + range);
+
+                    pages.push(1);
+                    if (start > 2) pages.push('...');
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (end < totalPages - 1) pages.push('...');
+                    if (totalPages > 1) pages.push(totalPages);
+
+                    return pages.map((p, idx) =>
+                      typeof p === 'string' ? (
+                        <span key={`ellipsis-${idx}`} className="px-2 py-1 text-sm text-gray-400">...</span>
+                      ) : (
+                        <button
+                          key={p}
+                          onClick={() => setPage(p)}
+                          className={`min-w-[32px] h-8 px-2 text-sm rounded border transition-colors ${
+                            p === page
+                              ? 'bg-safety-green-600 text-white border-safety-green-600 font-medium'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      )
+                    );
+                  })()}
+
+                  {/* Next */}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="border-gray-300"
+                    className="border-gray-300 px-2"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>
+                  {/* Last page */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(totalPages)}
+                    disabled={page === totalPages}
+                    className="border-gray-300 px-2"
+                  >
+                    <ChevronRight className="w-4 h-4" /><ChevronRight className="w-4 h-4 -ml-2" />
+                  </Button>
+
+                  {/* Go to page */}
+                  <div className="flex items-center gap-1 ml-3">
+                    <span className="text-sm text-gray-500">Go to:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={goToPage}
+                      onChange={(e) => setGoToPage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const target = parseInt(goToPage);
+                          if (target >= 1 && target <= totalPages) {
+                            setPage(target);
+                            setGoToPage('');
+                          }
+                        }
+                      }}
+                      className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-safety-green-500"
+                      placeholder={page.toString()}
+                    />
+                  </div>
                 </div>
               </div>
             )}
