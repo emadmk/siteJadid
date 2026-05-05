@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { formatPrice } from '@/lib/utils';
 import {
   ChevronRight,
   SlidersHorizontal,
@@ -941,11 +942,11 @@ function ProductGridCard({
 
           <div className="flex items-center gap-2 mt-auto">
             <span className="text-lg font-bold text-black">
-              ${Number(product.salePrice || product.basePrice).toFixed(2)}
+              ${formatPrice(product.salePrice || product.basePrice)}
             </span>
             {hasDiscount && (
               <span className="text-sm text-gray-500 line-through">
-                ${Number(product.basePrice).toFixed(2)}
+                ${formatPrice(product.basePrice)}
               </span>
             )}
           </div>
@@ -1036,11 +1037,11 @@ function ProductListCard({
 
             <div className="text-right">
               <div className="text-2xl font-bold text-black">
-                ${Number(product.salePrice || product.basePrice).toFixed(2)}
+                ${formatPrice(product.salePrice || product.basePrice)}
               </div>
               {hasDiscount && (
                 <div className="text-sm text-gray-500 line-through">
-                  ${Number(product.basePrice).toFixed(2)}
+                  ${formatPrice(product.basePrice)}
                 </div>
               )}
             </div>
