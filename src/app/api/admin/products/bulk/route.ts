@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const page = parseInt(searchParams.get('page') || '1');
     const skip = (page - 1) * limit;
+    const idsOnly = searchParams.get('idsOnly') === 'true';
 
     const where: any = {};
     const andConditions: any[] = [];
@@ -67,6 +68,18 @@ export async function GET(request: NextRequest) {
 
     // Get total count for pagination
     const total = await db.product.count({ where });
+
+    // Lightweight mode: return only IDs for "Select all across pages" UX.
+    // No pagination — used by the bulk-edit page when the admin wants to
+    // operate on every matching product, not just the loaded ones.
+    if (idsOnly) {
+      const idRows = await db.product.findMany({
+        where,
+        select: { id: true },
+        orderBy: { updatedAt: 'desc' },
+      });
+      return NextResponse.json({ ids: idRows.map((r) => r.id), total });
+    }
 
     const products = await db.product.findMany({
       where,

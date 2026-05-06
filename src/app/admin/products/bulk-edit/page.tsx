@@ -85,6 +85,7 @@ export default function BulkEditPage() {
   // Selection states
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
+  const [loadingAllIds, setLoadingAllIds] = useState(false);
 
   // Filter states
   const [search, setSearch] = useState('');
@@ -287,6 +288,39 @@ export default function BulkEditPage() {
       setSelectedIds(new Set(products.map(p => p.id)));
     }
     setSelectAll(!selectAll);
+  };
+
+  // "Select all matching products" — fetches every id that matches the
+  // current filters (across all pages, not just the loaded ones) so a
+  // bulk action can run against the complete result set without forcing
+  // the admin to scroll the entire list.
+  const selectAllAcrossPages = async () => {
+    setLoadingAllIds(true);
+    try {
+      const params = new URLSearchParams();
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      if (filterCategory) params.set('category', filterCategory);
+      if (filterBrand) params.set('brand', filterBrand);
+      if (filterWarehouse) params.set('warehouse', filterWarehouse);
+      if (filterStatus) params.set('status', filterStatus);
+      if (filterImage) params.set('hasImage', filterImage);
+      params.set('idsOnly', 'true');
+      const res = await fetch(`/api/admin/products/bulk?${params}`);
+      const data = await res.json();
+      if (Array.isArray(data.ids)) {
+        setSelectedIds(new Set(data.ids));
+        setSelectAll(true);
+      }
+    } catch (e) {
+      console.error('Failed to load all matching ids:', e);
+    } finally {
+      setLoadingAllIds(false);
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setSelectAll(false);
   };
 
   // Execute bulk action
@@ -601,6 +635,14 @@ export default function BulkEditPage() {
             <span className="font-bold text-white">{selectedIds.size}</span> selected
             <span className="ml-2 text-white/60">({products.length} loaded of {totalCount} total)</span>
           </span>
+          {selectedIds.size > 0 && (
+            <button
+              onClick={clearSelection}
+              className="text-xs text-white/60 hover:text-white underline"
+            >
+              Clear selection
+            </button>
+          )}
         </div>
 
         {selectedIds.size > 0 && (
@@ -651,6 +693,24 @@ export default function BulkEditPage() {
           </div>
         )}
       </div>
+
+      {/* Across-pages select banner */}
+      {selectedIds.size > 0 && selectedIds.size < totalCount && (
+        <div className="mb-6 flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm">
+          <div className="text-amber-900">
+            <span className="font-semibold">{selectedIds.size}</span> products selected on this view.
+            <span className="text-amber-700 ml-2">There are <span className="font-semibold">{totalCount}</span> products matching the current filters.</span>
+          </div>
+          <button
+            onClick={selectAllAcrossPages}
+            disabled={loadingAllIds}
+            className="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium disabled:opacity-50"
+          >
+            {loadingAllIds ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckSquare className="w-4 h-4" />}
+            Select all {totalCount} matching
+          </button>
+        </div>
+      )}
 
       {/* Products Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
