@@ -384,7 +384,7 @@ export function CheckoutForm({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            shippoRate: selectedRate ? { cost: selectedRate.cost, carrier: selectedRate.carrier, service: selectedRate.service } : undefined,
+            shippoRate: selectedRate ? { cost: selectedRate.cost, carrier: selectedRate.carrier } : undefined,
             isGovernmentOrder: isGovBuyer || isGSAAccount,
           }),
         });
