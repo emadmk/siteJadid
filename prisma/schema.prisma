@@ -4284,3 +4284,61 @@ model NewsletterSubscriber {
   @@index([email])
   @@index([status])
 }
+
+// ============================================
+// SHIPPING RULES & HANDLING FEES (consolidated)
+// ============================================
+// Per-supplier / per-warehouse shipping policy. Each cart group (split by
+// supplier, falling back to warehouse) is matched against the highest-priority
+// active rule whose scope includes that supplier or warehouse. A rule with
+// empty supplierIds AND warehouseIds is treated as the "default" rule applied
+// to any group that no scoped rule matched.
+enum ShippingRuleMode {
+  FREE
+  FIXED
+  PERCENT
+  SHIPPO
+}
+
+model ShippingRule {
+  id            String           @id @default(cuid())
+  name          String
+  description   String?
+  priority      Int              @default(0)
+  isActive      Boolean          @default(true)
+
+  supplierIds   String[]         @default([])
+  warehouseIds  String[]         @default([])
+
+  mode          ShippingRuleMode @default(SHIPPO)
+
+  flatAmount    Decimal?         @db.Decimal(10, 2)
+  percentValue  Decimal?         @db.Decimal(6, 2)
+
+  shippoMarkupType  String?
+  shippoMarkupValue Decimal?     @db.Decimal(10, 2)
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([priority])
+  @@index([isActive])
+}
+
+// Cart-level handling fee tiers. The first active tier whose
+// [minSubtotal, maxSubtotal) range contains the cart subtotal wins.
+model HandlingTier {
+  id            String   @id @default(cuid())
+  minSubtotal   Decimal  @db.Decimal(10, 2)
+  maxSubtotal   Decimal? @db.Decimal(10, 2)
+  type          String   // "fixed" | "percent"
+  value         Decimal  @db.Decimal(10, 2)
+  isActive      Boolean  @default(true)
+  displayOrder  Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([minSubtotal])
+  @@index([isActive])
+}

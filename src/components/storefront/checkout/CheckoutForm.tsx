@@ -366,10 +366,48 @@ export function CheckoutForm({
   // Get shipping cost from selected Shippo rate (no hardcoded fallback)
   const selectedRate = shippingRates.find(r => r.id === selectedRateId);
   const baseShippingCost = selectedRate?.cost ?? 0;
+
+  // Server-computed shipping + handling breakdown. Falls back to the raw Shippo
+  // rate while the engine call is in flight so the UI is never empty.
+  const [engineBreakdown, setEngineBreakdown] = useState<{
+    shippingTotal: number;
+    handlingFee: number;
+    combinedTotal: number;
+    splitMessage: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/checkout/compute-shipping', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            shippoRate: selectedRate ? { cost: selectedRate.cost, carrier: selectedRate.carrier, service: selectedRate.service } : undefined,
+            isGovernmentOrder: isGovBuyer || isGSAAccount,
+          }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setEngineBreakdown({
+          shippingTotal: Number(data.shippingTotal || 0),
+          handlingFee: Number(data.handlingFee || 0),
+          combinedTotal: Number(data.combinedTotal || 0),
+          splitMessage: String(data.splitMessage || ''),
+        });
+      } catch { /* leave previous breakdown */ }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedRateId, baseShippingCost, isGovBuyer, isGSAAccount]);
+
   const shippingCost =
     shippingSettings.freeShippingEnabled && subtotal >= shippingSettings.freeThreshold
       ? 0
-      : baseShippingCost;
+      : engineBreakdown
+        ? engineBreakdown.combinedTotal
+        : baseShippingCost;
 
   const couponDiscount = appliedCoupon?.discount || 0;
   // Government pricing is now applied through the subtotal calculation, not as a discount
@@ -1666,8 +1704,13 @@ export function CheckoutForm({
                 <span>Saving ${formatPrice(govPriceSavings)}</span>
               </div>
             )}
+            {engineBreakdown && engineBreakdown.splitMessage && (
+              <div className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-md px-2 py-1.5 mb-2">
+                📦 {engineBreakdown.splitMessage}
+              </div>
+            )}
             <div className="flex justify-between">
-              <span className="text-gray-600">Shipping</span>
+              <span className="text-gray-600">Shipping + Handling Fee</span>
               <span className="font-medium">
                 {!selectedRate ? (
                   <span className="text-gray-500 text-sm">{currentStep === 'shipping' ? 'Calculated in next step' : 'Select a shipping method'}</span>

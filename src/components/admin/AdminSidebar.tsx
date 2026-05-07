@@ -206,6 +206,7 @@ const menuItems: MenuItem[] = [
     permissions: ['settings.view'],
     children: [
       { title: 'General', href: '/admin/settings', icon: Settings, permissions: ['settings.view'] },
+      { title: 'Shipping & Handling', href: '/admin/settings/shipping', icon: Truck, permissions: ['settings.view'] },
       { title: 'Integrations', href: '/admin/settings/integrations', icon: Settings, permissions: ['settings.view'] },
       { title: 'Activity Logs', href: '/admin/activity-logs', icon: Activity, permissions: ['settings.manage'] },
     ],

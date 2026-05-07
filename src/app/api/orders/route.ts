@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { calculateProductDiscount } from '@/lib/discounts';
 import { calculateShippingCost } from '@/lib/shipping-calculator';
+import { computeShippingAndHandling, cartToLines } from '@/lib/services/shipping-engine';
 import { sendOrderConfirmation, sendAdminNewOrderNotification } from '@/lib/email-notifications';
 
 // GET /api/orders - Get user's orders
@@ -333,42 +334,43 @@ export async function POST(request: NextRequest) {
       return sum + (item.product.weight || 0) * item.quantity;
     }, 0);
 
-    // Use Shippo rate from client if a valid rate was selected, otherwise fall back to flat-rate
-    // The Shippo rate was already calculated server-side via /api/shipping/rates
+    // Compute shipping + handling via the centralized engine (per-supplier
+    // rules + cart-level handling tiers). The engine is the source of truth;
+    // legacy flat-rate calculator is only used as a last-resort fallback.
     let shippingCost: number;
+    let handlingFeeApplied = 0;
 
     if (validatedCoupon?.type === 'FREE_SHIPPING') {
       shippingCost = 0;
-    } else if (shippingRateId && typeof providedShippingCost === 'number' && providedShippingCost >= 0) {
-      // Client selected a Shippo rate - use it (rate was server-calculated via /api/shipping/rates)
-      // Apply free shipping threshold
-      const freeShippingThreshold = 99;
-      if (subtotal >= freeShippingThreshold) {
-        // Check if free shipping is enabled in settings
-        try {
-          const freeShippingSetting = await db.setting.findFirst({
-            where: { key: 'shipping.freeShippingEnabled' },
-          });
-          const thresholdSetting = await db.setting.findFirst({
-            where: { key: 'shipping.freeShippingThreshold' },
-          });
-          const isFreeShippingEnabled = freeShippingSetting?.value === 'true';
-          const threshold = Number(thresholdSetting?.value) || freeShippingThreshold;
-          shippingCost = (isFreeShippingEnabled && subtotal >= threshold) ? 0 : providedShippingCost;
-        } catch {
-          shippingCost = providedShippingCost;
-        }
-      } else {
-        shippingCost = providedShippingCost;
-      }
     } else {
-      // Fallback to flat-rate calculator if no Shippo rate selected
-      const shippingResult = calculateShippingCost({
-        subtotal,
-        totalWeight,
-        isFreeShippingCoupon: false,
-      });
-      shippingCost = shippingResult.cost;
+      try {
+        const isGovernmentOrder = !!(
+          (session.user as any).accountType === 'B2G' ||
+          (session.user as any).accountType === 'GSA' ||
+          (session.user as any).isGovernmentBuyer
+        );
+        const breakdown = await computeShippingAndHandling(cartToLines(cart), {
+          isGovernmentOrder,
+          shippoRate:
+            typeof providedShippingCost === 'number' && providedShippingCost >= 0
+              ? { cost: providedShippingCost }
+              : undefined,
+        });
+        shippingCost = breakdown.combinedTotal;
+        handlingFeeApplied = breakdown.handlingFee;
+      } catch (engineErr) {
+        console.error('Shipping engine failed, falling back to flat-rate:', engineErr);
+        if (shippingRateId && typeof providedShippingCost === 'number' && providedShippingCost >= 0) {
+          shippingCost = providedShippingCost;
+        } else {
+          const shippingResult = calculateShippingCost({
+            subtotal,
+            totalWeight,
+            isFreeShippingCoupon: false,
+          });
+          shippingCost = shippingResult.cost;
+        }
+      }
     }
 
     // Tax calculation using per-customer-type settings from DB
