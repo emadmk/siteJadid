@@ -56,6 +56,10 @@ export async function POST(request: NextRequest) {
     // Calculate total weight and build parcel from actual product dimensions
     let totalWeight = data.weight || 0;
     let parcel: ShippoParcel;
+    // For oversized carts we ship as a multi-parcel shipment. parcels is the
+    // authoritative array passed to Shippo when it has more than one entry;
+    // otherwise we fall back to wrapping `parcel` in a single-element array.
+    let parcels: ShippoParcel[] | null = null;
 
     if (data.cartItems && data.cartItems.length > 0) {
       const productIds = data.cartItems.map(item => item.productId);
@@ -78,26 +82,26 @@ export async function POST(request: NextRequest) {
         return sum + (weight * Number(item.quantity));
       }, 0);
 
-      // Build parcel from actual product dimensions.
+      // Build parcel(s) from actual product dimensions.
       //
       // Important: we DO NOT multiply each item's box dimensions by its
       // quantity. Stacking 3,000 small units linearly would produce a parcel
       // hundreds of inches tall — Shippo refuses to rate it and falls back to
       // the flat-rate calculator. Real-world high-quantity orders ship as
-      // multiple packages or pallets, neither of which a single parcel rate
-      // models well. Approach:
-      //   • Sum total weight from per-unit weight × quantity (carriers price
-      //     mostly on weight + dimensional weight, not the literal stack).
-      //   • Use one canonical box footprint = the largest single-unit
-      //     length/width across the cart, with a height capped at a single
-      //     carton (max-unit-height) so dims stay realistic.
-      //   • If the cart's total weight or item count exceeds what a single
-      //     parcel can carry, hand off to estimateParcel(totalWeight) which
-      //     gives a generous weight-driven estimate Shippo will accept.
+      // multiple packages or pallets. Approach:
+      //   • Sum total weight from per-unit weight × quantity.
+      //   • Use one canonical box footprint = the largest single-unit dims.
+      //   • If total weight exceeds what fits in one parcel (~70 lb), build
+      //     a multi-parcel array (Shippo accepts up to 50 parcels/shipment),
+      //     splitting weight evenly across parcels with the same dims.
+      //   • If even multi-parcel can't fit (>50 × 70 lb = 3,500 lb), still
+      //     send 50 parcels — Shippo's ground services accept up to 150 lb
+      //     per parcel, so a higher per-parcel weight still rates.
       const PADDING_FACTOR = 1.15;
-      const MAX_PARCEL_DIM_IN = 48;       // common carrier oversize threshold
-      const MAX_PARCEL_WEIGHT_LB = 70;    // common carrier max single-parcel weight
-      const MAX_TOTAL_UNITS_FOR_SINGLE_PARCEL = 50; // beyond this, treat as multi-parcel/pallet
+      const MAX_PARCEL_DIM_IN = 48;          // common carrier oversize threshold
+      const MAX_WEIGHT_PER_PARCEL = 70;      // typical USPS / preferred-zone limit
+      const HARD_PARCEL_WEIGHT_CAP = 150;    // most carriers' absolute single-parcel ceiling
+      const MAX_PARCELS = 50;                // Shippo per-shipment limit
 
       const unitBoxes: Array<{ l: number; w: number; h: number }> = [];
       let totalUnits = 0;
@@ -110,25 +114,48 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const overSized =
-        totalUnits > MAX_TOTAL_UNITS_FOR_SINGLE_PARCEL ||
-        totalWeight > MAX_PARCEL_WEIGHT_LB;
-
-      if (unitBoxes.length > 0 && !overSized) {
+      // Pick a canonical single-unit dimension (largest in each axis, padded)
+      let canonicalDim: { length: number; width: number; height: number } | null = null;
+      if (unitBoxes.length > 0) {
         const maxLength = Math.max(...unitBoxes.map((b) => b.l));
         const maxWidth = Math.max(...unitBoxes.map((b) => b.w));
         const maxHeight = Math.max(...unitBoxes.map((b) => b.h));
-        parcel = {
+        canonicalDim = {
           length: Math.min(MAX_PARCEL_DIM_IN, Math.ceil(maxLength * PADDING_FACTOR)),
           width: Math.min(MAX_PARCEL_DIM_IN, Math.ceil(maxWidth * PADDING_FACTOR)),
           height: Math.min(MAX_PARCEL_DIM_IN, Math.ceil(maxHeight * PADDING_FACTOR)),
+        };
+      }
+
+      if (totalWeight <= MAX_WEIGHT_PER_PARCEL && canonicalDim) {
+        // Fits comfortably in a single parcel.
+        parcel = {
+          ...canonicalDim,
           distance_unit: 'in',
           weight: Math.max(totalWeight, 0.5),
           mass_unit: 'lb',
         };
+      } else if (totalWeight > MAX_WEIGHT_PER_PARCEL) {
+        // Multi-parcel split. Try the standard 70 lb/parcel split first; if
+        // that needs more parcels than Shippo allows, raise per-parcel weight
+        // up to the carrier hard cap (150 lb). Above that, parcels are still
+        // built — most ground services will reject extra-heavy ones, but at
+        // least Shippo returns a quote we can fall back from.
+        let numParcels = Math.ceil(totalWeight / MAX_WEIGHT_PER_PARCEL);
+        if (numParcels > MAX_PARCELS) numParcels = MAX_PARCELS;
+        const weightPerParcel = Math.min(HARD_PARCEL_WEIGHT_CAP, totalWeight / numParcels);
+        const dim = canonicalDim || estimateParcel(weightPerParcel);
+        parcels = Array.from({ length: numParcels }, () => ({
+          length: (dim as any).length,
+          width: (dim as any).width,
+          height: (dim as any).height,
+          distance_unit: 'in',
+          weight: Math.max(weightPerParcel, 0.5),
+          mass_unit: 'lb',
+        }));
+        parcel = parcels[0]; // keep `parcel` defined for downstream `weight` cap
       } else {
-        // No usable dimensions OR cart exceeds single-parcel reality →
-        // weight-driven estimate that always returns a Shippo-acceptable size.
+        // No usable dimensions and weight is light → estimate by weight.
         parcel = estimateParcel(totalWeight);
       }
     } else {
@@ -170,8 +197,13 @@ export async function POST(request: NextRequest) {
       console.warn('Shipping rates requested without street address - results may be estimated');
     }
 
-    // Get rates from Shippo
-    const { rates, error } = await getShippingRates(toAddress, [parcel]);
+    // Get rates from Shippo. Use the multi-parcel array if we built one,
+    // otherwise wrap the single parcel.
+    const parcelsToShip = parcels && parcels.length > 0 ? parcels : [parcel];
+    if (parcelsToShip.length > 1) {
+      console.log(`Shippo multi-parcel shipment: ${parcelsToShip.length} parcels @ ~${parcelsToShip[0].weight}lb each (totalWeight=${totalWeight}lb)`);
+    }
+    const { rates, error } = await getShippingRates(toAddress, parcelsToShip);
 
     if (error) {
       // If Shippo fails, return fallback rates
