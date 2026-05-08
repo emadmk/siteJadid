@@ -298,10 +298,25 @@ export async function computeShippingAndHandling(
     g.ruleName = result.ruleName;
     g.mode = result.mode;
     g.shippingAmount = result.amount;
-    shippingTotal += result.amount;
     groups.push(g);
   }
-  shippingTotal = round2(shippingTotal);
+
+  // Dedupe SHIPPO charges across groups: the customer-selected Shippo rate
+  // covers the whole shipment (carriers don't bill per supplier), so only the
+  // first SHIPPO group "spends" the rate. Other SHIPPO groups ride along at
+  // 0. FREE / FIXED / PERCENT groups stay independent because each represents
+  // a deliberate per-supplier policy.
+  let shippoUsed = false;
+  for (const g of groups) {
+    if (g.mode !== 'SHIPPO') continue;
+    if (shippoUsed) {
+      g.shippingAmount = 0;
+    } else {
+      shippoUsed = true;
+    }
+  }
+
+  shippingTotal = round2(groups.reduce((s, g) => s + g.shippingAmount, 0));
 
   // Handling fee
   const skipHandling = options.isGovernmentOrder && skipGovernment;

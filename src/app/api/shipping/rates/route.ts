@@ -78,38 +78,57 @@ export async function POST(request: NextRequest) {
         return sum + (weight * Number(item.quantity));
       }, 0);
 
-      // Build parcel from actual product dimensions
-      // Collect all individual item boxes (accounting for quantity)
-      const itemBoxes: Array<{ l: number; w: number; h: number }> = [];
+      // Build parcel from actual product dimensions.
+      //
+      // Important: we DO NOT multiply each item's box dimensions by its
+      // quantity. Stacking 3,000 small units linearly would produce a parcel
+      // hundreds of inches tall — Shippo refuses to rate it and falls back to
+      // the flat-rate calculator. Real-world high-quantity orders ship as
+      // multiple packages or pallets, neither of which a single parcel rate
+      // models well. Approach:
+      //   • Sum total weight from per-unit weight × quantity (carriers price
+      //     mostly on weight + dimensional weight, not the literal stack).
+      //   • Use one canonical box footprint = the largest single-unit
+      //     length/width across the cart, with a height capped at a single
+      //     carton (max-unit-height) so dims stay realistic.
+      //   • If the cart's total weight or item count exceeds what a single
+      //     parcel can carry, hand off to estimateParcel(totalWeight) which
+      //     gives a generous weight-driven estimate Shippo will accept.
+      const PADDING_FACTOR = 1.15;
+      const MAX_PARCEL_DIM_IN = 48;       // common carrier oversize threshold
+      const MAX_PARCEL_WEIGHT_LB = 70;    // common carrier max single-parcel weight
+      const MAX_TOTAL_UNITS_FOR_SINGLE_PARCEL = 50; // beyond this, treat as multi-parcel/pallet
+
+      const unitBoxes: Array<{ l: number; w: number; h: number }> = [];
+      let totalUnits = 0;
       for (const item of data.cartItems) {
         const product = productMap.get(item.productId);
-        const qty = Number(item.quantity);
+        const qty = Number(item.quantity) || 0;
+        totalUnits += qty;
         if (product && product.length > 0 && product.width > 0 && product.height > 0) {
-          for (let i = 0; i < qty; i++) {
-            itemBoxes.push({ l: product.length, w: product.width, h: product.height });
-          }
+          unitBoxes.push({ l: product.length, w: product.width, h: product.height });
         }
       }
 
-      if (itemBoxes.length > 0) {
-        // Smart box calculation: stack items and add padding
-        // Find the largest footprint (length x width) and sum heights
-        const maxLength = Math.max(...itemBoxes.map(b => b.l));
-        const maxWidth = Math.max(...itemBoxes.map(b => b.w));
-        const totalHeight = itemBoxes.reduce((sum, b) => sum + b.h, 0);
+      const overSized =
+        totalUnits > MAX_TOTAL_UNITS_FOR_SINGLE_PARCEL ||
+        totalWeight > MAX_PARCEL_WEIGHT_LB;
 
-        // Add 15% padding for packing material and box walls
-        const PADDING_FACTOR = 1.15;
+      if (unitBoxes.length > 0 && !overSized) {
+        const maxLength = Math.max(...unitBoxes.map((b) => b.l));
+        const maxWidth = Math.max(...unitBoxes.map((b) => b.w));
+        const maxHeight = Math.max(...unitBoxes.map((b) => b.h));
         parcel = {
-          length: Math.ceil(maxLength * PADDING_FACTOR),
-          width: Math.ceil(maxWidth * PADDING_FACTOR),
-          height: Math.ceil(totalHeight * PADDING_FACTOR),
+          length: Math.min(MAX_PARCEL_DIM_IN, Math.ceil(maxLength * PADDING_FACTOR)),
+          width: Math.min(MAX_PARCEL_DIM_IN, Math.ceil(maxWidth * PADDING_FACTOR)),
+          height: Math.min(MAX_PARCEL_DIM_IN, Math.ceil(maxHeight * PADDING_FACTOR)),
           distance_unit: 'in',
           weight: Math.max(totalWeight, 0.5),
           mass_unit: 'lb',
         };
       } else {
-        // No products have dimensions - use generous fallback estimate
+        // No usable dimensions OR cart exceeds single-parcel reality →
+        // weight-driven estimate that always returns a Shippo-acceptable size.
         parcel = estimateParcel(totalWeight);
       }
     } else {

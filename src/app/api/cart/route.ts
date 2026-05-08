@@ -162,12 +162,28 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Variant is not available' }, { status: 400 });
       }
 
-      if (variant.stockQuantity < quantity) {
+      // Stock check is bypassed when the requested quantity meets the
+      // product's minimum order qty — these products are typically supplier-
+      // stocked / drop-shipped, so the order will fall through to
+      // SUPPLIER_STOCK or BACKORDER at fulfilment time. Without this, an
+      // item with MOQ 3,000 and warehouse stock 100 could never be ordered.
+      const moq = product.minimumOrderQty || 1;
+      const isSupplierStocked =
+        !!product.defaultSupplierId || quantity >= moq;
+      if (!isSupplierStocked && variant.stockQuantity < quantity) {
         return NextResponse.json({ error: 'Insufficient stock for this variant' }, { status: 400 });
       }
     } else {
-      // Check product stock if no variant
-      if (product.trackInventory && product.stockQuantity < quantity) {
+      // Same logic at the product level: MOQ-meeting orders or supplier-
+      // stocked items skip the warehouse stock check.
+      const moq = product.minimumOrderQty || 1;
+      const isSupplierStocked =
+        !!product.defaultSupplierId || quantity >= moq;
+      if (
+        product.trackInventory &&
+        !isSupplierStocked &&
+        product.stockQuantity < quantity
+      ) {
         return NextResponse.json({ error: 'Insufficient stock' }, { status: 400 });
       }
     }
