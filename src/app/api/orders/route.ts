@@ -330,8 +330,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Per-unit weight = stored weight / qtyPerPack. Many imported catalogs
+    // record the carton/case weight in Product.weight while quantity is
+    // counted in individual units, so a naive multiplication produces
+    // wildly inflated shipping totals. Mirrors the same divisor used in
+    // /api/shipping/rates.
     const totalWeight = cart.items.reduce((sum: number, item: any) => {
-      return sum + (item.product.weight || 0) * item.quantity;
+      const raw = Number(item.product.weight) || 0;
+      const qpp = Math.max(1, Number(item.product.qtyPerPack) || 1);
+      return sum + (raw / qpp) * item.quantity;
     }, 0);
 
     // Compute shipping + handling via the centralized engine (per-supplier

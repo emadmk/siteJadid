@@ -65,17 +65,29 @@ export async function POST(request: NextRequest) {
       const productIds = data.cartItems.map(item => item.productId);
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },
-        select: { id: true, weight: true, length: true, width: true, height: true }
+        select: { id: true, weight: true, length: true, width: true, height: true, qtyPerPack: true }
       });
 
-      const productMap = new Map(products.map(p => [p.id, {
-        weight: Number(p.weight) || 1,
-        length: Number(p.length) || 0,
-        width: Number(p.width) || 0,
-        height: Number(p.height) || 0,
-      }]));
+      // Many imported catalogs (3M, Grainger, etc.) record `Product.weight` as
+      // the weight of the packaging unit (carton/case) rather than per
+      // individual unit, while still exposing each unit on the product page.
+      // Example: a 3M Wetordry sheet that weighs 0.006 lb individually but
+      // ships as 300/carton has weight=1.832 in the DB. Without the divisor,
+      // a 3,000-sheet order would weigh 5,490 lb instead of the real ~18 lb,
+      // producing absurd carrier rates. We treat `qtyPerPack` as the implicit
+      // divisor: per-unit shipping weight = weight / qtyPerPack.
+      const productMap = new Map(products.map(p => {
+        const rawWeight = Number(p.weight) || 1;
+        const qtyPerPack = Math.max(1, Number(p.qtyPerPack) || 1);
+        return [p.id, {
+          weight: rawWeight / qtyPerPack,
+          length: Number(p.length) || 0,
+          width: Number(p.width) || 0,
+          height: Number(p.height) || 0,
+        }];
+      }));
 
-      // Calculate total weight
+      // Calculate total weight using the per-unit weight.
       totalWeight = data.cartItems.reduce((sum: number, item: { productId: string; quantity: number }) => {
         const product = productMap.get(item.productId);
         const weight = product?.weight || 1;
