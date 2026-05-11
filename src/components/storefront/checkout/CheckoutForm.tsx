@@ -1710,7 +1710,7 @@ export function CheckoutForm({
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-gray-600">Shipping + Handling Fee</span>
+              <span className="text-gray-600">Shipping &amp; Handling Fee</span>
               <span className="font-medium">
                 {!selectedRate ? (
                   <span className="text-gray-500 text-sm">{currentStep === 'shipping' ? 'Calculated in next step' : 'Select a shipping method'}</span>

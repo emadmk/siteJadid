@@ -283,7 +283,7 @@ export default function ShippingSettingsPage() {
                 <Info className="w-5 h-5 text-blue-500 mt-0.5" />
                 <div className="text-sm text-gray-600 max-w-2xl">
                   Handling fee added to every cart based on its subtotal. Tiers must not overlap — the first matching tier wins. Fee is added invisibly into the displayed
-                  &ldquo;Shipping + Handling Fee&rdquo; line.
+                  &ldquo;Shipping &amp; Handling Fee&rdquo; line.
                 </div>
               </div>
               <Button onClick={() => setEditingTier({ ...DEFAULT_NEW_TIER, displayOrder: tiers.length })}>
