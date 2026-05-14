@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Save, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Upload, X, Image as ImageIcon, Search, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { CategoryVariantConfig } from './CategoryVariantConfig';
 
@@ -164,27 +164,6 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
     }
   };
 
-  // Build hierarchical category list for parent selection
-  function buildCategoryOptions(
-    cats: typeof categories,
-    parentId: string | null = null,
-    level: number = 0
-  ): JSX.Element[] {
-    const options: JSX.Element[] = [];
-    const children = cats.filter(c => c.parentId === parentId);
-
-    children.forEach(cat => {
-      options.push(
-        <option key={cat.id} value={cat.id}>
-          {'\u00A0'.repeat(level * 4)}{cat.name}
-        </option>
-      );
-      options.push(...buildCategoryOptions(cats, cat.id, level + 1));
-    });
-
-    return options;
-  }
-
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl">
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
@@ -233,14 +212,11 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Parent Category
             </label>
-            <select
-              value={formData.parentId}
-              onChange={(e) => setFormData(prev => ({ ...prev, parentId: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-            >
-              <option value="">-- Root Category --</option>
-              {buildCategoryOptions(categories)}
-            </select>
+            <SearchableCategoryPicker
+              categories={categories}
+              selectedId={formData.parentId}
+              onChange={(id) => setFormData((prev) => ({ ...prev, parentId: id }))}
+            />
             <p className="text-xs text-gray-600 mt-1">
               Leave blank to create a root category
             </p>
@@ -449,5 +425,157 @@ export function CategoryForm({ category, categories }: CategoryFormProps) {
         </Button>
       </div>
     </form>
+  );
+}
+
+// ============================================================
+// Searchable Category Picker
+// ============================================================
+// Fuzzy-matches user input against each category's full breadcrumb path
+// (e.g. "Tools > Hand Tools > Abrasive Blast Gun"). Every space-separated
+// token in the search must appear in the breadcrumb, in any order. So
+// "blast gun" finds "Abrasive Blast Gun", and "tools blast" also finds it.
+interface PickerCategory {
+  id: string;
+  name: string;
+  parentId: string | null;
+  slug: string;
+}
+
+function SearchableCategoryPicker({
+  categories,
+  selectedId,
+  onChange,
+}: {
+  categories: PickerCategory[];
+  selectedId: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Build breadcrumb path for every category, once.
+  const pathMap = useMemo(() => {
+    const byId = new Map(categories.map((c) => [c.id, c]));
+    const out = new Map<string, string>();
+    for (const c of categories) {
+      const parts: string[] = [];
+      let cur: PickerCategory | undefined = c;
+      const seen = new Set<string>();
+      while (cur && !seen.has(cur.id)) {
+        parts.unshift(cur.name);
+        seen.add(cur.id);
+        cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+      }
+      out.set(c.id, parts.join(' > '));
+    }
+    return out;
+  }, [categories]);
+
+  // Filter by tokenized substring match. Empty query → show top 200 alphabetical.
+  const filtered = useMemo(() => {
+    const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const items = categories
+      .map((c) => ({ c, path: pathMap.get(c.id) || c.name }))
+      .filter(({ path }) => {
+        if (tokens.length === 0) return true;
+        const lower = path.toLowerCase();
+        return tokens.every((t) => lower.includes(t));
+      });
+    items.sort((a, b) => a.path.localeCompare(b.path));
+    return items.slice(0, 200);
+  }, [categories, pathMap, query]);
+
+  // Click outside to close
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const selectedLabel = selectedId
+    ? pathMap.get(selectedId) || categories.find((c) => c.id === selectedId)?.name || '(unknown)'
+    : '-- Root Category --';
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg bg-white text-left focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+      >
+        <span className={selectedId ? 'text-black' : 'text-gray-500'}>{selectedLabel}</span>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+          <div className="p-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+            <Search className="w-4 h-4 text-gray-400 shrink-0" />
+            <input
+              type="text"
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search categories (e.g. 'blast gun')..."
+              className="flex-1 bg-transparent outline-none text-sm"
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery('')} className="text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="max-h-72 overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => {
+                onChange('');
+                setOpen(false);
+                setQuery('');
+              }}
+              className={`w-full text-left px-4 py-2 text-sm hover:bg-safety-green-50 ${
+                !selectedId ? 'bg-safety-green-50 font-medium' : ''
+              }`}
+            >
+              -- Root Category --
+            </button>
+            {filtered.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-gray-500">No categories match &ldquo;{query}&rdquo;</div>
+            ) : (
+              filtered.map(({ c, path }) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(c.id);
+                    setOpen(false);
+                    setQuery('');
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-safety-green-50 ${
+                    selectedId === c.id ? 'bg-safety-green-50 font-medium' : ''
+                  }`}
+                >
+                  <div className="text-black">{c.name}</div>
+                  {path !== c.name && <div className="text-xs text-gray-500">{path}</div>}
+                </button>
+              ))
+            )}
+            {filtered.length === 200 && (
+              <div className="px-4 py-2 text-xs text-gray-400 text-center border-t border-gray-100">
+                Showing first 200 results — refine search to narrow down
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
