@@ -353,10 +353,31 @@ export default async function OrderDetailPage({
                     <span className="font-medium text-red-600">-${Number(order.discount).toFixed(2)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Shipping:</span>
-                  <span className="font-medium text-black">${Number(order.shipping).toFixed(2)}</span>
-                </div>
+                {(() => {
+                  const totalShip = Number(order.shipping);
+                  const handling = order.handlingFee != null ? Number(order.handlingFee) : 0;
+                  const carrierOnly = Math.max(0, totalShip - handling);
+                  return (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Shipping &amp; Handling:</span>
+                        <span className="font-medium text-black">${totalShip.toFixed(2)}</span>
+                      </div>
+                      {handling > 0 && (
+                        <div className="pl-4 text-xs text-gray-500 space-y-0.5 -mt-1 mb-1">
+                          <div className="flex justify-between">
+                            <span>↳ Carrier ({order.shippingCarrier || order.shippingMethod || 'shipping'}):</span>
+                            <span>${carrierOnly.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>↳ Handling fee:</span>
+                            <span>${handling.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Tax:</span>
                   <span className="font-medium text-black">${Number(order.tax).toFixed(2)}</span>

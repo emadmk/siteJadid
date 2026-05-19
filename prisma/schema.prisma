@@ -870,8 +870,9 @@ model Order {
   subtotal          Decimal       @db.Decimal(12, 2)
   tax               Decimal       @default(0) @db.Decimal(12, 2)
   taxAmount         Decimal?      @db.Decimal(12, 2) // Alias for tax
-  shipping          Decimal       @default(0) @db.Decimal(12, 2)
+  shipping          Decimal       @default(0) @db.Decimal(12, 2) // Carrier + handling combined (what the customer was charged)
   shippingCost      Decimal?      @db.Decimal(12, 2) // Alias for shipping
+  handlingFee       Decimal?      @db.Decimal(12, 2) // Handling portion of shipping (admin-only breakdown). null = no breakdown captured.
   discount          Decimal       @default(0) @db.Decimal(12, 2)
   total             Decimal       @db.Decimal(12, 2)
   totalAmount       Decimal?      @db.Decimal(12, 2) // Alias for total

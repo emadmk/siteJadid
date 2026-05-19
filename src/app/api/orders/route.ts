@@ -355,6 +355,30 @@ export async function POST(request: NextRequest) {
       // /api/shipping/rates. Re-running the engine here with the same rate
       // would double-charge handling. Trust the provided cost.
       shippingCost = providedShippingCost;
+
+      // Recompute what the handling portion was, so admins can see a
+      // shipping vs handling breakdown on the order. Customer-facing
+      // numbers are unchanged.
+      if (providedShippingCost > 0) {
+        try {
+          const tiers = await db.handlingTier.findMany({ where: { isActive: true } });
+          const sorted = [...tiers].sort((a, b) => Number(a.minSubtotal) - Number(b.minSubtotal));
+          for (const t of sorted) {
+            const min = Number(t.minSubtotal) || 0;
+            const max = t.maxSubtotal == null ? Infinity : Number(t.maxSubtotal);
+            if (subtotal >= min && subtotal < max) {
+              const v = Number(t.value) || 0;
+              handlingFeeApplied =
+                t.type === 'percent'
+                  ? Math.round(((subtotal * v) / 100) * 100) / 100
+                  : Math.round(v * 100) / 100;
+              break;
+            }
+          }
+        } catch {
+          handlingFeeApplied = 0;
+        }
+      }
     } else {
       try {
         const isGovernmentOrder = !!(
@@ -453,6 +477,7 @@ export async function POST(request: NextRequest) {
           tax,
           taxAmount: tax,
           shippingCost: shippingCost,
+          handlingFee: handlingFeeApplied > 0 ? handlingFeeApplied : null,
           totalAmount: total,
           discount: couponDiscount,
           total,
