@@ -153,6 +153,20 @@ export function CheckoutForm({
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
+  // Auto-restore any coupon the customer applied on the cart page in the same
+  // session so they don't have to type it again at checkout.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('appliedCoupon');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.code) {
+        setAppliedCoupon({ code: parsed.code, discount: Number(parsed.discount) || 0 });
+        setCouponCode(parsed.code);
+      }
+    } catch {}
+  }, []);
+
   // Government Buyer state
   const [isGovBuyer, setIsGovBuyer] = useState(false);
   const [govBuyerInfo, setGovBuyerInfo] = useState({
@@ -520,10 +534,14 @@ export function CheckoutForm({
       const data = await response.json();
 
       if (response.ok && data.valid) {
-        setAppliedCoupon({
-          code: couponCode,
-          discount: data.discount,
-        });
+        const discount = Number(
+          data.discount ?? data.coupon?.discountAmount ?? 0,
+        );
+        const applied = { code: couponCode.toUpperCase(), discount };
+        setAppliedCoupon(applied);
+        try {
+          sessionStorage.setItem('appliedCoupon', JSON.stringify({ ...applied, type: data.type }));
+        } catch {}
         setError(null);
       } else {
         setError(data.error || 'Invalid coupon code');
@@ -687,6 +705,7 @@ export function CheckoutForm({
         const data = await response.json();
 
         if (response.ok) {
+          try { sessionStorage.removeItem('appliedCoupon'); } catch {}
           router.push(`/orders/${data.orderNumber}?new=true`);
         } else {
           throw new Error(data.error || 'Failed to place order');

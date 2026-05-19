@@ -118,6 +118,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       valid: true,
+      // Flat fields the client code is already reading. Keeping the nested
+      // `coupon` shape too for backwards compatibility with any caller that
+      // expects it.
+      discount: Math.round(discountAmount * 100) / 100,
+      type: coupon.type,
       coupon: {
         id: coupon.id,
         code: coupon.code,

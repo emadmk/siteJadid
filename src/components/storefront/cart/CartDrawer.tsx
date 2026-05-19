@@ -12,7 +12,7 @@ export function CartDrawer() {
   const { data: session } = useSession();
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type?: string } | null>(null);
   const [freeShippingEnabled, setFreeShippingEnabled] = useState(false);
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(100);
 
@@ -71,17 +71,32 @@ export function CartDrawer() {
       const res = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: couponCode }),
+        body: JSON.stringify({
+          code: couponCode,
+          subtotal: cart?.subtotal || 0,
+          accountType: session?.user?.accountType,
+        }),
       });
 
-      if (res.ok) {
-        setAppliedCoupon(couponCode);
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        const applied = {
+          code: couponCode.toUpperCase(),
+          discount: Number(data.discount) || 0,
+          type: data.type,
+        };
+        setAppliedCoupon(applied);
+        // Persist for the checkout page so the customer doesn't have to
+        // re-enter the same code. Cleared after order creation.
+        try {
+          sessionStorage.setItem('appliedCoupon', JSON.stringify(applied));
+        } catch {}
         window.dispatchEvent(new CustomEvent('showToast', {
           detail: { message: 'Coupon applied successfully!', type: 'success' }
         }));
       } else {
         window.dispatchEvent(new CustomEvent('showToast', {
-          detail: { message: 'Invalid or expired coupon', type: 'error' }
+          detail: { message: data.error || 'Invalid or expired coupon', type: 'error' }
         }));
       }
     } catch {
@@ -90,6 +105,20 @@ export function CartDrawer() {
       }));
     }
   };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    try { sessionStorage.removeItem('appliedCoupon'); } catch {}
+  };
+
+  // Restore any coupon the customer applied on a previous open of the drawer
+  // (or from a different page within this session).
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('appliedCoupon');
+      if (raw) setAppliedCoupon(JSON.parse(raw));
+    } catch {}
+  }, []);
 
   const subtotal = cart?.subtotal || 0;
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
@@ -421,10 +450,18 @@ export function CartDrawer() {
                 <div className="flex items-center justify-between bg-safety-green-50 px-3 py-2 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Tag className="w-4 h-4 text-safety-green-600" />
-                    <span className="text-sm font-medium text-safety-green-700">{appliedCoupon}</span>
+                    <span className="text-sm font-medium text-safety-green-700">
+                      {appliedCoupon.code}
+                      {appliedCoupon.discount > 0 && (
+                        <span className="ml-2 text-xs text-safety-green-600">−${formatPrice(appliedCoupon.discount)}</span>
+                      )}
+                      {appliedCoupon.type === 'FREE_SHIPPING' && (
+                        <span className="ml-2 text-xs text-safety-green-600">Free shipping</span>
+                      )}
+                    </span>
                   </div>
                   <button
-                    onClick={() => setAppliedCoupon(null)}
+                    onClick={handleRemoveCoupon}
                     className="text-sm text-safety-green-600 hover:text-safety-green-700"
                   >
                     Remove
@@ -455,6 +492,18 @@ export function CartDrawer() {
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-semibold text-gray-900">${formatPrice(subtotal)}</span>
               </div>
+              {appliedCoupon && appliedCoupon.discount > 0 && (
+                <div className="flex items-center justify-between mb-1 text-safety-green-700">
+                  <span>Coupon ({appliedCoupon.code})</span>
+                  <span className="font-semibold">−${formatPrice(appliedCoupon.discount)}</span>
+                </div>
+              )}
+              {appliedCoupon && appliedCoupon.discount > 0 && (
+                <div className="flex items-center justify-between mb-1 pt-1 border-t border-gray-100">
+                  <span className="text-gray-700 font-medium">Estimated total</span>
+                  <span className="font-bold text-black">${formatPrice(Math.max(0, subtotal - appliedCoupon.discount))}</span>
+                </div>
+              )}
               <p className="text-xs text-gray-500 mb-2">Shipping and taxes calculated at checkout</p>
               <div className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-md px-2 py-1.5 mb-3">
                 📦 Your order may ship in multiple packages and arrive on different dates to ensure the fastest delivery.
