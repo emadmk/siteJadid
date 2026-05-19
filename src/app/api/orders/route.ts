@@ -349,6 +349,12 @@ export async function POST(request: NextRequest) {
 
     if (validatedCoupon?.type === 'FREE_SHIPPING') {
       shippingCost = 0;
+    } else if (typeof providedShippingCost === 'number' && providedShippingCost >= 0) {
+      // The shipping rate the customer selected at checkout already has the
+      // handling fee folded in (and optional doubling), set by
+      // /api/shipping/rates. Re-running the engine here with the same rate
+      // would double-charge handling. Trust the provided cost.
+      shippingCost = providedShippingCost;
     } else {
       try {
         const isGovernmentOrder = !!(
@@ -358,25 +364,17 @@ export async function POST(request: NextRequest) {
         );
         const breakdown = await computeShippingAndHandling(cartToLines(cart), {
           isGovernmentOrder,
-          shippoRate:
-            typeof providedShippingCost === 'number' && providedShippingCost >= 0
-              ? { cost: providedShippingCost }
-              : undefined,
         });
         shippingCost = breakdown.combinedTotal;
         handlingFeeApplied = breakdown.handlingFee;
       } catch (engineErr) {
         console.error('Shipping engine failed, falling back to flat-rate:', engineErr);
-        if (shippingRateId && typeof providedShippingCost === 'number' && providedShippingCost >= 0) {
-          shippingCost = providedShippingCost;
-        } else {
-          const shippingResult = calculateShippingCost({
-            subtotal,
-            totalWeight,
-            isFreeShippingCoupon: false,
-          });
-          shippingCost = shippingResult.cost;
-        }
+        const shippingResult = calculateShippingCost({
+          subtotal,
+          totalWeight,
+          isFreeShippingCoupon: false,
+        });
+        shippingCost = shippingResult.cost;
       }
     }
 

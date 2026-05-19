@@ -4336,6 +4336,12 @@ model HandlingTier {
   isActive      Boolean  @default(true)
   displayOrder  Int      @default(0)
 
+  // When true and this tier matches the cart subtotal:
+  //   • every Shippo carrier rate is doubled
+  //   • a "Free Shipping" option is prepended so the customer chooses
+  //     between paying the doubled rate or the free option
+  doubleShippingWithFreeOption Boolean @default(false)
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

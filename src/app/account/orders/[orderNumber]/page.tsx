@@ -243,7 +243,7 @@ export default async function OrderDetailPage({
                 <span className="text-black">${Number(order.subtotal).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Shipping</span>
+                <span className="text-gray-600">Shipping &amp; Handling</span>
                 <span className="text-black">
                   {Number(order.shippingCost) === 0
                     ? 'Free'

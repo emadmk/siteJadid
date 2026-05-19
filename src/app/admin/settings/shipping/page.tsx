@@ -45,6 +45,7 @@ interface HandlingTier {
   value: string | number;
   isActive: boolean;
   displayOrder: number;
+  doubleShippingWithFreeOption?: boolean;
 }
 
 interface Supplier { id: string; name: string; code?: string }
@@ -71,6 +72,7 @@ const DEFAULT_NEW_TIER: Partial<HandlingTier> = {
   value: 0,
   isActive: true,
   displayOrder: 0,
+  doubleShippingWithFreeOption: false,
 };
 
 export default function ShippingSettingsPage() {
@@ -314,6 +316,11 @@ export default function ShippingSettingsPage() {
                       <td className="px-4 py-3">
                         <span className="font-semibold">{t.type === 'percent' ? `${Number(t.value)}%` : `$${Number(t.value).toFixed(2)}`}</span>
                         <span className="text-xs text-gray-500 ml-2">{t.type}</span>
+                        {t.doubleShippingWithFreeOption && (
+                          <span className="ml-2 inline-block text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium" title="Shipping rates doubled and Free Shipping offered">
+                            2× + Free
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`inline-block w-2 h-2 rounded-full ${t.isActive ? 'bg-safety-green-500' : 'bg-gray-300'}`} />
@@ -506,6 +513,23 @@ function TierEditor({ tier, saving, onChange, onCancel, onSave }: any) {
             <span className="text-sm">Tier is active</span>
           </label>
         </Field>
+
+        <div className="border-t border-gray-200 pt-4">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!!tier.doubleShippingWithFreeOption}
+              onChange={(e) => set({ doubleShippingWithFreeOption: e.target.checked })}
+              className="mt-1"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-black">Double shipping rates and offer a Free Shipping option</span>
+              <span className="block text-xs text-gray-500 mt-0.5">
+                When this tier matches, every carrier rate is doubled and a &ldquo;Free Shipping&rdquo; option is added at the top so the customer can choose between free (slower) or paid (doubled).
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
       <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
         <Button variant="outline" onClick={onCancel}><X className="w-4 h-4 mr-1" /> Cancel</Button>

@@ -56,6 +56,24 @@ export async function POST(request: NextRequest) {
 
     const lines = cartToLines(cart);
     const result = await computeShippingAndHandling(lines, { isGovernmentOrder, shippoRate });
+
+    // When the caller passed a shippoRate, the /api/shipping/rates layer has
+    // already folded the handling fee into that rate (and possibly doubled it
+    // for the matched tier). Re-applying the handling tier here would
+    // double-charge it. So when shippoRate is present we trust its cost and
+    // expose handlingFee=0 / combinedTotal=shippoRate.cost to the UI.
+    if (shippoRate) {
+      const carrierTotal = Math.round(Number(shippoRate.cost) * 100) / 100;
+      return NextResponse.json({
+        ...result,
+        shippingTotal: carrierTotal,
+        handlingFee: 0,
+        combinedTotal: carrierTotal,
+        handlingTierId: null,
+        handlingTierLabel: null,
+      });
+    }
+
     return NextResponse.json(result);
   } catch (e: any) {
     console.error('compute-shipping error:', e);

@@ -455,7 +455,7 @@ export function CartDrawer() {
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-semibold text-gray-900">${formatPrice(subtotal)}</span>
               </div>
-              <p className="text-xs text-gray-500 mb-2">Shipping &amp; handling and taxes calculated at checkout</p>
+              <p className="text-xs text-gray-500 mb-2">Shipping and taxes calculated at checkout</p>
               <div className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-md px-2 py-1.5 mb-3">
                 📦 Your order may ship in multiple packages and arrive on different dates to ensure the fastest delivery.
               </div>

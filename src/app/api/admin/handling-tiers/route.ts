@@ -22,6 +22,7 @@ function sanitize(body: any) {
     value: parseFloat(String(body.value ?? 0)) || 0,
     isActive: body.isActive !== false,
     displayOrder: parseInt(String(body.displayOrder ?? 0), 10) || 0,
+    doubleShippingWithFreeOption: !!body.doubleShippingWithFreeOption,
   };
 }
 

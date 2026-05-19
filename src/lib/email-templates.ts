@@ -532,7 +532,7 @@ export function orderConfirmationTemplate(data: {
         <td style="padding: 6px 0; text-align: right;"><span style="color: #059669; font-size: 14px;">-${fmt(data.discount)}</span></td>
       </tr>` : ''}
       <tr>
-        <td style="padding: 6px 0;"><span style="color: #6b7280; font-size: 14px;">Shipping</span></td>
+        <td style="padding: 6px 0;"><span style="color: #6b7280; font-size: 14px;">Shipping &amp; Handling</span></td>
         <td style="padding: 6px 0; text-align: right;"><span style="color: #374151; font-size: 14px;">${data.shipping === 0 ? '<span style="color: #059669;">FREE</span>' : fmt(data.shipping)}</span></td>
       </tr>
       <tr>

@@ -8,6 +8,86 @@ import {
   ShippingRate
 } from '@/lib/services/shippo';
 import { prisma } from '@/lib/prisma';
+import { loadActiveTiers } from '@/lib/services/shipping-engine';
+
+// Apply the customer-facing tweaks: filter to UPS only, fold handling
+// fee into each rate so customers see one "Shipping" number, and (when
+// the matched tier asks for it) double rates + prepend a Free option.
+function applyRateAdjustments(
+  rawRates: ShippingRate[],
+  cartSubtotal: number,
+  matchedTier: any | null,
+): ShippingRate[] {
+  // 1. UPS only — drop FedEx, USPS, DHL etc. If no UPS rates were returned
+  //    (e.g. UPS not enabled on the Shippo account, or fallback rates with
+  //    generic names) keep all originals so the customer still sees options.
+  const upsOnly = rawRates.filter((r) =>
+    String(r.carrier || '').toUpperCase().includes('UPS'),
+  );
+  let rates = upsOnly.length > 0 ? upsOnly : rawRates;
+
+  // 2. Compute handling fee from the matched tier
+  let handlingFee = 0;
+  if (matchedTier) {
+    const v = Number(matchedTier.value) || 0;
+    handlingFee =
+      matchedTier.type === 'percent'
+        ? Math.round(((cartSubtotal * v) / 100) * 100) / 100
+        : Math.round(v * 100) / 100;
+  }
+
+  const doubleAndFree = !!matchedTier?.doubleShippingWithFreeOption;
+
+  // 3. Double the carrier rates if the tier asks for it
+  if (doubleAndFree) {
+    rates = rates.map((r) => ({ ...r, cost: Math.round(r.cost * 2 * 100) / 100 }));
+  }
+
+  // 4. Fold the handling fee into each visible rate
+  if (handlingFee > 0) {
+    rates = rates.map((r) => ({
+      ...r,
+      cost: Math.round((r.cost + handlingFee) * 100) / 100,
+    }));
+  }
+
+  // 5. Prepend a Free Shipping option when the tier asks for it
+  if (doubleAndFree) {
+    const slowestDays = rates.reduce(
+      (max, r) => Math.max(max, r.estimatedDays || 0),
+      7,
+    );
+    const freeRate: ShippingRate = {
+      id: 'tier_free_shipping',
+      carrier: 'Free Shipping',
+      carrierLogo: '',
+      serviceName: 'Standard Ground (Free)',
+      serviceCode: 'TIER_FREE',
+      cost: 0,
+      currency: 'USD',
+      estimatedDays: slowestDays + 2,
+      arrivesBy: null,
+    };
+    rates = [freeRate, ...rates];
+  }
+
+  return rates;
+}
+
+function pickActiveTier(tiers: any[], cartSubtotal: number): any | null {
+  const sorted = [...tiers].sort(
+    (a, b) => Number(a.minSubtotal) - Number(b.minSubtotal),
+  );
+  for (const t of sorted) {
+    const min = Number(t.minSubtotal) || 0;
+    const max =
+      t.maxSubtotal === null || t.maxSubtotal === undefined
+        ? Infinity
+        : Number(t.maxSubtotal);
+    if (cartSubtotal >= min && cartSubtotal < max) return t;
+  }
+  return null;
+}
 
 interface ShippingRateRequest {
   // Destination address
@@ -217,12 +297,24 @@ export async function POST(request: NextRequest) {
     }
     const { rates, error } = await getShippingRates(toAddress, parcelsToShip);
 
+    // Compute cart subtotal from the items (used for handling-tier lookup).
+    // We deliberately use price × qty here rather than reading the cart row
+    // because the client already has the authoritative pricing for the items
+    // it sent — and this endpoint is also called pre-login during quote.
+    const cartSubtotal = (data.cartItems || []).reduce(
+      (s: number, it: any) => s + Number(it.unitPrice || it.price || 0) * Number(it.quantity || 0),
+      0,
+    );
+    const tiers = await loadActiveTiers().catch(() => [] as any[]);
+    const matchedTier = pickActiveTier(tiers, cartSubtotal);
+
     if (error) {
       // If Shippo fails, return fallback rates
       console.warn('Shippo rate error, using fallback:', error);
 
       // Return fallback flat rates
-      const fallbackRates: ShippingRate[] = await getFallbackRates(totalWeight);
+      let fallbackRates: ShippingRate[] = await getFallbackRates(totalWeight);
+      fallbackRates = applyRateAdjustments(fallbackRates, cartSubtotal, matchedTier);
 
       return NextResponse.json({
         rates: fallbackRates,
@@ -233,7 +325,8 @@ export async function POST(request: NextRequest) {
 
     if (rates.length === 0) {
       // No rates from Shippo, return fallback
-      const fallbackRates: ShippingRate[] = await getFallbackRates(totalWeight);
+      let fallbackRates: ShippingRate[] = await getFallbackRates(totalWeight);
+      fallbackRates = applyRateAdjustments(fallbackRates, cartSubtotal, matchedTier);
 
       return NextResponse.json({
         rates: fallbackRates,
@@ -242,7 +335,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ rates, fallback: false });
+    const adjusted = applyRateAdjustments(rates, cartSubtotal, matchedTier);
+    return NextResponse.json({ rates: adjusted, fallback: false });
   } catch (error: any) {
     console.error('Error fetching shipping rates:', error);
     return NextResponse.json(

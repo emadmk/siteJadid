@@ -23,6 +23,9 @@ function sanitize(body: any) {
   if (body.value !== undefined) data.value = parseFloat(String(body.value)) || 0;
   if (body.isActive !== undefined) data.isActive = !!body.isActive;
   if (body.displayOrder !== undefined) data.displayOrder = parseInt(String(body.displayOrder), 10) || 0;
+  if (body.doubleShippingWithFreeOption !== undefined) {
+    data.doubleShippingWithFreeOption = !!body.doubleShippingWithFreeOption;
+  }
   return data;
 }
 
