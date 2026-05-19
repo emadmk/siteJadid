@@ -247,30 +247,60 @@ export const productSearch = {
       const should: any[] = [];
 
       if (query) {
-        must.push({
-          bool: {
-            should: [
-              // Exact name match (highest boost)
-              { match_phrase: { name: { query, boost: 10 } } },
-              // Name fuzzy match
-              { match: { name: { query, fuzziness: 'AUTO', boost: 5 } } },
-              // Name ngram (partial/instant match)
-              { match: { 'name.ngram': { query, boost: 3 } } },
-              // SKU match
-              { match: { sku: { query, fuzziness: 'AUTO', boost: 4 } } },
-              { wildcard: { 'sku.keyword': { value: `*${query.toUpperCase()}*`, boost: 3 } } },
-              // Vendor part number
-              { match: { vendorPartNumber: { query, fuzziness: 'AUTO', boost: 3 } } },
-              // Brand name
-              { match: { brandName: { query, fuzziness: 'AUTO', boost: 2 } } },
-              // Category name
-              { match: { categoryName: { query, fuzziness: 'AUTO', boost: 2 } } },
-              // Description (lowest priority)
-              { match: { description: { query, fuzziness: 'AUTO', boost: 1 } } },
-            ],
-            minimum_should_match: 1,
-          },
-        });
+        // Multi-word vs single-word treatment.
+        // Multi-word queries (e.g. "rain gear") want PHRASE relevance — the
+        // n-gram analyzer + fuzzy match would otherwise return "drain pipe"
+        // and "grain pigskin" because they share a single letter with "rain".
+        // Single-word queries keep the looser typo/partial behaviour.
+        const tokens = query.trim().split(/\s+/).filter(Boolean);
+        const isMultiWord = tokens.length > 1;
+
+        if (isMultiWord) {
+          must.push({
+            bool: {
+              should: [
+                // Whole phrase in the product name dominates
+                { match_phrase: { name: { query, boost: 20 } } },
+                // Phrase in supporting fields
+                { match_phrase: { shortDescription: { query, boost: 5 } } },
+                { match_phrase: { brandName: { query, boost: 3 } } },
+                { match_phrase: { categoryName: { query, boost: 3 } } },
+                { match_phrase: { description: { query, boost: 1 } } },
+                // SKU is special-cased even for multi-word queries because
+                // SKUs sometimes contain spaces.
+                { match_phrase: { sku: { query, boost: 4 } } },
+                { wildcard: { 'sku.keyword': { value: `*${query.toUpperCase()}*`, boost: 3 } } },
+                { match_phrase: { vendorPartNumber: { query, boost: 3 } } },
+              ],
+              minimum_should_match: 1,
+            },
+          });
+        } else {
+          must.push({
+            bool: {
+              should: [
+                // Exact name match (highest boost)
+                { match_phrase: { name: { query, boost: 10 } } },
+                // Name fuzzy match
+                { match: { name: { query, fuzziness: 'AUTO', boost: 5 } } },
+                // Name ngram (partial/instant match)
+                { match: { 'name.ngram': { query, boost: 3 } } },
+                // SKU match
+                { match: { sku: { query, fuzziness: 'AUTO', boost: 4 } } },
+                { wildcard: { 'sku.keyword': { value: `*${query.toUpperCase()}*`, boost: 3 } } },
+                // Vendor part number
+                { match: { vendorPartNumber: { query, fuzziness: 'AUTO', boost: 3 } } },
+                // Brand name
+                { match: { brandName: { query, fuzziness: 'AUTO', boost: 2 } } },
+                // Category name
+                { match: { categoryName: { query, fuzziness: 'AUTO', boost: 2 } } },
+                // Description (lowest priority)
+                { match: { description: { query, fuzziness: 'AUTO', boost: 1 } } },
+              ],
+              minimum_should_match: 1,
+            },
+          });
+        }
 
         // Boost featured/bestseller products
         should.push(
