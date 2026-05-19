@@ -41,6 +41,16 @@ export function CartDrawer() {
       .catch(() => {});
   }, []);
 
+  // Restore any coupon the customer applied earlier in this session (e.g. on
+  // the cart page) so it stays applied when the drawer re-opens. Must live
+  // above the conditional `return null` to satisfy the Rules of Hooks.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('appliedCoupon');
+      if (raw) setAppliedCoupon(JSON.parse(raw));
+    } catch {}
+  }, []);
+
   if (!isCartOpen) return null;
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
@@ -111,16 +121,9 @@ export function CartDrawer() {
     try { sessionStorage.removeItem('appliedCoupon'); } catch {}
   };
 
-  // Restore any coupon the customer applied on a previous open of the drawer
-  // (or from a different page within this session).
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('appliedCoupon');
-      if (raw) setAppliedCoupon(JSON.parse(raw));
-    } catch {}
-  }, []);
-
   const subtotal = cart?.subtotal || 0;
+  const originalSubtotal = (cart as any)?.originalSubtotal || subtotal;
+  const totalSavings = Math.max(0, ((cart as any)?.totalSavings) || (originalSubtotal - subtotal));
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
   const progressPercentage = Math.min((subtotal / freeShippingThreshold) * 100, 100);
 
@@ -357,15 +360,21 @@ export function CartDrawer() {
           <div className="border-t border-gray-200 bg-white">
             {/* Discount Savings Banner */}
             {discountTiers.length > 0 && (() => {
+              // Match tiers against the pre-discount subtotal so the banner
+              // doesn't shift down a tier just because the discount itself
+              // brought the running total below the threshold.
+              const tierBase = originalSubtotal;
               const activeTier = [...discountTiers]
                 .reverse()
-                .find((t) => subtotal >= t.minimumOrderAmount && t.discountPercentage > 0);
+                .find((t) => tierBase >= t.minimumOrderAmount && t.discountPercentage > 0);
               const nextTier = discountTiers.find(
-                (t) => subtotal < t.minimumOrderAmount && t.discountPercentage > 0
+                (t) => tierBase < t.minimumOrderAmount && t.discountPercentage > 0
               );
-              const currentSavings = activeTier ? (subtotal * activeTier.discountPercentage) / 100 : 0;
-              const amountToNextTier = nextTier ? nextTier.minimumOrderAmount - subtotal : 0;
-              const progressToNext = nextTier ? Math.min((subtotal / nextTier.minimumOrderAmount) * 100, 100) : 100;
+              // Source of truth is the savings the server actually applied,
+              // not a re-computation that could drift from line-by-line logic.
+              const currentSavings = totalSavings;
+              const amountToNextTier = nextTier ? nextTier.minimumOrderAmount - tierBase : 0;
+              const progressToNext = nextTier ? Math.min((tierBase / nextTier.minimumOrderAmount) * 100, 100) : 100;
               const accountLabel = discountAccountLabel;
 
               return (
@@ -488,6 +497,18 @@ export function CartDrawer() {
 
             {/* Summary */}
             <div className="px-6 py-4">
+              {totalSavings > 0 && (
+                <div className="flex items-center justify-between mb-1 text-gray-500 text-sm">
+                  <span>Items total</span>
+                  <span className="line-through">${formatPrice(originalSubtotal)}</span>
+                </div>
+              )}
+              {totalSavings > 0 && (
+                <div className="flex items-center justify-between mb-1 text-safety-green-700 text-sm">
+                  <span>{discountAccountLabel} savings</span>
+                  <span className="font-semibold">−${formatPrice(totalSavings)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between mb-1">
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-semibold text-gray-900">${formatPrice(subtotal)}</span>
@@ -498,10 +519,10 @@ export function CartDrawer() {
                   <span className="font-semibold">−${formatPrice(appliedCoupon.discount)}</span>
                 </div>
               )}
-              {appliedCoupon && appliedCoupon.discount > 0 && (
+              {(appliedCoupon?.discount || 0) > 0 && (
                 <div className="flex items-center justify-between mb-1 pt-1 border-t border-gray-100">
                   <span className="text-gray-700 font-medium">Estimated total</span>
-                  <span className="font-bold text-black">${formatPrice(Math.max(0, subtotal - appliedCoupon.discount))}</span>
+                  <span className="font-bold text-black">${formatPrice(Math.max(0, subtotal - (appliedCoupon?.discount || 0)))}</span>
                 </div>
               )}
               <p className="text-xs text-gray-500 mb-2">Shipping and taxes calculated at checkout</p>

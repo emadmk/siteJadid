@@ -50,27 +50,82 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Enrich items with minimumOrderQty from product
+    // Normalize the user's account type once for live discount lookups.
+    const userAccountTypeForDiscount = (session.user.accountType || 'B2C') as any;
+
+    // First pass: rough subtotal using stored item.price. We need this so the
+    // discount engine can apply order-amount-based tiers when re-pricing each
+    // line below. We don't return this to the client.
+    const rawSubtotal = cart.items.reduce(
+      (sum: number, item: any) => sum + parseFloat(item.price.toString()) * item.quantity,
+      0,
+    );
+
+    // Enrich items with minimumOrderQty and the *live* effective price.
+    // The price stored on a cart item is whatever was current when the item
+    // was added. If the admin later activates / changes a volume-buyer or
+    // tier discount, we must surface the new effective price here so the
+    // customer sees the actual amount they'll pay and the cart total
+    // matches the order total at checkout.
     const enrichedItems = await Promise.all(
       cart.items.map(async (item: any) => {
-        const product = await db.product.findUnique({
+        const minOrder = await db.product.findUnique({
           where: { id: item.productId },
           select: { minimumOrderQty: true },
         });
+
+        const originalPrice = parseFloat(item.price.toString());
+        let effectivePrice = originalPrice;
+        try {
+          const discountResult = await calculateProductDiscount(
+            {
+              id: item.product.id,
+              categoryId: item.product.categoryId,
+              brandId: item.product.brandId,
+              defaultSupplierId: item.product.defaultSupplierId,
+              defaultWarehouseId: item.product.defaultWarehouseId,
+              basePrice: parseFloat(item.product.basePrice.toString()),
+              salePrice: item.product.salePrice ? parseFloat(item.product.salePrice.toString()) : null,
+              wholesalePrice: item.product.wholesalePrice ? parseFloat(item.product.wholesalePrice.toString()) : null,
+              gsaPrice: item.product.gsaPrice ? parseFloat(item.product.gsaPrice.toString()) : null,
+            },
+            userAccountTypeForDiscount,
+            rawSubtotal,
+          );
+          // Only ever take the cheaper of the two — never raise the price
+          // above what the customer was originally quoted on add-to-cart.
+          if (discountResult.discountedPrice < originalPrice) {
+            effectivePrice = discountResult.discountedPrice;
+          }
+        } catch (e) {
+          // If discount calculation fails, fall back to the stored price.
+        }
+
         return {
           ...item,
+          // Mutate price the UI reads so summary lines stay in sync without
+          // changes elsewhere. Original kept for "you saved" displays.
+          price: effectivePrice,
+          originalPrice,
+          effectivePrice,
           product: {
             ...item.product,
-            minimumOrderQty: product?.minimumOrderQty || 1,
+            minimumOrderQty: minOrder?.minimumOrderQty || 1,
           },
         };
-      })
+      }),
     );
 
-    // Calculate totals
-    const subtotal = enrichedItems.reduce((sum: number, item: any) => {
-      return sum + parseFloat(item.price.toString()) * item.quantity;
-    }, 0);
+    // Totals computed from the (possibly re-discounted) effective prices.
+    const subtotal = enrichedItems.reduce(
+      (sum: number, item: any) => sum + Number(item.effectivePrice) * item.quantity,
+      0,
+    );
+    const originalSubtotal = enrichedItems.reduce(
+      (sum: number, item: any) => sum + Number(item.originalPrice) * item.quantity,
+      0,
+    );
+    const totalSavings = Math.max(0, originalSubtotal - subtotal);
 
     // Fetch discount tiers for this user
     const userAccountType = session.user.accountType || 'B2C';
@@ -103,6 +158,8 @@ export async function GET(request: NextRequest) {
       ...cart,
       items: enrichedItems,
       subtotal,
+      originalSubtotal,
+      totalSavings,
       itemCount: enrichedItems.reduce((sum: number, item: any) => sum + item.quantity, 0),
       discountTiers,
       discountAccountLabel,
