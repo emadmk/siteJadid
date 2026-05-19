@@ -317,6 +317,9 @@ export function CheckoutForm({
           cartItems: cartItems.map(item => ({
             productId: item.product.id,
             quantity: item.quantity,
+            unitPrice: isGovBuyer
+              ? Number(item.product.gsaPrice || item.product.basePrice)
+              : Number(item.product.salePrice || item.product.basePrice),
           })),
         }),
         signal: controller.signal,

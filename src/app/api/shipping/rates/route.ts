@@ -297,14 +297,38 @@ export async function POST(request: NextRequest) {
     }
     const { rates, error } = await getShippingRates(toAddress, parcelsToShip);
 
-    // Compute cart subtotal from the items (used for handling-tier lookup).
-    // We deliberately use price × qty here rather than reading the cart row
-    // because the client already has the authoritative pricing for the items
-    // it sent — and this endpoint is also called pre-login during quote.
-    const cartSubtotal = (data.cartItems || []).reduce(
+    // Compute cart subtotal (used to look up the matching handling-fee tier).
+    // Prefer prices the client sent; if any line is missing a price, fall back
+    // to the product's basePrice from the DB so the tier still resolves
+    // correctly. Without this, a payload that only carries productId+quantity
+    // would yield subtotal=0 and skip every tier.
+    let cartSubtotal = (data.cartItems || []).reduce(
       (s: number, it: any) => s + Number(it.unitPrice || it.price || 0) * Number(it.quantity || 0),
       0,
     );
+    if (cartSubtotal === 0 && data.cartItems && data.cartItems.length > 0) {
+      try {
+        const ids = data.cartItems.map((i: any) => i.productId).filter(Boolean);
+        const products = await prisma.product.findMany({
+          where: { id: { in: ids } },
+          select: { id: true, basePrice: true, salePrice: true },
+        });
+        const priceById = new Map(
+          products.map((p) => [
+            p.id,
+            Number(p.salePrice || p.basePrice || 0),
+          ]),
+        );
+        cartSubtotal = (data.cartItems || []).reduce(
+          (s: number, it: any) =>
+            s + (priceById.get(it.productId) || 0) * Number(it.quantity || 0),
+          0,
+        );
+      } catch {
+        // Leave at 0; no tier will match and the engine will treat it as a
+        // sub-minSubtotal cart.
+      }
+    }
     const tiers = await loadActiveTiers().catch(() => [] as any[]);
     const matchedTier = pickActiveTier(tiers, cartSubtotal);
 
