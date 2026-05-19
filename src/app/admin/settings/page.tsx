@@ -116,6 +116,7 @@ interface Settings {
     paypalClientId: string;
     paypalClientSecret: string;
     gsaSmartpay: boolean;
+    net30: boolean;
   };
   security: {
     twoFactorAuth: boolean;
@@ -174,6 +175,7 @@ const defaultSettings: Settings = {
     paypalClientId: '',
     paypalClientSecret: '',
     gsaSmartpay: true,
+    net30: false,
   },
   security: {
     twoFactorAuth: true,
@@ -502,6 +504,17 @@ export default function SettingsPage() {
                 description="Government Procurement Cards"
                 active={settings.payment.gsaSmartpay}
                 onChange={(v) => updateSetting('payment', 'gsaSmartpay', v)}
+              />
+            </div>
+
+            {/* Net 30 Terms (B2B / Volume Buyer accounts) */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <PaymentMethod
+                icon={<CreditCard className="w-6 h-6 text-gray-600" />}
+                name="Net 30 Terms"
+                description="Allow B2B / Volume Buyer accounts to pay within 30 days"
+                active={settings.payment.net30}
+                onChange={(v) => updateSetting('payment', 'net30', v)}
               />
             </div>
           </div>

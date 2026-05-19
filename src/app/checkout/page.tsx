@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { db } from '@/lib/db';
 import { getServerSession } from 'next-auth';
+import { calculateProductDiscount } from '@/lib/discounts';
 import { authOptions } from '@/lib/auth';
 import { CheckoutForm } from '@/components/storefront/checkout/CheckoutForm';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,10 @@ async function getCheckoutData(userId: string) {
                 gsaPrice: true,
                 images: true,
                 weight: true,
+                categoryId: true,
+                brandId: true,
+                defaultSupplierId: true,
+                defaultWarehouseId: true,
               },
             },
           },
@@ -154,23 +159,63 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 
   const isB2BQuote = searchParams.quote === 'true';
 
-  // Transform cart items
-  const cartItems = cart.items.map((item: any) => ({
-    id: item.id,
-    quantity: item.quantity,
-    product: {
-      id: item.product.id,
-      sku: item.product.sku,
-      name: item.product.name,
-      slug: item.product.slug,
-      basePrice: Number(item.product.basePrice),
-      salePrice: item.product.salePrice ? Number(item.product.salePrice) : null,
-      wholesalePrice: item.product.wholesalePrice ? Number(item.product.wholesalePrice) : null,
-      gsaPrice: item.product.gsaPrice ? Number(item.product.gsaPrice) : null,
-      images: (item.product.images as string[]) || [],
-      weight: item.product.weight ? Number(item.product.weight) : null,
-    },
-  }));
+  // Rough pre-discount subtotal so the discount engine can apply
+  // order-amount-based tiers (10% above $500, etc.) consistently.
+  const rawSubtotal = cart.items.reduce(
+    (sum: number, item: any) =>
+      sum + Number(item.product.salePrice || item.product.basePrice) * item.quantity,
+    0,
+  );
+
+  // Compute the *effective* per-unit price for each cart item, honoring the
+  // active UserTypeDiscountSettings (volume-buyer / category / brand etc.) so
+  // the checkout subtotal matches the cart and the final order.
+  const cartItems = await Promise.all(
+    cart.items.map(async (item: any) => {
+      const productRaw = {
+        id: item.product.id,
+        categoryId: item.product.categoryId,
+        brandId: item.product.brandId,
+        defaultSupplierId: item.product.defaultSupplierId,
+        defaultWarehouseId: item.product.defaultWarehouseId,
+        basePrice: Number(item.product.basePrice),
+        salePrice: item.product.salePrice ? Number(item.product.salePrice) : null,
+        wholesalePrice: item.product.wholesalePrice ? Number(item.product.wholesalePrice) : null,
+        gsaPrice: item.product.gsaPrice ? Number(item.product.gsaPrice) : null,
+      };
+      let effectivePrice = Number(productRaw.salePrice || productRaw.basePrice);
+      try {
+        const dr = await calculateProductDiscount(
+          productRaw,
+          userAccountType as any,
+          rawSubtotal,
+        );
+        if (dr.discountedPrice < effectivePrice) effectivePrice = dr.discountedPrice;
+      } catch {
+        // Fall back to the unadjusted price below.
+      }
+      return {
+        id: item.id,
+        quantity: item.quantity,
+        product: {
+          id: item.product.id,
+          sku: item.product.sku,
+          name: item.product.name,
+          slug: item.product.slug,
+          basePrice: Number(item.product.basePrice),
+          salePrice: item.product.salePrice ? Number(item.product.salePrice) : null,
+          wholesalePrice: item.product.wholesalePrice ? Number(item.product.wholesalePrice) : null,
+          gsaPrice: item.product.gsaPrice ? Number(item.product.gsaPrice) : null,
+          // Pre-computed best-price-for-this-account-type. CheckoutForm
+          // prefers this over re-deriving from basePrice / salePrice so the
+          // volume-buyer/category discount actually lands in the total.
+          effectivePrice,
+          images: (item.product.images as string[]) || [],
+          weight: item.product.weight ? Number(item.product.weight) : null,
+        },
+      };
+    }),
+  );
 
   // Transform addresses
   const formattedAddresses = addresses.map((addr: any) => ({

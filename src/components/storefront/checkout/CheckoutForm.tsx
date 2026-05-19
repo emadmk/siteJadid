@@ -147,11 +147,21 @@ export function CheckoutForm({
     b2bMembership?.costCenter?.id || null
   );
   const [shippingMethod, setShippingMethod] = useState('ground');
-  const [paymentMethod, setPaymentMethod] = useState(accountType === 'B2B' ? 'net30' : 'card');
+  const [paymentMethod, setPaymentMethod] = useState('card');
   const [orderNote, setOrderNote] = useState('');
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  // Payment method visibility (admin-configurable). Defaults match the
+  // pre-toggle behaviour so the page doesn't change for existing installs
+  // until the admin actively flips a switch.
+  const [paymentVisibility, setPaymentVisibility] = useState({
+    stripe: true,
+    paypal: false,
+    gsaSmartpay: true,
+    net30: false,
+  });
 
   // Auto-restore any coupon the customer applied on the cart page in the same
   // session so they don't have to type it again at checkout.
@@ -166,6 +176,22 @@ export function CheckoutForm({
       }
     } catch {}
   }, []);
+
+  useEffect(() => {
+    fetch('/api/storefront/settings/payment')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d && typeof d === 'object') {
+          setPaymentVisibility((v) => ({ ...v, ...d }));
+          // Preserve the historical default of Net 30 for B2B accounts when
+          // the admin keeps that method enabled.
+          if (d.net30 && (accountType === 'B2B' || accountType === 'VOLUME_BUYER')) {
+            setPaymentMethod('net30');
+          }
+        }
+      })
+      .catch(() => {});
+  }, [accountType]);
 
   // Government Buyer state
   const [isGovBuyer, setIsGovBuyer] = useState(false);
@@ -257,13 +283,22 @@ export function CheckoutForm({
   const isB2BAccount = accountType === 'B2B' || accountType === 'VOLUME_BUYER';
   const isGSAAccount = accountType === 'GSA' || accountType === 'GOVERNMENT';
 
-  // Calculate subtotal using regular prices
+  // Calculate subtotal using regular prices. Prefer the server-computed
+  // effectivePrice (which already factors in UserTypeDiscountSettings) so
+  // volume-buyer / category / brand discounts land in the running total;
+  // fall back to the price-tier ladder if effectivePrice isn't supplied.
   const regularSubtotal = cartItems.reduce((sum, item) => {
-    let price = Number(item.product.salePrice || item.product.basePrice);
-    if (isB2BAccount && item.product.wholesalePrice) {
-      price = Number(item.product.wholesalePrice);
-    } else if (isGSAAccount && item.product.gsaPrice) {
-      price = Number(item.product.gsaPrice);
+    const ep = (item.product as any).effectivePrice;
+    let price: number;
+    if (typeof ep === 'number' && ep > 0) {
+      price = ep;
+    } else {
+      price = Number(item.product.salePrice || item.product.basePrice);
+      if (isB2BAccount && item.product.wholesalePrice) {
+        price = Number(item.product.wholesalePrice);
+      } else if (isGSAAccount && item.product.gsaPrice) {
+        price = Number(item.product.gsaPrice);
+      }
     }
     return sum + price * item.quantity;
   }, 0);
@@ -1284,7 +1319,7 @@ export function CheckoutForm({
               <h2 className="text-xl font-bold text-black">Payment Method</h2>
             </div>
 
-            {isB2BAccount && (
+            {isB2BAccount && paymentVisibility.net30 && (
               <div className="space-y-3 mb-6">
                 <label
                   className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
@@ -1683,27 +1718,42 @@ export function CheckoutForm({
 
           {/* Coupon */}
           <div className="mb-6">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                placeholder="Coupon code"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500"
-              />
-              <Button
-                variant="outline"
-                onClick={handleApplyCoupon}
-                disabled={applyingCoupon || !couponCode}
-                className="border-gray-300"
-              >
-                {applyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
-              </Button>
-            </div>
-            {appliedCoupon && (
-              <div className="mt-2 text-sm text-safety-green-600 flex items-center gap-2">
-                <Check className="w-4 h-4" />
-                {appliedCoupon.code} applied: -${formatPrice(appliedCoupon.discount)}
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between bg-safety-green-50 border border-safety-green-200 px-3 py-2 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-safety-green-700">
+                  <Check className="w-4 h-4" />
+                  <span className="font-medium">{appliedCoupon.code}</span>
+                  <span>applied{appliedCoupon.discount > 0 ? `: −$${formatPrice(appliedCoupon.discount)}` : ''}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppliedCoupon(null);
+                    setCouponCode('');
+                    try { sessionStorage.removeItem('appliedCoupon'); } catch {}
+                  }}
+                  className="text-sm text-safety-green-700 hover:text-safety-green-900 font-medium"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Coupon code"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-safety-green-500"
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleApplyCoupon}
+                  disabled={applyingCoupon || !couponCode}
+                  className="border-gray-300"
+                >
+                  {applyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
+                </Button>
               </div>
             )}
           </div>
