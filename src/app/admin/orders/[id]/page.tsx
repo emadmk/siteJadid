@@ -356,23 +356,37 @@ export default async function OrderDetailPage({
                 {(() => {
                   const totalShip = Number(order.shipping);
                   const handling = order.handlingFee != null ? Number(order.handlingFee) : 0;
+                  const doubled = !!(order as any).shippingDoubled;
                   const carrierOnly = Math.max(0, totalShip - handling);
+                  // Carrier base (pre-doubling) inferred from the stored
+                  // doubled total. Only meaningful when shippingDoubled=true.
+                  const carrierBase = doubled ? Math.round((carrierOnly / 2) * 100) / 100 : carrierOnly;
+                  const showBreakdown = handling > 0 || doubled;
                   return (
                     <>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Shipping &amp; Handling:</span>
                         <span className="font-medium text-black">${totalShip.toFixed(2)}</span>
                       </div>
-                      {handling > 0 && (
+                      {showBreakdown && (
                         <div className="pl-4 text-xs text-gray-500 space-y-0.5 -mt-1 mb-1">
-                          <div className="flex justify-between">
-                            <span>↳ Carrier ({order.shippingCarrier || order.shippingMethod || 'shipping'}):</span>
-                            <span>${carrierOnly.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>↳ Handling fee:</span>
-                            <span>${handling.toFixed(2)}</span>
-                          </div>
+                          {doubled ? (
+                            <div className="flex justify-between">
+                              <span>↳ Carrier ({order.shippingCarrier || order.shippingMethod || 'shipping'}) <span className="text-amber-600 font-medium">×2 high-volume tier</span>:</span>
+                              <span>${carrierBase.toFixed(2)} → ${carrierOnly.toFixed(2)}</span>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between">
+                              <span>↳ Carrier ({order.shippingCarrier || order.shippingMethod || 'shipping'}):</span>
+                              <span>${carrierOnly.toFixed(2)}</span>
+                            </div>
+                          )}
+                          {handling > 0 && (
+                            <div className="flex justify-between">
+                              <span>↳ Handling fee:</span>
+                              <span>${handling.toFixed(2)}</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </>

@@ -873,6 +873,8 @@ model Order {
   shipping          Decimal       @default(0) @db.Decimal(12, 2) // Carrier + handling combined (what the customer was charged)
   shippingCost      Decimal?      @db.Decimal(12, 2) // Alias for shipping
   handlingFee       Decimal?      @db.Decimal(12, 2) // Handling portion of shipping (admin-only breakdown). null = no breakdown captured.
+  shippingDoubled   Boolean       @default(false) // Set when a HandlingTier doubled the carrier rate (admin-only signal)
+  couponCode        String?       // Code of the coupon applied to this order (for per-user usage limits + audit trail)
   discount          Decimal       @default(0) @db.Decimal(12, 2)
   total             Decimal       @db.Decimal(12, 2)
   totalAmount       Decimal?      @db.Decimal(12, 2) // Alias for total

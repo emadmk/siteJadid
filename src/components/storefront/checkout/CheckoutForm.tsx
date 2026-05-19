@@ -34,6 +34,7 @@ interface CartItem {
     salePrice: number | null;
     wholesalePrice: number | null;
     gsaPrice: number | null;
+    effectivePrice?: number;
     images: string[];
     weight: number | null;
   };
@@ -123,7 +124,7 @@ function StripePaymentElement({
 }
 
 export function CheckoutForm({
-  cartItems,
+  cartItems: cartItemsProp,
   addresses,
   userEmail,
   userName,
@@ -152,6 +153,53 @@ export function CheckoutForm({
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+
+  // Live cart state. The page is a server component so its `cartItems` prop
+  // is frozen at page load — without this the checkout would not see a
+  // newly-added line item until the customer manually refreshed. We hydrate
+  // from the server prop, then refresh from /api/cart on mount and whenever
+  // CartContext fires `cartUpdated`.
+  const [liveCartItems, setLiveCartItems] = useState<CartItem[] | null>(null);
+
+  const refetchLiveCart = useCallback(async () => {
+    try {
+      const res = await fetch('/api/cart', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data?.items) return;
+      const next: CartItem[] = data.items.map((it: any) => ({
+        id: it.id,
+        quantity: it.quantity,
+        product: {
+          id: it.product.id,
+          sku: it.product.sku,
+          name: it.product.name,
+          slug: it.product.slug,
+          basePrice: Number(it.product.basePrice),
+          salePrice: it.product.salePrice ? Number(it.product.salePrice) : null,
+          wholesalePrice: it.product.wholesalePrice ? Number(it.product.wholesalePrice) : null,
+          gsaPrice: it.product.gsaPrice ? Number(it.product.gsaPrice) : null,
+          effectivePrice: typeof it.effectivePrice === 'number' ? it.effectivePrice : undefined,
+          images: (it.product.images as string[]) || [],
+          weight: it.product.weight ? Number(it.product.weight) : null,
+        },
+      }));
+      setLiveCartItems(next);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    refetchLiveCart();
+    const handler = () => refetchLiveCart();
+    window.addEventListener('cartUpdated', handler);
+    return () => window.removeEventListener('cartUpdated', handler);
+  }, [refetchLiveCart]);
+
+  // Source of truth for everything below: prefer the live items, fall back
+  // to the server-rendered prop until the first /api/cart call resolves.
+  // We bind it back to the name `cartItems` so the rest of the component
+  // (subtotal/totals/render loops) keeps using the same identifier.
+  const cartItems: CartItem[] = liveCartItems ?? cartItemsProp;
 
   // Payment method visibility (admin-configurable). Defaults match the
   // pre-toggle behaviour so the page doesn't change for existing installs
@@ -317,6 +365,52 @@ export function CheckoutForm({
 
   // Calculate government discount (the difference between regular and government prices)
   const govPriceSavings = isGovBuyer && !isGSAAccount ? regularSubtotal - governmentSubtotal : 0;
+
+  // Whenever the subtotal changes (item added/removed/qty edited), re-validate
+  // any applied coupon. If the coupon is no longer valid (min purchase no
+  // longer met, expired, hit usage limit) we silently drop it so the customer
+  // never carries a stale discount through to the order. If it's still valid
+  // but the discount value changed (percentage of a different subtotal) we
+  // refresh the stored discount.
+  useEffect(() => {
+    if (!appliedCoupon?.code || subtotal <= 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/coupons/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: appliedCoupon.code,
+            subtotal,
+            accountType,
+          }),
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (res.ok && data.valid) {
+          const newDiscount = Number(data.discount ?? data.coupon?.discountAmount ?? 0);
+          if (Math.abs(newDiscount - appliedCoupon.discount) > 0.005) {
+            const next = { code: appliedCoupon.code, discount: newDiscount };
+            setAppliedCoupon(next);
+            try {
+              sessionStorage.setItem('appliedCoupon', JSON.stringify({ ...next, type: data.type }));
+            } catch {}
+          }
+        } else {
+          // Coupon no longer valid — clear it so the customer isn't shown an
+          // outdated discount.
+          setAppliedCoupon(null);
+          setCouponCode('');
+          try { sessionStorage.removeItem('appliedCoupon'); } catch {}
+        }
+      } catch {
+        // Network blip — leave the existing coupon state alone.
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotal, accountType]);
 
   // Fetch shipping settings
   useEffect(() => {

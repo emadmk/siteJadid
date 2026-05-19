@@ -311,11 +311,28 @@ export async function POST(request: NextRequest) {
       });
 
       if (validatedCoupon) {
-        // Check usage limits
+        // Check usage limits (total + per-user)
         const withinUsageLimit = !validatedCoupon.usageLimit || validatedCoupon.usageCount < validatedCoupon.usageLimit;
         const meetsMinPurchase = !validatedCoupon.minPurchase || subtotal >= Number(validatedCoupon.minPurchase);
+        let withinPerUserLimit = true;
+        if (validatedCoupon.perUserLimit && validatedCoupon.perUserLimit > 0) {
+          const userUses = await db.order.count({
+            where: {
+              userId: session.user.id,
+              couponCode: validatedCoupon.code,
+              status: { notIn: ['CANCELLED'] },
+            },
+          });
+          withinPerUserLimit = userUses < validatedCoupon.perUserLimit;
+        }
+        if (!withinUsageLimit || !withinPerUserLimit) {
+          return NextResponse.json(
+            { error: 'This coupon is no longer available for use on this account.' },
+            { status: 400 }
+          );
+        }
 
-        if (withinUsageLimit && meetsMinPurchase) {
+        if (meetsMinPurchase) {
           if (validatedCoupon.type === 'PERCENTAGE') {
             couponDiscount = subtotal * (Number(validatedCoupon.value) / 100);
             if (validatedCoupon.maxDiscount) {
@@ -346,6 +363,7 @@ export async function POST(request: NextRequest) {
     // legacy flat-rate calculator is only used as a last-resort fallback.
     let shippingCost: number;
     let handlingFeeApplied = 0;
+    let shippingWasDoubled = false;
 
     if (validatedCoupon?.type === 'FREE_SHIPPING') {
       shippingCost = 0;
@@ -372,6 +390,7 @@ export async function POST(request: NextRequest) {
                 t.type === 'percent'
                   ? Math.round(((subtotal * v) / 100) * 100) / 100
                   : Math.round(v * 100) / 100;
+              shippingWasDoubled = !!t.doubleShippingWithFreeOption && providedShippingCost > 0;
               break;
             }
           }
@@ -478,6 +497,8 @@ export async function POST(request: NextRequest) {
           taxAmount: tax,
           shippingCost: shippingCost,
           handlingFee: handlingFeeApplied > 0 ? handlingFeeApplied : null,
+          shippingDoubled: shippingWasDoubled,
+          ...(validatedCoupon ? { couponCode: validatedCoupon.code } : {}),
           totalAmount: total,
           discount: couponDiscount,
           total,

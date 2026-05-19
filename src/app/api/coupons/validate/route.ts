@@ -68,6 +68,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Per-user limit. We count any order placed by this user that referenced
+    // this coupon — even orders whose payment later failed — so a customer
+    // can't burn through the limit by retrying failed payments. Cancelled
+    // orders are excluded so a genuine cancellation doesn't lock the
+    // customer out.
+    if (session?.user?.id && coupon.perUserLimit && coupon.perUserLimit > 0) {
+      const userUsageCount = await prisma.order.count({
+        where: {
+          userId: session.user.id,
+          couponCode: coupon.code,
+          status: { notIn: ['CANCELLED'] },
+        },
+      });
+      if (userUsageCount >= coupon.perUserLimit) {
+        return NextResponse.json(
+          {
+            error: `You've already used this coupon the maximum number of times (${coupon.perUserLimit}).`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Check minimum purchase requirement
     if (coupon.minPurchase && subtotal < Number(coupon.minPurchase)) {
       return NextResponse.json(
